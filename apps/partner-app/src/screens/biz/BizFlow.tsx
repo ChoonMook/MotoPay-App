@@ -46,7 +46,7 @@ export default function BizFlow({ onExit, onLogout }: BizFlowProps) {
           onBack={() => setScreen("main")}
           onSaved={(updated) => {
             setShop(updated);
-            showToast("저장되었어요. 관리자 승인 후 반영돼요", "success");
+            showToast("저장되었어요.", "success");
           }}
           onError={(message) => showToast(message, "danger")}
         />

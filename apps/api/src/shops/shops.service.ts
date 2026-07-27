@@ -122,6 +122,7 @@ export class ShopsService {
       data: {
         intro: dto.intro,
         greeting: dto.greeting,
+        zipCode: dto.zipCode,
         address: dto.address,
         addressDetail: dto.addressDetail,
         phone: dto.phone,

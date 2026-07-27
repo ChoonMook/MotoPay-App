@@ -30,6 +30,7 @@ export interface MyShop {
 export interface UpdateShopInput {
   intro?: string;
   greeting?: string;
+  zipCode?: string;
   address?: string;
   addressDetail?: string;
   phone?: string;

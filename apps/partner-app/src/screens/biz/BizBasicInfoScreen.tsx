@@ -6,6 +6,7 @@ import Textarea from "../../components/ui/Textarea";
 import Button from "../../components/ui/Button";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { updateMyShop, type MyShop } from "../../api/shops";
+import { useDaumPostcode } from "../../hooks/useDaumPostcode";
 import { BackIcon } from "./bizIcons";
 
 interface BizBasicInfoScreenProps {
@@ -18,6 +19,8 @@ interface BizBasicInfoScreenProps {
 export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: BizBasicInfoScreenProps) {
   const [intro, setIntro] = useState(shop.intro ?? "");
   const [greeting, setGreeting] = useState(shop.greeting ?? "");
+  const [zipCode, setZipCode] = useState(shop.zipCode ?? "");
+  const [address, setAddress] = useState(shop.address ?? "");
   const [addressDetail, setAddressDetail] = useState(shop.addressDetail ?? "");
   const [phone, setPhone] = useState(shop.phone ?? "");
   const [businessHours, setBusinessHours] = useState(shop.businessHours ?? "");
@@ -25,6 +28,7 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
   const [allCategories, setAllCategories] = useState<CommonCodeDetailApi[]>([]);
   const [saving, setSaving] = useState(false);
   const [basicSaved, setBasicSaved] = useState(false);
+  const { open: openAddressSearch } = useDaumPostcode();
 
   useEffect(() => {
     getCommonCodeDetails("CAR_INST")
@@ -32,6 +36,16 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
       .catch((err) => onError(err instanceof Error ? err.message : "시공가능 카테고리를 불러오지 못했어요"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSearchAddress = () => {
+    openAddressSearch(
+      (result) => {
+        setZipCode(result.zonecode);
+        setAddress(result.address);
+      },
+      (message) => onError(message),
+    );
+  };
 
   const toggleCategory = (detailCode: string) => {
     setSelectedCategories((prev) =>
@@ -45,6 +59,8 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
       const updated = await updateMyShop({
         intro,
         greeting,
+        zipCode,
+        address,
         addressDetail,
         phone,
         businessHours,
@@ -119,9 +135,9 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
           <div className="mb-2 text-sm font-semibold">주소</div>
           <div className="mb-2 flex gap-2">
             <div className="flex-1">
-              <Input value={shop.address ?? ""} disabled placeholder="주소 검색" />
+              <Input value={address} disabled placeholder="주소 검색" />
             </div>
-            <Button variant="secondary" size="lg" fullWidth={false} onClick={() => onError("주소 검색 팝업을 엽니다")}>
+            <Button variant="secondary" size="lg" fullWidth={false} onClick={handleSearchAddress}>
               검색
             </Button>
           </div>

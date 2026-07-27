@@ -13,6 +13,11 @@ export class UpdateShopDto {
   @IsString()
   greeting?: string;
 
+  @ApiPropertyOptional({ description: '우편번호' })
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
+
   @ApiPropertyOptional({ description: '주소' })
   @IsOptional()
   @IsString()

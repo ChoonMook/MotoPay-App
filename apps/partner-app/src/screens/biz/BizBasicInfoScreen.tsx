@@ -28,7 +28,7 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
   const [allCategories, setAllCategories] = useState<CommonCodeDetailApi[]>([]);
   const [saving, setSaving] = useState(false);
   const [basicSaved, setBasicSaved] = useState(false);
-  const { open: openAddressSearch } = useDaumPostcode();
+  const { open: openAddressSearch, modal: addressSearchModal } = useDaumPostcode();
 
   useEffect(() => {
     getCommonCodeDetails("CAR_INST")
@@ -183,6 +183,8 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
           {saving ? "저장 중..." : "저장"}
         </Button>
       </div>
+
+      {addressSearchModal}
     </div>
   );
 }

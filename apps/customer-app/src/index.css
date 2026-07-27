@@ -1,0 +1,204 @@
+/* Cardoc 디자인시스템 토큰 이식 + Tailwind v4 진입점 */
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Regular.otf") format("opentype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Medium.otf") format("opentype");
+  font-weight: 500;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-SemiBold.otf") format("opentype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Bold.otf") format("opentype");
+  font-weight: 700;
+}
+
+:root {
+  /* ---- Brand / Primary (Cardoc Blue) -------------------------------------- */
+  --blue-50: #ebf2fe;
+  --blue-100: #d6e4fd;
+  --blue-200: #adc9fb;
+  --blue-300: #7fa9f8;
+  --blue-400: #4e86f5;
+  --blue-500: #1b64f2;
+  --blue-600: #1550d0;
+  --blue-700: #103d9e;
+  --blue-800: #0c2e76;
+  --blue-900: #081f4f;
+
+  /* ---- Neutral / Gray ----------------------------------------------------- */
+  --gray-0: #ffffff;
+  --gray-50: #f7f8fa;
+  --gray-100: #f1f3f5;
+  --gray-200: #e8ebed;
+  --gray-300: #d5dade;
+  --gray-400: #b0b8bf;
+  --gray-500: #8a929a;
+  --gray-600: #616a72;
+  --gray-700: #454c53;
+  --gray-800: #2b3138;
+  --gray-900: #16191c;
+
+  /* ---- Semantic ----------------------------------------------------------- */
+  --green-50: #e7f7ef;
+  --green-500: #12b76a;
+  --green-600: #0e9455;
+  --amber-50: #fef6e7;
+  --amber-500: #f79009;
+  --red-50: #feeceb;
+  --red-500: #f04438;
+  --red-600: #d3271c;
+
+  /* ---- Accent (promotions / events / urgency) ---------------------------- */
+  --orange-50: #fff3ec;
+  --orange-100: #ffe1cf;
+  --orange-500: #ff6b2c;
+  --orange-600: #e85614;
+
+  /* ---- Semantic aliases ----------------------------------------------------- */
+  --color-brand: var(--blue-500);
+  --color-brand-strong: var(--blue-600);
+  --color-brand-subtle: var(--blue-50);
+  --color-brand-border: var(--blue-200);
+
+  --color-accent: var(--orange-500);
+  --color-accent-strong: var(--orange-600);
+  --color-accent-subtle: var(--orange-50);
+  --color-accent-border: var(--orange-100);
+
+  --text-strong: var(--gray-900);
+  --text-body: var(--gray-800);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --text-disabled: var(--gray-400);
+  --text-on-brand: var(--gray-0);
+
+  --surface-page: var(--gray-50);
+  --surface-card: var(--gray-0);
+  --surface-sunken: var(--gray-100);
+  --surface-brand-subtle: var(--blue-50);
+  --surface-overlay: rgba(22, 25, 28, 0.55);
+
+  --border-subtle: var(--gray-200);
+  --border-default: var(--gray-300);
+  --border-strong: var(--gray-400);
+  --divider: var(--gray-100);
+  --focus-ring: rgba(27, 100, 242, 0.35);
+
+  --status-success: var(--green-500);
+  --status-success-bg: var(--green-50);
+  --status-warning: var(--amber-500);
+  --status-warning-bg: var(--amber-50);
+  --status-danger: var(--red-500);
+  --status-danger-bg: var(--red-50);
+
+  /* ---- Shadow -----------------------------------------------------------
+     주의: --radius-* 이름은 Tailwind v4 내부 테마 변수와 충돌하므로 여기서 선언하지 않는다.
+     Cardoc radius 스케일(xs4/sm6/md8/lg12/xl16/2xl20)은 Tailwind 기본 스케일과 한 단계 밀려
+     대응한다 — Cardoc md(8px, 버튼/인풋)=Tailwind rounded-lg, Cardoc lg(12px, 카드)=Tailwind
+     rounded-xl. 유틸리티 클래스 사용 시 이 매핑을 따른다. --------------------------------- */
+  --shadow-sheet: 0 -4px 24px rgba(22, 25, 28, 0.12);
+
+  /* ---- Font ------------------------------------------------------------- */
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", system-ui, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+@theme inline {
+  --color-brand: var(--blue-500);
+  --color-brand-strong: var(--blue-600);
+  --color-brand-subtle: var(--blue-50);
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-status-danger: var(--red-500);
+  --color-status-danger-bg: var(--red-50);
+  --color-status-success: var(--green-500);
+  --color-status-success-bg: var(--green-50);
+  --color-status-warning: var(--amber-500);
+  --color-status-warning-bg: var(--amber-50);
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+  --color-accent: var(--orange-500);
+  --color-accent-strong: var(--orange-600);
+  --color-accent-subtle: var(--orange-50);
+  --color-accent-border: var(--orange-100);
+  --font-family-sans: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background: var(--gray-200);
+}
+
+.mp-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.mp-scroll {
+  scrollbar-width: none;
+}
+
+@keyframes mp-screen {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mp-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes mp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cardoc-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

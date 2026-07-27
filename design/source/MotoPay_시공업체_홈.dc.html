@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">파트너(시공업체)앱</span> · 홈</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · PT-HOME-01</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:780px;line-height:1.6;margin-bottom:32px">파트너(시공업체) 로그인 후 진입하는 <b>업무 홈</b>입니다. 확인 대기 알림, <b>신차패키지 시공관리</b>·<b>예약시공 입찰</b> 현황 카드, <b>오늘의 시공 일정</b>, bottom navigation으로 구성했어요. 고객앱 홈(CU-HOME-01)과 동일한 레이아웃 문법을 사용하되 콘텐츠는 업체 업무 중심입니다.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <!-- status bar -->
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- top app bar -->
+        <div style="position:absolute;top:46px;left:0;right:0;height:52px;z-index:50;display:flex;align-items:center;gap:8px;padding:0 18px;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+          <span style="font-size:21px;font-weight:800;letter-spacing:-.04em;color:var(--gray-900)">Moto<span style="color:var(--color-brand)">Pay</span></span>
+          <span style="font-size:10.5px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:2.5px 7px;border-radius:5px">파트너</span>
+          <span style="flex:1"></span>
+          <span onClick="{{ tapBell }}" style="position:relative;cursor:pointer;color:var(--gray-700);display:inline-flex">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+            <span style="position:absolute;top:-1px;right:0;width:7px;height:7px;border-radius:50%;background:var(--status-danger);border:1.5px solid var(--surface-card)"></span>
+          </span>
+        </div>
+
+        <!-- scroll body -->
+        <div class="mp-scroll" style="position:absolute;top:98px;bottom:66px;left:0;right:0;overflow-y:auto;padding:16px 18px 24px;animation:mp-screen .32s ease">
+
+          <!-- greeting -->
+          <div style="margin:2px 2px 14px">
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">{{ shopName }} {{ staffName }}님, 안녕하세요</div>
+            <div style="font-size:13.5px;color:var(--text-secondary);margin-top:3px">오늘 처리할 시공과 입찰을 확인해 보세요.</div>
+          </div>
+
+          <!-- 확인 대기 알림 배너 -->
+          <div onClick="{{ tapAlert }}" style="display:flex;gap:12px;align-items:flex-start;background:var(--surface-brand-subtle);border-radius:14px;padding:16px;margin-bottom:16px;cursor:pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+            <div style="font-size:14px;font-weight:700;color:var(--color-brand);line-height:1.5">신규 예약 {{ alertResv }}건, 마감임박 입찰 {{ alertBid }}건이 확인을 기다리고 있어요</div>
+          </div>
+
+          <!-- 신차패키지 시공관리 -->
+          <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg>
+              <span style="flex:1;font-size:16px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">신차패키지 시공관리</span>
+              <span onClick="{{ tapPkg }}" style="font-size:13px;font-weight:700;color:var(--color-brand);cursor:pointer">바로가기</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <sc-for list="{{ pkgStats }}" as="s" hint-placeholder-count="3">
+                <div onClick="{{ s.onClick }}" style="background:var(--surface-sunken);border-radius:12px;padding:14px 12px;cursor:pointer">
+                  <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:{{ s.color }};font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:3px">{{ s.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- 예약시공 입찰 -->
+          <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:18px;margin-bottom:22px;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray-700)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V4a1 1 0 0 1 1-1h8.5l8.1 8.1a1.6 1.6 0 0 1 0 2.3Z"></path><circle cx="7.5" cy="7.5" r="1.2"></circle></svg>
+              <span style="flex:1;font-size:16px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">예약시공 입찰</span>
+              <span onClick="{{ tapBid }}" style="font-size:13px;font-weight:700;color:var(--color-brand);cursor:pointer">바로가기</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <sc-for list="{{ bidStats }}" as="s" hint-placeholder-count="3">
+                <div onClick="{{ s.onClick }}" style="background:var(--surface-sunken);border-radius:12px;padding:14px 12px;cursor:pointer">
+                  <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:{{ s.color }};font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:3px">{{ s.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- 오늘의 시공 일정 -->
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin:2px 2px 10px">
+            <span style="font-size:16px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">오늘의 시공 일정</span>
+            <span style="font-size:13px;color:var(--text-tertiary);font-variant-numeric:tabular-nums">{{ today }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ todayResv }}" as="r" hint-placeholder-count="3">
+              <div onClick="{{ r.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 16px;cursor:pointer;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="flex:1;font-size:15px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">{{ r.time }} · {{ r.service }}</span>
+                  <span style="{{ r.statusStyle }}">{{ r.status }}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-tertiary);margin-top:6px">{{ r.customer }} · {{ r.car }} · {{ r.plate }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+        </div>
+
+        <!-- ===== bottom navigation ===== -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:66px;z-index:50;display:flex;background:var(--surface-card);border-top:1px solid var(--divider);padding-bottom:8px">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+            <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:{{ n.color }}">
+              {{ n.icon }}
+              <span style="font-size:10.5px;font-weight:{{ n.weight }}">{{ n.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:82px;z-index:90;display:flex;justify-content:center;padding:0 24px">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import>
+          </div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 파트너 로그인 후 진입 · bottom navigation</div>
+    </div>
+
+    <!-- ============ SUMMARY ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 14px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">홈 구성요소</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">고객앱 홈과 동일한 레이아웃 문법, 콘텐츠는 업무 중심</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ sectionItems }}" as="item" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:var(--surface-sunken)">
+              <span style="flex:none;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;background:var(--color-brand);border-radius:8px">{{ item.num }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13.5px;font-weight:700;color:var(--text-body)">{{ item.title }}</div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px">{{ item.desc }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em">PT-HOME-01</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">홈</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · 주화면</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">/partner/home</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">공용(반응형)</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">오늘 예약·신규 견적요청 요약, 견적관리·예약관리·정산·고객센터 진입 홈 (bottom navigation)</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ specDetail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { toast: '', toastTone: 'default' };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2000); }
+
+  icon(name, active) {
+    const c = active ? 'var(--color-brand)' : 'var(--text-tertiary)';
+    const paths = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      pay: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21V4a1 1 0 0 1 1-1Z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+    };
+    return React.createElement('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: paths[name] } });
+  }
+  qicon(name) {
+    const paths = {
+      quote: '<path d="M4 4h16v12H8l-4 4V4Z"/><path d="M8 9h8M8 12.5h5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      settle: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+      cs: '<path d="M4 12a8 8 0 0 1 16 0"/><rect x="3" y="12" width="4" height="6" rx="1.4"/><rect x="17" y="12" width="4" height="6" rx="1.4"/><path d="M19 18v1a2 2 0 0 1-2 2h-3"/>'
+    };
+    return React.createElement('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: paths[name] } });
+  }
+
+  renderVals() {
+    const brand = 'var(--color-brand)', muted = 'var(--text-tertiary)';
+
+    const pkgStats = [
+      { value: 3, label: '착수대기', color: 'var(--color-accent-strong)' },
+      { value: 2, label: '시공중', color: brand },
+      { value: 18, label: '완료', color: 'var(--status-success)' },
+    ].map(s => Object.assign({}, s, { onClick: () => this.showToast('신차패키지 ' + s.label + ' ' + s.value + '건 목록으로 이동해요') }));
+
+    const bidStats = [
+      { value: 4, label: '신규요청', color: 'var(--color-accent-strong)' },
+      { value: 2, label: '참여중', color: brand },
+      { value: 3, label: '시공대기', color: '#0E9A96' },
+    ].map(s => Object.assign({}, s, { onClick: () => this.showToast('예약시공 ' + s.label + ' ' + s.value + '건 목록으로 이동해요') }));
+
+    const chip = 'font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;flex:none';
+    const statusMeta = {
+      '방문예정': `${chip};color:${brand};background:var(--surface-brand-subtle)`,
+      '시공중': `${chip};color:var(--color-accent-strong);background:var(--color-accent-subtle)`,
+      '완료': `${chip};color:var(--status-success);background:var(--status-success-bg)`,
+    };
+    const todayResv = [
+      { time: '오후 2:00', customer: '박지훈', service: '유리막코팅', car: '쏘렌토', plate: '78마 1234', status: '시공중' },
+      { time: '오후 4:00', customer: '홍길동', service: '틴팅', car: 'Benz E-Class', plate: '12가 3456', status: '방문예정' },
+      { time: '오전 10:30', customer: '이서연', service: '블랙박스', car: 'Kia K5', plate: '45나 7890', status: '완료' },
+    ].map(r => Object.assign({}, r, {
+      onClick: () => this.showToast(r.customer + '님 시공 상세로 이동해요'),
+      statusStyle: statusMeta[r.status],
+    }));
+
+    const navMeta = [{ k: 'home', label: '홈' }, { k: 'resv', label: '예약관리' }, { k: 'pay', label: '정산' }, { k: 'my', label: '마이' }];
+    const navItems = navMeta.map((n, i) => {
+      const active = i === 0;
+      return { label: n.label, icon: this.icon(n.k, active), color: active ? brand : muted, weight: active ? 700 : 500,
+        onClick: () => active ? null : this.showToast(n.label + ' 탭으로 이동해요') };
+    });
+
+    const sectionItems = [
+      { num: '①', title: '확인 대기 알림', desc: '신규 예약·마감임박 입찰 건수 요약 배너' },
+      { num: '②', title: '신차패키지 시공관리', desc: '착수대기·시공중·완료 건수 + 바로가기' },
+      { num: '③', title: '예약시공 입찰', desc: '신규요청·참여중·시공대기 건수 + 바로가기' },
+      { num: '④', title: '오늘의 시공 일정', desc: '시간·시공항목·상태 칩 · 고객/차량/번호판' },
+    ];
+
+    return {
+      shopName: '강남 오토바디', staffName: '김철수',
+      alertResv: 2, alertBid: 1, today: '2026.07.02',
+      pkgStats, bidStats, todayResv, navItems, sectionItems,
+      toast: this.state.toast, toastTone: this.state.toastTone,
+      specDetail: '[UI요소] 확인 대기 알림 배너, 신차패키지 시공관리 카드(착수대기/시공중/완료 + 바로가기), 예약시공 입찰 카드(신규요청/참여중/시공대기 + 바로가기), 오늘의 시공 일정 리스트, bottom navigation.\n[상태] 알림 배너는 미확인 건수가 0이면 미노출. 일정 리스트는 상태 칩(방문예정/시공중/완료)으로 구분.\n[인터랙션] 카드별 [바로가기] 또는 숫자 타일 탭 시 해당 상태로 필터링된 관리 목록으로 이동, 일정 항목 탭 시 시공 상세로 이동.\n[디자인고려사항] 업체가 실제로 처리해야 할 두 업무 축(신차패키지·예약시공 입찰)을 카드로 분리하고 오늘 작업내역을 하단에 배치. 상호명과 담당자명을 함께 표기(파트너 1인 이상).',
+      tapBell: () => this.showToast('알림함으로 이동해요'),
+      tapAlert: () => this.showToast('확인 대기 건 목록으로 이동해요'),
+      tapPkg: () => this.showToast('신차패키지 시공관리로 이동해요'),
+      tapBid: () => this.showToast('예약시공 입찰 목록으로 이동해요'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

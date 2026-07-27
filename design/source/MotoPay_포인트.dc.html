@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 포인트</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-PNT-01, 02, 06, 07</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:900px;line-height:1.6;margin-bottom:32px">포인트 <b>충전 → 조회 → 등급 혜택</b>의 여정(CU-PNT-01,02,06,07)입니다. 충전 금액 선택 후 즉시 적립되고, 내역 필터 조회, 최근 3개월 실적 기반 <b>회원 등급 혜택</b>까지 이어져요. 오른쪽 <b>화면 목록</b>에서 이동하고, 폰 안의 버튼을 눌러 실제 플로우를 클릭해볼 수 있어요. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ===== 01 포인트 (주화면) ===== -->
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;height:98px;padding:46px 18px 0;display:flex;align-items:center;background:var(--surface-card);border-bottom:1px solid var(--divider)"><span style="font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">포인트</span></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 26px">
+              <div style="border-radius:20px;padding:20px 20px 18px;background:var(--color-brand);color:#fff;box-shadow:var(--shadow-md)">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <span style="font-size:12.5px;color:rgba(255,255,255,.85)">보유 포인트</span>
+                  <span onClick="{{ goGrade }}" style="{{ gradePill }}">{{ grade }} 등급 ›</span>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:4px;margin-top:8px"><span style="font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ balance }}</span><span style="font-size:17px;font-weight:700;padding-bottom:4px">P</span></div>
+                <div style="display:flex;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.2)">
+                  <div><div style="font-size:11px;color:rgba(255,255,255,.75)">총 충전 금액</div><div style="font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px">+800,000</div></div>
+                  <div><div style="font-size:11px;color:rgba(255,255,255,.75)">총 사용 금액</div><div style="font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px">-152,000</div></div>
+                </div>
+              </div>
+              <div style="margin-top:14px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaCharge }}" hint-size="100%,52px">포인트 충전하기</x-import></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px">
+                <sc-for list="{{ menus }}" as="m" hint-placeholder-count="3">
+                  <div onClick="{{ m.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border:1px solid var(--border-subtle);border-radius:14px;background:var(--surface-card);cursor:pointer;box-shadow:var(--shadow-sm)"><span style="width:38px;height:38px;border-radius:11px;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center">{{ m.icon }}</span><span style="font-size:12px;font-weight:700;color:var(--text-strong);text-align:center">{{ m.label }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 12px"><span style="font-size:15px;font-weight:800;color:var(--gray-900)">최근 내역</span><span onClick="{{ goHist }}" style="font-size:12px;font-weight:700;color:var(--color-brand);cursor:pointer">전체보기 ›</span></div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:4px 16px;box-shadow:var(--shadow-sm)">
+                <sc-for list="{{ recentRows }}" as="r" hint-placeholder-count="3">
+                  <div style="{{ r.rowStyle }}"><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ r.title }}</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">{{ r.date }} · {{ r.kindLabel }}</div></div><span style="font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ r.amtColor }}">{{ r.amt }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:none;height:56px;display:flex;background:var(--surface-card);border-top:1px solid var(--divider)">
+              <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ n.color }}">{{ n.icon }}<span style="font-size:10px;font-weight:{{ n.weight }}">{{ n.label }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 02 충전 금액선택 ===== -->
+        <sc-if value="{{ isChargeamt }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">포인트 충전</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin:0 2px 10px">충전 금액</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><sc-for list="{{ amtChips }}" as="a" hint-placeholder-count="4"><span onClick="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</span></sc-for></div>
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:12px;padding:0 14px;background:var(--surface-page);margin-top:10px"><input value="{{ etcVal }}" onChange="{{ onEtc }}" inputMode="numeric" placeholder="기타 금액 직접 입력" style="flex:1;border:none;outline:none;background:transparent;font-size:15px;font-weight:700;color:var(--gray-900);padding:13px 0;font-family:var(--font-numeric)"><span style="font-size:14px;font-weight:700;color:var(--text-tertiary)">원</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border-radius:10px;padding:11px 13px;margin-top:12px"><span style="flex:none;color:var(--text-tertiary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg></span><span style="font-size:12px;color:var(--text-secondary);line-height:1.45">충전 금액은 추가 적립 없이 <b>충전액 그대로 1P = 1원</b>으로 적립돼요.</span></div>
+              <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">결제 수단 <span style="color:var(--text-tertiary);font-weight:600">· 남은 금액</span></div>
+              <div style="display:flex;flex-direction:column;gap:9px"><sc-for list="{{ methodRows }}" as="m" hint-placeholder-count="2"><div onClick="{{ m.onClick }}" style="{{ m.rowStyle }}"><span style="{{ m.radioStyle }}">{{ m.mark }}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text-body)">{{ m.label }}</div><sc-if value="{{ m.hasNote }}"><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:3px;font-family:var(--font-numeric)">{{ m.note }}</div></sc-if></div></div></sc-for></div>
+            </div>
+            <div style="flex:none;background:var(--surface-card);border-top:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 0"><span style="font-size:12.5px;color:var(--text-secondary)">충전 금액</span><span style="font-size:16px;font-weight:800;color:var(--color-brand);font-variant-numeric:tabular-nums">{{ chargeTotal }}원</span></div>
+              <div style="padding:8px 20px 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaAmt }}" hint-size="100%,56px">{{ ctaAmtLabel }}</x-import></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 06 내역 조회 ===== -->
+        <sc-if value="{{ isHist }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">포인트 내역</span></div></div>
+            <div style="flex:none;padding:8px 20px 12px;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-brand-subtle);border-radius:12px;padding:13px 15px"><span style="font-size:12.5px;color:var(--text-secondary)">현재 잔액</span><span style="font-size:17px;font-weight:800;color:var(--color-brand);font-variant-numeric:tabular-nums">{{ balance }} P</span></div>
+              <div style="display:flex;gap:7px;margin-top:12px"><sc-for list="{{ histChips }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:6px 20px 24px">
+              <div style="background:var(--surface-card)">
+                <sc-for list="{{ histRows }}" as="r" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;gap:12px;padding:15px 2px;border-bottom:1px solid var(--divider)">
+                    <span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+                    <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ r.title }}</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">{{ r.date }}</div></div>
+                    <div style="text-align:right"><div style="font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums;color:{{ r.amtColor }}">{{ r.amt }}</div><div style="font-size:10.5px;color:var(--text-tertiary);margin-top:1px;font-variant-numeric:tabular-nums">잔액 {{ r.bal }}</div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 07 회원 등급 혜택 ===== -->
+        <sc-if value="{{ isGrade }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">회원 등급 혜택</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="border-radius:20px;padding:20px;background:{{ gradeHeroBg }};color:#fff;box-shadow:var(--shadow-md)">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:800;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:999px">현재 등급</span></div>
+                <div style="font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:8px">{{ grade }}</div>
+                <div style="font-size:12.5px;color:rgba(255,255,255,.85);margin-top:2px">최근 3개월 사용 실적 {{ recentSpend }}원</div>
+                <div style="margin-top:16px"><div style="height:8px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden"><div style="height:100%;width:{{ gradeProgress }};background:#fff;border-radius:999px"></div></div><div style="display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:rgba(255,255,255,.85)"><span>{{ grade }}</span><span>다음 {{ nextGrade }}까지 {{ nextRemain }}원</span></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--surface-sunken);border-radius:10px;padding:11px 13px;margin-top:14px"><span style="flex:none;color:var(--text-tertiary)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg></span><span style="font-size:12px;color:var(--text-secondary);line-height:1.45">등급은 <b>최근 3개월 포인트 사용금액</b> 기준으로 매월 산정돼요.</span></div>
+              <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">등급별 혜택</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="3">
+                  <div style="{{ t.cardStyle }}">
+                    <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:8px"><span style="{{ t.dotStyle }}"></span><span style="font-size:15px;font-weight:800;color:var(--gray-900)">{{ t.name }}</span><sc-if value="{{ t.current }}"><span style="font-size:9.5px;font-weight:800;color:#fff;background:var(--color-brand);padding:2px 7px;border-radius:5px">MY</span></sc-if></div><span style="font-size:11.5px;font-weight:700;color:var(--text-tertiary)">{{ t.cond }}</span></div>
+                    <div style="display:flex;gap:8px;margin-top:11px"><sc-for list="{{ t.perks }}" as="p" hint-placeholder-count="2"><div style="flex:1;background:var(--surface-sunken);border-radius:10px;padding:10px 11px"><div style="font-size:10.5px;color:var(--text-tertiary)">{{ p.k }}</div><div style="font-size:13px;font-weight:800;color:var(--text-strong);margin-top:2px">{{ p.v }}</div></div></sc-for></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import></div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 포인트 7개 화면 (충전·사용·조회·등급)</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 4</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="7">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);font-size:12px;color:var(--text-tertiary);line-height:1.6">
+        <b style="color:var(--text-secondary)">플로우 안내</b><br>충전: 금액·결제수단 선택(02) 후 즉시 포인트로 적립됩니다. 조회(06)·등급 혜택(07)은 포인트 메인에서 진입합니다.
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em;font-family:var(--font-numeric)">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1360,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'main',
+    chargeAmt: 300000, chargeMethod: 'bank', chargeEtc: '',
+    useAmt: 0, useAll: false,
+    histFilter: 'all',
+    toast: '', toastTone: 'default'
+  };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+
+  svg(path, sw) { return React.createElement('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw || 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: path } }); }
+  nav(name, active) {
+    const c = active ? 'var(--color-brand)' : 'var(--text-tertiary)';
+    const p = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      shop: '<path d="M4 8h16l-1 12H5L4 8Z"/><path d="M8.5 8a3.5 3.5 0 1 1 7 0"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+    };
+    return React.createElement('svg', { width: 23, height: 23, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: p[name] } });
+  }
+
+  spec() {
+    return {
+      '01': { id: 'CU-PNT-01', name: '포인트', type: '주화면', url: '/point', device: '공용(반응형)',
+        func: '포인트 충전·사용·조회 진입 메인. 보유 포인트와 회원 등급(GOLD/SILVER/BRONZE)을 노출하고 충전·내역·등급혜택으로 분기.',
+        detail: '[UI요소] 보유 포인트, 회원 등급(GOLD/SILVER/BRONZE) 뱃지, 최근 내역 미리보기, 충전·사용내역·등급혜택 메뉴.\n[상태] 등급별 색상 구분(GOLD/SILVER/BRONZE).\n[인터랙션] 각 메뉴 탭 시 하위 화면 이동.\n[디자인고려사항] 등급 뱃지를 상단에 크게 노출해 등급 혜택 인지도를 높임.' },
+      '02': { id: 'CU-PNT-02', name: '포인트 충전 - 금액선택', type: '등록/수정', url: '/point/pt-charge-amt-sel', device: '공용(반응형)',
+        func: '충전 금액 선택(10·30·50·100만원) 또는 기타금액 직접 입력. 추가 적립 없음. 결제수단(무통장입금/신용·체크카드) 선택 후 즉시 충전.',
+        detail: '[UI요소] 충전 금액 선택 칩(10·30·50·100만원), 기타 금액 입력, 결제수단 선택(무통장 입금·신용/체크카드), 무통장 선택 시 입금 계좌 안내.\n[상태] 미선택/선택완료.\n[인터랙션] 결제수단에 따라 카드결제(CU-PNT-03) 또는 무통장입금(CU-PNT-04)으로 분기.\n[디자인고려사항] 추가 적립 없이 충전액 그대로 적립됨을 안내.' },
+      '06': { id: 'CU-PNT-06', name: '포인트 내역 조회', type: '목록', url: '/point/pt-hist', device: '공용(반응형)',
+        func: '구매·사용·관리자부여/차감 내역을 유형 필터로 조회, 잔액 상단 고정 표시.',
+        detail: '[UI요소] 적립·사용 내역 리스트(일자·금액·유형), 유형별 필터.\n[상태] 내역 있음/없음.\n[인터랙션] 필터 변경 시 리스트 재조회.\n[디자인고려사항] 관리자 강제부여·차감 내역도 동일 리스트에 유형 구분 표시.' },
+      '07': { id: 'CU-PNT-07', name: '회원 등급 혜택', type: '등록/수정', url: '/point/grade-benefit', device: '공용(반응형)',
+        func: "'등급 혜택' 진입. 최근 3개월 포인트 사용금액 기준 GOLD(300만)·SILVER(200만)·BRONZE(100만) 등급 산정, 등급별 할인권·금액권 발급 안내. 현재 등급 강조.",
+        detail: '[UI요소] 현재 등급, 등급 산정 기준(최근 3개월 사용실적) 안내, 등급별 혜택(할인권·금액권) 비교.\n[상태] GOLD/SILVER/BRONZE 등급별 콘텐츠.\n[인터랙션] 다음 등급까지 필요 금액 안내.\n[디자인고려사항] 등급 상승 유도를 위해 다음 등급까지 남은 실적을 프로그레스바로 시각화.' }
+    };
+  }
+  activeId() { return { main: '01', chargeamt: '02', cardpay: '03', bank: '04', usepay: '05', hist: '06', grade: '07' }[this.state.screen]; }
+  goTo(id) {
+    const map = { '01': 'main', '02': 'chargeamt', '03': 'cardpay', '04': 'bank', '05': 'usepay', '06': 'hist', '07': 'grade' }[id];
+    if (map) this.setState({ screen: map });
+  }
+
+  renderVals() {
+    const st = this.state, brand = 'var(--color-brand)';
+    const SPEC = this.spec(), aId = this.activeId();
+    const nfmt = n => (n || 0).toLocaleString('en-US');
+    const balanceNum = 182400, recentSpendNum = 2600000;
+    const grade = 'SILVER', nextGrade = 'GOLD', nextThreshold = 3000000;
+    const gradeColors = { GOLD: '#C79A3B', SILVER: '#8B95A3', BRONZE: '#A9713F' };
+
+    const order = ['01', '02', '06', '07'];
+    const typeColors = { '주화면': 'var(--color-brand)', '등록/수정': 'var(--status-success)', '외부연동': '#EC4899', '협업': '#8B5CF6', '목록': '#0EA5E9' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id], active = id === aId, tc = typeColors[sp.type] || 'var(--text-tertiary)';
+      return { id, name: sp.name, type: sp.type, onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1.5px var(--color-brand)' : 'background:transparent'}`,
+        badgeStyle: `flex:none;width:26px;text-align:center;font-size:11px;font-weight:800;font-family:var(--font-numeric);color:${active ? '#fff' : 'var(--text-tertiary)'};background:${active ? brand : 'var(--surface-sunken)'};padding:3px 0;border-radius:6px`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}14;padding:3px 8px;border-radius:5px` };
+    });
+
+    const navMeta = [['home', '홈', 0], ['resv', '예약시공', 0], ['shop', '쇼핑몰', 0], ['my', '내 정보', 1]];
+    const navItems = navMeta.map(n => ({ label: n[1], icon: this.nav(n[0], !!n[2]), color: n[2] ? brand : 'var(--text-tertiary)', weight: n[2] ? 700 : 500,
+      onClick: () => n[2] ? null : this.showToast(n[1] + ' 탭으로 이동해요') }));
+
+    // 01 메뉴 + 최근 내역
+    const menus = [
+      { label: '포인트 충전', ic: '<path d="M12 5v14M5 12h14"/>', onClick: () => this.setState({ screen: 'chargeamt' }) },
+      { label: '사용 내역', ic: '<path d="M4 6h16M4 12h16M4 18h10"/>', onClick: () => this.setState({ screen: 'hist' }) },
+      { label: '등급 혜택', ic: '<path d="M12 2 15 8l6 .9-4.5 4.3 1 6.1L12 16.6 6.5 19.3l1-6.1L3 8.9 9 8z"/>', onClick: () => this.setState({ screen: 'grade' }) }
+    ].map(m => ({ label: m.label, icon: this.svg(m.ic, 1.8), onClick: m.onClick }));
+
+    const kindMeta = { charge: ['충전', '#12A150'], use: ['사용', '#E5484D'], admin: ['기타', '#8A929E'] };
+    const allHist = [
+      { title: '썬팅·블랙박스 시공 결제', date: '2026.06.18', kind: 'use', amt: -120000, bal: 182400 },
+      { title: '카드 충전', date: '2026.06.15', kind: 'charge', amt: 300000, bal: 302400 },
+      { title: '리뷰 이벤트 적립', date: '2026.06.10', kind: 'admin', amt: 5000, bal: 2400 },
+      { title: '쇼핑몰 상품 결제', date: '2026.06.02', kind: 'use', amt: -32000, bal: -2600 },
+      { title: '무통장 충전', date: '2026.05.28', kind: 'charge', amt: 500000, bal: 29400 },
+      { title: '오적립 정정 차감', date: '2026.05.20', kind: 'admin', amt: -3000, bal: -470600 }
+    ];
+    const signed = n => (n > 0 ? '+' : '') + nfmt(n) + 'P';
+    const recentRows = allHist.slice(0, 3).map((r, i, arr) => ({ title: r.title, date: r.date, kindLabel: kindMeta[r.kind][0], amt: signed(r.amt), amtColor: r.amt > 0 ? 'var(--green-600)' : 'var(--text-strong)',
+      rowStyle: `display:flex;align-items:center;gap:10px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+
+    // 02 충전
+    const amtDefs = [[100000, '10만원'], [300000, '30만원'], [500000, '50만원'], [1000000, '100만원']];
+    const amtChips = amtDefs.map(([v, label]) => {
+      const on = !st.chargeEtc && st.chargeAmt === v;
+      return { label, onClick: () => this.setState({ chargeAmt: v, chargeEtc: '' }),
+        style: `text-align:center;padding:15px 0;border-radius:12px;font-size:14px;font-weight:${on ? 800 : 700};font-variant-numeric:tabular-nums;cursor:pointer;${on ? `background:${brand};color:#fff` : 'background:var(--surface-card);border:1px solid var(--border-strong);color:var(--text-body)'}` };
+    });
+    const chargeVal = st.chargeEtc ? (parseInt(st.chargeEtc.replace(/[^0-9]/g, ''), 10) || 0) : st.chargeAmt;
+    const methodDefs = [
+      ['bank', '무통장 입금', '입금 계좌 · 국민 123456-01-234567 (모토페이)', 'bank'],
+      ['card', '신용/체크카드', '', 'cardpay']
+    ];
+    const methodRows = methodDefs.map(([k, label, note]) => { const on = st.chargeMethod === k; return {
+      label, note, hasNote: on && !!note,
+      rowStyle: `display:flex;align-items:center;gap:11px;border:1px solid ${on ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${on ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      radioStyle: `flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;${on ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+      mark: on ? '✓' : '', onClick: () => this.setState({ chargeMethod: k }) }; });
+    const methodTarget = (methodDefs.find(m => m[0] === st.chargeMethod) || methodDefs[0])[3];
+    const methodLabel = (methodDefs.find(m => m[0] === st.chargeMethod) || methodDefs[0])[1];
+    const chargeOk = chargeVal >= 10000;
+
+    // 04 무통장
+    const bankRows = [['입금 은행', '우리은행'], ['가상계좌', '1002-461-582013'], ['예금주', '(주)모토페이'], ['입금 금액', nfmt(chargeVal) + '원']]
+      .map((r, i, arr) => ({ k: r[0], v: r[1], rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+
+    // 05 사용 (결제)
+    const orderTotalNum = 640000;
+    const useAmtNum = st.useAll ? Math.min(balanceNum, orderTotalNum) : Math.min(st.useAmt || 0, balanceNum, orderTotalNum);
+    const finalPayNum = orderTotalNum - useAmtNum;
+    const payRows = [
+      { k: '상품 금액', v: nfmt(orderTotalNum) + '원', kc: 'var(--text-tertiary)', c: 'var(--text-body)', w: 600, fs: '13.5px' },
+      { k: '포인트 사용', v: '-' + nfmt(useAmtNum) + 'P', kc: 'var(--text-tertiary)', c: 'var(--color-brand)', w: 700, fs: '13.5px' },
+      { k: '최종 결제금액', v: nfmt(finalPayNum) + '원', kc: 'var(--gray-900)', c: 'var(--gray-900)', w: 800, fs: '16px' }
+    ].map((r, i, arr) => Object.assign(r, { rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+
+    // 06 내역
+    const histChipDefs = [['all', '전체'], ['charge', '충전'], ['use', '사용'], ['admin', '기타']];
+    const histChips = histChipDefs.map(([k, label]) => { const on = st.histFilter === k; return {
+      label, onClick: () => this.setState({ histFilter: k }),
+      style: `flex:none;font-size:12.5px;font-weight:${on ? 800 : 600};padding:7px 15px;border-radius:999px;cursor:pointer;${on ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}` }; });
+    const histRows = allHist.filter(r => st.histFilter === 'all' || r.kind === st.histFilter).map(r => ({
+      title: r.title, date: r.date, amt: signed(r.amt), bal: nfmt(r.bal) + 'P',
+      amtColor: r.amt > 0 ? 'var(--green-600)' : 'var(--text-strong)',
+      tag: kindMeta[r.kind][0],
+      tagStyle: `flex:none;font-size:10.5px;font-weight:800;color:${kindMeta[r.kind][1]};background:${kindMeta[r.kind][1]}18;padding:5px 9px;border-radius:7px` }));
+
+    // 07 등급
+    const gradeProgressPct = Math.round(((recentSpendNum - 2000000) / (nextThreshold - 2000000)) * 100);
+    const tierDefs = [
+      { name: 'GOLD', cond: '최근 3개월 300만원 ↑', perks: [['시공 할인권', '15%'], ['월 금액권', '30,000원']] },
+      { name: 'SILVER', cond: '200만 ~ 300만원', perks: [['시공 할인권', '10%'], ['월 금액권', '15,000원']] },
+      { name: 'BRONZE', cond: '100만 ~ 200만원', perks: [['시공 할인권', '5%'], ['월 금액권', '5,000원']] }
+    ];
+    const tiers = tierDefs.map(t => { const cur = t.name === grade; return {
+      name: t.name, cond: t.cond, current: cur,
+      cardStyle: `border:1.5px solid ${cur ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:16px;padding:15px 16px;background:${cur ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'};box-shadow:var(--shadow-sm)`,
+      dotStyle: `flex:none;width:12px;height:12px;border-radius:50%;background:${gradeColors[t.name]}`,
+      perks: t.perks.map(p => ({ k: p[0], v: p[1] })) }; });
+
+    const bt = (over) => Object.assign({ variant: 'primary', size: 'lg', fullWidth: true }, over);
+
+    return {
+      isMain: st.screen === 'main', isChargeamt: st.screen === 'chargeamt',
+      isHist: st.screen === 'hist', isGrade: st.screen === 'grade',
+      mapItems, curSpec: SPEC[aId], navItems,
+      balance: nfmt(balanceNum), grade, nextGrade,
+      gradePill: 'font-size:11px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px;cursor:pointer',
+      menus, recentRows,
+      ctaCharge: bt({ onClick: () => this.setState({ screen: 'chargeamt' }) }),
+      goMain: () => this.setState({ screen: 'main' }),
+      goHist: () => this.setState({ screen: 'hist' }),
+      goGrade: () => this.setState({ screen: 'grade' }),
+      goChargeamt: () => this.setState({ screen: 'chargeamt' }),
+      amtChips, etcVal: st.chargeEtc, onEtc: (e) => this.setState({ chargeEtc: e.target.value }),
+      methodRows, chargeTotal: nfmt(chargeVal), methodLabel,
+      ctaAmt: bt({ size: 'xl', disabled: !chargeOk, onClick: () => { if (!chargeOk) return; this.showToast(nfmt(chargeVal) + 'P가 적립됐어요', 'success'); setTimeout(() => this.setState({ screen: 'hist' }), 800); } }),
+      ctaAmtLabel: chargeOk ? '결제하기' : '충전 금액을 입력하세요',
+      bankDue: '내일 23:59', bankRows,
+      ctaCopy: { variant: 'outline', size: 'md', fullWidth: true, onClick: () => this.showToast('계좌번호가 복사됐어요') },
+      ctaBankDone: bt({ size: 'xl', onClick: () => { this.showToast('입금 확인 후 적립 알림을 보내드려요'); setTimeout(() => this.setState({ screen: 'main' }), 800); } }),
+      orderTotal: nfmt(orderTotalNum), useAmtVal: st.useAll ? nfmt(useAmtNum) : (st.useAmt ? nfmt(st.useAmt) : ''),
+      onUseAmt: (e) => this.setState({ useAll: false, useAmt: parseInt((e.target.value || '').replace(/[^0-9]/g, ''), 10) || 0 }),
+      useAllToggle: () => this.setState(s => ({ useAll: !s.useAll, useAmt: 0 })),
+      useAllStyle: `font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;cursor:pointer;${st.useAll ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}`,
+      payRows, finalPay: nfmt(finalPayNum),
+      ctaUse: bt({ size: 'xl', onClick: () => this.showToast('결제가 완료됐어요 · ' + nfmt(useAmtNum) + 'P 사용', 'success') }),
+      histChips, histRows,
+      recentSpend: nfmt(recentSpendNum), gradeProgress: gradeProgressPct + '%', nextRemain: nfmt(nextThreshold - recentSpendNum),
+      gradeHeroBg: gradeColors[grade], tiers,
+      toast: st.toast, toastTone: st.toastTone
+    };
+  }
+}
+</script>
+</body>
+</html>

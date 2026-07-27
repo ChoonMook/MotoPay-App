@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 쇼핑몰</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-SHOP-01 ~ CU-SHOP-12</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:900px;line-height:1.6;margin-bottom:32px">쇼핑몰 <b>전체 여정(CU-SHOP-01~12)</b>을 담은 프로토타입입니다. <b>홈·탐색</b>(카테고리·상품목록·검색) → <b>상품상세·장바구니</b> → <b>배송지·주문결제</b> → <b>결제완료·주문내역·배송조회·리뷰</b>까지 이어져요. 오른쪽 <b>화면 목록</b>에서 화면을 누르면 이동하고, 폰 안의 버튼·카드를 눌러 실제 플로우를 클릭해볼 수 있어요. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE PROTOTYPE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ===== 01 쇼핑몰 (홈) ===== -->
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;height:98px;padding:46px 18px 0;display:flex;align-items:center;justify-content:space-between;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <span style="font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">쇼핑몰</span>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span onClick="{{ goSearch }}" style="color:var(--gray-800);cursor:pointer"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg></span>
+                <span onClick="{{ goCart }}" style="position:relative;color:var(--gray-800);cursor:pointer"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 9h-12z"></path><path d="M6 6 5 2H2"></path><circle cx="9" cy="20" r="1.4"></circle><circle cx="17" cy="20" r="1.4"></circle></svg><sc-if value="{{ cartCount }}"><span style="position:absolute;top:-6px;right:-8px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:var(--color-accent);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center">{{ cartCount }}</span></sc-if></span>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 26px">
+              <div style="background:linear-gradient(135deg,var(--color-brand),var(--color-brand-strong));border-radius:16px;padding:20px 18px;color:#fff">
+                <div style="font-size:15.5px;font-weight:800;letter-spacing:-.02em">정품 인증 카용품</div>
+                <div style="font-size:12.5px;color:rgba(255,255,255,.88);margin-top:5px;line-height:1.5">엔진오일·블랙박스·타이어까지<br>믿을 수 있는 정품만 모았어요</div>
+              </div>
+              <div style="display:flex;gap:14px;overflow-x:auto;margin-top:18px;padding-bottom:2px" class="mp-scroll">
+                <sc-for list="{{ catIcons }}" as="c" hint-placeholder-count="6">
+                  <div onClick="{{ c.onClick }}" style="flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer">
+                    <span style="width:50px;height:50px;border-radius:14px;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center">{{ c.icon }}</span>
+                    <span style="font-size:11px;font-weight:600;color:var(--text-secondary);text-align:center">{{ c.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 12px">
+                <span style="font-size:15px;font-weight:800;color:var(--gray-900)">베스트 상품</span>
+                <span onClick="{{ goListAll }}" style="font-size:12px;font-weight:700;color:var(--text-tertiary);cursor:pointer">전체보기 ›</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <sc-for list="{{ bestItems }}" as="p" hint-placeholder-count="4">
+                  <div onClick="{{ p.onClick }}" style="cursor:pointer">
+                    <span style="position:relative;display:block;width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--surface-sunken)">
+                      <img src="{{ p.img }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover">
+                      <span onClick="{{ p.onWish }}" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;color:{{ p.wishColor }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="{{ p.wishFill }}" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span>
+                    </span>
+                    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.brand }}</div>
+                    <div style="font-size:13.5px;font-weight:700;color:var(--text-strong);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ p.name }}</div>
+                    <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px">
+                      <sc-if value="{{ p.hasDisc }}"><span style="font-size:13px;font-weight:800;color:var(--color-accent-strong)">{{ p.discPct }}%</span></sc-if>
+                      <span style="font-size:14.5px;font-weight:800;color:var(--gray-900);font-variant-numeric:tabular-nums">{{ p.price }}</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">★ {{ p.rating }} · {{ p.reviews }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:none;height:56px;display:flex;background:var(--surface-card);border-top:1px solid var(--divider)">
+              <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ n.color }}">{{ n.icon }}<span style="font-size:10px;font-weight:{{ n.weight }}">{{ n.label }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 02 카테고리·상품 목록 ===== -->
+        <sc-if value="{{ isList }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">{{ listTitle }}</span><span onClick="{{ goSearch }}" style="margin-left:auto;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg></span></div></div>
+            <div style="flex:none;display:flex;gap:7px;overflow-x:auto;padding:12px 20px;background:var(--surface-card);border-bottom:1px solid var(--divider)" class="mp-scroll"><sc-for list="{{ catChipsList }}" as="c" hint-placeholder-count="6"><span onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+            <div style="flex:none;display:flex;gap:7px;padding:10px 20px;background:var(--surface-card);border-bottom:1px solid var(--divider)"><sc-for list="{{ sortChipsList }}" as="s" hint-placeholder-count="4"><span onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:14px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <sc-for list="{{ listItems }}" as="p" hint-placeholder-count="6">
+                  <div onClick="{{ p.onClick }}" style="display:flex;gap:12px;cursor:pointer">
+                    <span style="flex:none;position:relative;width:78px;height:78px;border-radius:12px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ p.img }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover"></span>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+                      <div style="font-size:11.5px;font-weight:700;color:var(--color-brand)">{{ p.brand }}</div>
+                      <div style="font-size:13.5px;font-weight:700;color:var(--text-strong);margin-top:2px;line-height:1.35">{{ p.name }}</div>
+                      <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px"><sc-if value="{{ p.hasDisc }}"><span style="font-size:12.5px;font-weight:800;color:var(--color-accent-strong)">{{ p.discPct }}%</span></sc-if><span style="font-size:14px;font-weight:800;color:var(--gray-900);font-variant-numeric:tabular-nums">{{ p.price }}</span></div>
+                      <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">★ {{ p.rating }} · 후기 {{ p.reviews }}</div>
+                    </div>
+                    <span onClick="{{ p.onWish }}" style="flex:none;align-self:flex-start;color:{{ p.wishColor }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="{{ p.wishFill }}" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 03 상품 상세 ===== -->
+        <sc-if value="{{ isDetail }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:0 0 90px">
+              <div style="position:relative;width:100%;height:280px;overflow:hidden;background:var(--surface-sunken)">
+                <img src="{{ curP.img }}" alt="{{ curP.name }}" style="width:100%;height:100%;object-fit:cover">
+                <span onClick="{{ goMain }}" style="position:absolute;top:50px;left:14px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span>
+                <span onClick="{{ curP.onWish }}" style="position:absolute;top:50px;right:14px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:{{ curP.wishColorD }};cursor:pointer"><svg width="19" height="19" viewBox="0 0 24 24" fill="{{ curP.wishFill }}" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span>
+              </div>
+              <div style="padding:18px 20px 0">
+                <div style="font-size:12px;font-weight:800;color:var(--color-brand)">{{ curP.brand }}</div>
+                <div style="font-size:18.5px;font-weight:800;color:var(--gray-900);margin-top:4px;line-height:1.35">{{ curP.name }}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-accent)" stroke="none"><path d="M12 2 15 8l6 .9-4.5 4.3 1 6.1L12 16.6 6.5 19.3l1-6.1L3 8.9 9 8z"></path></svg><span style="font-size:12.5px;font-weight:700;color:var(--gray-900)">{{ curP.rating }}</span><span style="font-size:12px;color:var(--text-tertiary)">후기 {{ curP.reviews }}건</span></div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:12px">
+                  <sc-if value="{{ curP.hasDisc }}"><span style="font-size:17px;font-weight:800;color:var(--color-accent-strong)">{{ curP.discPct }}%</span><span style="font-size:13px;color:var(--text-tertiary);text-decoration:line-through">{{ curP.origPrice }}</span></sc-if>
+                  <span style="font-size:21px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ curP.price }}</span>
+                </div>
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">옵션</div>
+                <div onClick="{{ openOption }}" style="display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;cursor:pointer"><span style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ curOptLabel }}</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px"><span style="font-size:13.5px;font-weight:700;color:var(--text-body)">수량</span><div style="display:flex;align-items:center;gap:14px"><span onClick="{{ qtyDec }}" style="width:30px;height:30px;border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--text-body);cursor:pointer">−</span><span style="font-size:14.5px;font-weight:800;color:var(--gray-900);min-width:18px;text-align:center">{{ qty }}</span><span onClick="{{ qtyInc }}" style="width:30px;height:30px;border-radius:8px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--text-body);cursor:pointer">＋</span></div></div>
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">상품 설명</div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">{{ curP.desc }}</div>
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">상세 정보</div>
+                <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 16px;box-shadow:var(--shadow-sm)"><sc-for list="{{ curP.specs }}" as="s" hint-placeholder-count="4"><div style="{{ s.rowStyle }}"><span style="font-size:12.5px;color:var(--text-tertiary)">{{ s.k }}</span><span style="font-size:13px;font-weight:700;color:var(--text-strong);text-align:right">{{ s.v }}</span></div></sc-for></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 10px"><span style="font-size:13px;font-weight:800;color:var(--gray-900)">리뷰 {{ curP.reviews }}건</span><span style="font-size:12.5px;font-weight:700;color:var(--color-brand)">★ {{ curP.rating }} 평균</span></div>
+                <div style="display:flex;flex-direction:column;gap:10px"><sc-for list="{{ curP.reviewList }}" as="v" hint-placeholder-count="2"><div style="border:1px solid var(--border-subtle);border-radius:12px;padding:13px 14px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;font-weight:700;color:var(--gray-900)">{{ v.name }}</span><span style="font-size:11px;color:var(--color-accent-strong)">{{ v.stars }}</span></div><div style="font-size:12.5px;color:var(--text-secondary);margin-top:5px;line-height:1.5">{{ v.text }}</div></div></sc-for></div>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;display:flex;gap:9px;padding:12px 20px 24px;background:var(--surface-card);border-top:1px solid var(--divider)">
+              <span onClick="{{ curP.onWish }}" style="flex:none;width:52px;height:52px;border-radius:12px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;color:{{ curP.wishColorD }};cursor:pointer"><svg width="21" height="21" viewBox="0 0 24 24" fill="{{ curP.wishFill }}" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span>
+              <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaAddCart }}" hint-size="100%,52px">장바구니</x-import></div>
+              <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaBuyNow }}" hint-size="100%,52px">바로구매</x-import></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 04 장바구니 ===== -->
+        <sc-if value="{{ isCart }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">장바구니 {{ cartCount }}</span></div></div>
+            <sc-if value="{{ cartEmpty }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 24px;text-align:center">
+                <span style="width:64px;height:64px;border-radius:50%;background:var(--surface-sunken);color:var(--text-tertiary);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 9h-12z"></path><path d="M6 6 5 2H2"></path><circle cx="9" cy="20" r="1.4"></circle><circle cx="17" cy="20" r="1.4"></circle></svg></span>
+                <div style="font-size:15px;font-weight:800;color:var(--gray-900)">장바구니가 비어있어요</div>
+                <div style="width:100%;margin-top:6px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaGoShop }}" hint-size="100%,52px">쇼핑 계속하기</x-import></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasCartItems }}">
+              <div style="flex:none;display:flex;align-items:center;gap:9px;padding:12px 20px;border-bottom:1px solid var(--divider)"><span onClick="{{ toggleSelectAll }}" style="{{ selectAllBoxStyle }}">{{ selectAllMark }}</span><span style="font-size:13px;font-weight:700;color:var(--text-body)">전체선택</span></div>
+              <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:14px 20px 24px">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <sc-for list="{{ cartItems }}" as="c" hint-placeholder-count="3">
+                    <div style="display:flex;gap:11px;align-items:flex-start">
+                      <span onClick="{{ c.toggle }}" style="{{ c.boxStyle }};margin-top:26px">{{ c.mark }}</span>
+                      <span style="flex:none;width:68px;height:68px;border-radius:11px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ c.img }}" alt="{{ c.name }}" style="width:100%;height:100%;object-fit:cover"></span>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:13.5px;font-weight:700;color:var(--text-strong);line-height:1.3">{{ c.name }}</div>
+                        <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">옵션 · {{ c.opt }}</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                          <div style="display:flex;align-items:center;gap:10px"><span onClick="{{ c.dec }}" style="width:24px;height:24px;border-radius:6px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer">−</span><span style="font-size:13px;font-weight:800;min-width:14px;text-align:center">{{ c.qty }}</span><span onClick="{{ c.inc }}" style="width:24px;height:24px;border-radius:6px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer">＋</span></div>
+                          <span style="font-size:14px;font-weight:800;color:var(--gray-900);font-variant-numeric:tabular-nums">{{ c.lineTotal }}</span>
+                        </div>
+                      </div>
+                      <span onClick="{{ c.remove }}" style="flex:none;color:var(--text-tertiary);cursor:pointer;margin-top:24px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="flex:none;padding:14px 20px 0;border-top:1px solid var(--divider);background:var(--surface-card)">
+                <div style="background:var(--surface-card);padding:2px 0 8px"><sc-for list="{{ cartRows }}" as="r" hint-placeholder-count="3"><div style="{{ r.rowStyle }}"><span style="font-size:12.5px;color:var(--text-tertiary)">{{ r.k }}</span><span style="font-size:13.5px;font-weight:{{ r.w }};color:{{ r.c }};font-variant-numeric:tabular-nums">{{ r.v }}</span></div></sc-for></div>
+                <div style="padding:6px 0 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaOrder }}" hint-size="100%,56px">{{ ctaOrderLabel }}</x-import></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ===== 05 배송지 선택 ===== -->
+        <sc-if value="{{ isAddress }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goAddrBack }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">배송지 선택</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ addrList }}" as="a" hint-placeholder-count="2">
+                  <div onClick="{{ a.onClick }}" style="{{ a.rowStyle }}">
+                    <span style="{{ a.radioStyle }}">{{ a.mark }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:6px"><span style="font-size:14px;font-weight:800;color:var(--gray-900)">{{ a.name }}</span><sc-if value="{{ a.isDefault }}"><span style="font-size:9.5px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:2px 6px;border-radius:4px">기본배송지</span></sc-if></div>
+                      <div style="font-size:12px;color:var(--text-tertiary);margin-top:3px">{{ a.phone }}</div>
+                      <div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;line-height:1.4">{{ a.addr }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ toggleAddAddr }}" style="display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border-strong);border-radius:12px;padding:14px;margin-top:14px;cursor:pointer;color:var(--text-secondary);font-size:13px;font-weight:700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>새 배송지 추가</div>
+              <sc-if value="{{ addAddrOpen }}">
+                <div style="border:1px solid var(--border-subtle);border-radius:14px;padding:16px;margin-top:12px;display:flex;flex-direction:column;gap:10px;background:var(--surface-card)">
+                  <input value="{{ newName }}" onChange="{{ onNewName }}" placeholder="받는 분 이름" style="border:1px solid var(--border-strong);border-radius:10px;padding:12px 13px;font-size:13.5px;outline:none;background:var(--surface-page)">
+                  <input value="{{ newPhone }}" onChange="{{ onNewPhone }}" placeholder="연락처" style="border:1px solid var(--border-strong);border-radius:10px;padding:12px 13px;font-size:13.5px;outline:none;background:var(--surface-page)">
+                  <input value="{{ newAddr }}" onChange="{{ onNewAddr }}" placeholder="배송지 주소" style="border:1px solid var(--border-strong);border-radius:10px;padding:12px 13px;font-size:13.5px;outline:none;background:var(--surface-page)">
+                  <div style="margin-top:4px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaSaveAddr }}" hint-size="100%,48px">배송지 저장</x-import></div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaAddrDone }}" hint-size="100%,56px">이 배송지로 배송</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 06 주문/결제 ===== -->
+        <sc-if value="{{ isCheckout }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goCart }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">주문/결제</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 10px">주문 상품 {{ checkoutCount }}건</div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ checkoutItems }}" as="c" hint-placeholder-count="2">
+                  <div style="display:flex;gap:11px;align-items:center"><span style="flex:none;width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ c.img }}" alt="{{ c.name }}" style="width:100%;height:100%;object-fit:cover"></span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text-strong)">{{ c.name }}</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">{{ c.opt }} · {{ c.qty }}개</div></div><span style="font-size:13.5px;font-weight:800;color:var(--gray-900);font-variant-numeric:tabular-nums">{{ c.lineTotal }}</span></div>
+                </sc-for>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:20px 2px 10px">배송지</div>
+              <div onClick="{{ goAddress }}" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                <div><div style="font-size:13.5px;font-weight:700;color:var(--gray-900)">{{ selAddrName }}</div><div style="font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4">{{ selAddrText }}</div></div>
+                <span style="flex:none;font-size:12px;font-weight:700;color:var(--color-brand);white-space:nowrap">변경</span>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">포인트 사용</div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:50%;background:var(--surface-brand-subtle);color:var(--color-brand);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center">P</span><div><div style="font-size:13.5px;font-weight:700;color:var(--gray-900)">포인트 사용</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px">{{ pointBalTxt }}P 보유</div></div></div><span onClick="{{ useAllPoint }}" style="font-size:12px;font-weight:700;color:var(--color-brand);background:var(--surface-brand-subtle);padding:6px 12px;border-radius:8px;cursor:pointer">전액 사용</span></div>
+                <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:10px;padding:0 12px;background:var(--surface-page)"><input value="{{ pointUseVal }}" onChange="{{ onPointInput }}" inputMode="numeric" style="flex:1;border:none;outline:none;background:transparent;font-size:16px;font-weight:700;color:var(--gray-900);padding:12px 0;font-family:var(--font-numeric)"><span style="font-size:14px;font-weight:700;color:var(--text-tertiary)">P</span></div>
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:6px">최대 {{ pointMaxTxt }}P 사용 가능</div>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">할인 쿠폰</div>
+              <div onClick="{{ openCouponSheet }}" style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:8px;background:var(--color-accent-subtle);color:var(--color-accent-strong);display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"></path><path d="M2 8h20v4H2z"></path><path d="M12 8v14M12 8a3 3 0 1 0-3-3c0 1.5 3 3 3 3Z"></path><path d="M12 8a3 3 0 1 1 3-3c0 1.5-3 3-3 3Z"></path></svg></span><div><div style="font-size:13.5px;font-weight:700;color:var(--gray-900)">{{ couponLabel }}</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px">{{ couponSubLabel }}</div></div></div>
+                <span style="display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--color-brand)">선택<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">결제 수단</div>
+              <div style="display:flex;flex-direction:column;gap:9px"><sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="2"><div onClick="{{ m.onClick }}" style="{{ m.rowStyle }}"><span style="{{ m.radioStyle }}">{{ m.mark }}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text-body)">{{ m.label }}</div><sc-if value="{{ m.hasNote }}"><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:3px;font-family:var(--font-numeric)">{{ m.note }}</div></sc-if></div></div></sc-for></div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 16px;box-shadow:var(--shadow-sm);margin-top:22px"><sc-for list="{{ payRows }}" as="r" hint-placeholder-count="4"><div style="{{ r.rowStyle }}"><span style="font-size:12.5px;color:var(--text-tertiary)">{{ r.k }}</span><span style="font-size:13.5px;font-weight:{{ r.w }};color:{{ r.c }};font-variant-numeric:tabular-nums">{{ r.v }}</span></div></sc-for></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaPay }}" hint-size="100%,56px">{{ ctaPayLabel }}</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 07 결제완료 ===== -->
+        <sc-if value="{{ isPaydone }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:0">
+              <div style="background:linear-gradient(160deg,var(--green-500),#0f9d63);padding:66px 24px 34px;text-align:center;color:#fff">
+                <div style="width:66px;height:66px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                <div style="font-size:22px;font-weight:800;letter-spacing:-.02em">결제가 완료됐어요</div>
+                <div style="font-size:13.5px;color:rgba(255,255,255,.9);margin-top:6px">주문이 정상 접수됐어요</div>
+              </div>
+              <div style="padding:20px 20px 24px">
+                <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 18px;box-shadow:var(--shadow-sm)"><sc-for list="{{ doneRows }}" as="r" hint-placeholder-count="4"><div style="{{ r.rowStyle }}"><span style="font-size:12.5px;color:var(--text-tertiary)">{{ r.k }}</span><span style="font-size:13.5px;font-weight:700;color:var(--text-strong);text-align:right;font-variant-numeric:tabular-nums">{{ r.v }}</span></div></sc-for></div>
+                <div style="display:flex;align-items:flex-start;gap:10px;background:var(--surface-brand-subtle);border-radius:12px;padding:14px 15px;margin-top:16px"><span style="flex:none;color:var(--color-brand);margin-top:1px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8v13H4V8"></path><path d="M2 3h20v5H2z"></path><path d="M10 12h4"></path></svg></span><div><div style="font-size:13px;font-weight:700;color:var(--gray-900)">상품을 준비하고 있어요</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.5">출고 후 배송 현황을 주문내역에서 실시간으로 확인할 수 있어요.</div></div></div>
+              </div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaGoOrders }}" hint-size="100%,56px">주문내역 보기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 08 주문내역 ===== -->
+        <sc-if value="{{ isOrders }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">주문내역</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ orderCards }}" as="o" hint-placeholder-count="3">
+                  <div onClick="{{ o.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span style="font-size:11.5px;color:var(--text-tertiary)">{{ o.date }} · {{ o.no }}</span><span style="{{ o.badgeStyle }}">{{ o.statusLabel }}</span></div>
+                    <div style="display:flex;gap:11px;align-items:center"><span style="flex:none;width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ o.img }}" alt="{{ o.name }}" style="width:100%;height:100%;object-fit:cover"></span><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ o.name }}</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ o.itemsLabel }}</div></div><span style="font-size:14px;font-weight:800;color:var(--gray-900);font-variant-numeric:tabular-nums">{{ o.total }}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 09 주문상세(배송조회) ===== -->
+        <sc-if value="{{ isOrderdtl }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goOrders }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">주문 상세</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="display:flex;gap:11px;align-items:center;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px;box-shadow:var(--shadow-sm)"><span style="flex:none;width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ curOrder.img }}" alt="{{ curOrder.name }}" style="width:100%;height:100%;object-fit:cover"></span><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ curOrder.name }}</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ curOrder.itemsLabel }}</div></div></div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 14px">배송 현황</div>
+              <div style="display:flex;flex-direction:column;gap:0">
+                <sc-for list="{{ orderTimeline }}" as="t" hint-placeholder-count="4">
+                  <div style="display:flex;gap:12px">
+                    <div style="display:flex;flex-direction:column;align-items:center;width:20px;flex:none"><span style="{{ t.dotStyle }}"></span><sc-if value="{{ t.hasLine }}"><span style="{{ t.lineStyle }}"></span></sc-if></div>
+                    <div style="padding-bottom:22px;flex:1"><div style="font-size:13.5px;font-weight:{{ t.weight }};color:{{ t.color }}">{{ t.label }}</div><sc-if value="{{ t.hasDate }}"><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ t.date }}</div></sc-if></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:8px 2px 10px">배송지</div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow-sm)"><div style="font-size:13.5px;font-weight:700;color:var(--gray-900)">{{ selAddrName }}</div><div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;line-height:1.4">{{ selAddrText }}</div></div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:22px 2px 10px">결제 정보</div>
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 16px;box-shadow:var(--shadow-sm)"><sc-for list="{{ orderPayRows }}" as="r" hint-placeholder-count="3"><div style="{{ r.rowStyle }}"><span style="font-size:12.5px;color:var(--text-tertiary)">{{ r.k }}</span><span style="font-size:13.5px;font-weight:700;color:var(--text-strong);text-align:right;font-variant-numeric:tabular-nums">{{ r.v }}</span></div></sc-for></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaOrderAction }}" hint-size="100%,56px">{{ ctaOrderActionLabel }}</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 10 검색 ===== -->
+        <sc-if value="{{ isSearch }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 14px 12px;background:var(--surface-card);border-bottom:1px solid var(--divider)"><div style="display:flex;align-items:center;gap:8px"><span onClick="{{ goMain }}" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer;flex:none"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><div style="flex:1;display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:12px;padding:0 13px;background:var(--surface-page)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg><input value="{{ searchVal }}" onChange="{{ onSearch }}" placeholder="상품명·브랜드 검색" style="flex:1;border:none;outline:none;background:transparent;font-size:13.5px;color:var(--gray-900);padding:11px 0"></div></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <sc-if value="{{ searchEmpty }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px"><span style="font-size:13px;font-weight:800;color:var(--gray-900)">최근 검색어</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px"><sc-for list="{{ recentChips }}" as="r" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-secondary);background:var(--surface-sunken);padding:8px 8px 8px 13px;border-radius:999px"><span onClick="{{ r.onClick }}" style="cursor:pointer">{{ r.label }}</span><span onClick="{{ r.onRemove }}" style="cursor:pointer;color:var(--text-tertiary)">✕</span></span></sc-for></div>
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 10px">인기 검색어</div>
+                <div style="display:flex;flex-direction:column;gap:2px"><sc-for list="{{ popularKeywords }}" as="k" hint-placeholder-count="8"><div onClick="{{ k.onClick }}" style="display:flex;align-items:center;gap:10px;padding:10px 2px;cursor:pointer"><span style="font-size:13px;font-weight:800;color:{{ k.rankColor }};width:16px">{{ k.rank }}</span><span style="font-size:13.5px;font-weight:600;color:var(--text-body)">{{ k.label }}</span></div></sc-for></div>
+              </sc-if>
+              <sc-if value="{{ hasSearchResults }}">
+                <div style="font-size:12.5px;color:var(--text-tertiary);margin:0 2px 12px">'{{ searchVal }}' 검색 결과 {{ searchResultCount }}건</div>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <sc-for list="{{ searchResults }}" as="p" hint-placeholder-count="4">
+                    <div onClick="{{ p.onClick }}" style="display:flex;gap:12px;cursor:pointer">
+                      <span style="flex:none;width:66px;height:66px;border-radius:11px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ p.img }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover"></span>
+                      <div style="flex:1;min-width:0"><div style="font-size:11.5px;font-weight:700;color:var(--color-brand)">{{ p.brand }}</div><div style="font-size:13.5px;font-weight:700;color:var(--text-strong);margin-top:2px">{{ p.name }}</div><div style="font-size:13.5px;font-weight:800;color:var(--gray-900);margin-top:5px;font-variant-numeric:tabular-nums">{{ p.price }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noSearchResults }}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:60px 20px;text-align:center"><span style="color:var(--gray-300)"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg></span><div style="font-size:14px;font-weight:700;color:var(--text-secondary)">검색 결과가 없어요</div></div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 11 찜 목록 ===== -->
+        <sc-if value="{{ isWish }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">찜한 상품 {{ wishCount }}</span></div></div>
+            <sc-if value="{{ wishEmpty }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 24px;text-align:center"><span style="color:var(--gray-300)"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span><div style="font-size:14px;font-weight:700;color:var(--text-secondary)">찜한 상품이 없어요</div></div>
+            </sc-if>
+            <sc-if value="{{ hasWishItems }}">
+              <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <sc-for list="{{ wishItems }}" as="p" hint-placeholder-count="4">
+                    <div onClick="{{ p.onClick }}" style="cursor:pointer">
+                      <span style="position:relative;display:block;width:100%;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--surface-sunken)"><img src="{{ p.img }}" alt="{{ p.name }}" style="width:100%;height:100%;object-fit:cover"><span onClick="{{ p.onWish }}" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;color:var(--color-accent)"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-accent)" stroke="currentColor" stroke-width="2"><path d="M12 21s-7.5-4.6-10-9.3C.4 8 2 4.5 5.5 4A5.6 5.6 0 0 1 12 7a5.6 5.6 0 0 1 6.5-3c3.5.5 5 4 3.5 7.7C19.5 16.4 12 21 12 21Z"></path></svg></span></span>
+                      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-top:8px">{{ p.brand }}</div>
+                      <div style="font-size:13.5px;font-weight:700;color:var(--text-strong);margin-top:2px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ p.name }}</div>
+                      <div style="font-size:14.5px;font-weight:800;color:var(--gray-900);margin-top:5px;font-variant-numeric:tabular-nums">{{ p.price }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ SHEETS (팝업) ============ -->
+        <sc-if value="{{ hasSheet }}">
+          <div style="position:absolute;inset:0;z-index:70">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+
+            <!-- 옵션 선택 -->
+            <sc-if value="{{ shOption }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:8px 20px 24px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1);max-height:70%;display:flex;flex-direction:column">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:6px auto 14px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:18px;font-weight:800;color:var(--gray-900)">옵션 선택</span><span onClick="{{ closeSheet }}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+                <div class="mp-scroll" style="overflow-y:auto;display:flex;flex-direction:column;gap:9px">
+                  <sc-for list="{{ optionRows }}" as="o" hint-placeholder-count="3">
+                    <div onClick="{{ o.onClick }}" style="{{ o.rowStyle }}"><span style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ o.label }}</span><span style="{{ o.markStyle }}">{{ o.mark }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 쿠폰함 -->
+            <sc-if value="{{ shCoupon }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:8px 20px 22px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1);max-height:88%;display:flex;flex-direction:column">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:6px auto 14px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:18px;font-weight:800;color:var(--gray-900)">쿠폰함</span><span onClick="{{ closeSheet }}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+                <div style="font-size:12.5px;color:var(--text-secondary);margin:5px 0 14px">적용할 쿠폰 1장을 선택하세요.</div>
+                <div class="mp-scroll" style="overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+                  <div onClick="{{ couponNoneOpt.onClick }}" style="{{ couponNoneOpt.rowStyle }}"><span style="{{ couponNoneOpt.radioStyle }}">{{ couponNoneOpt.mark }}</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">쿠폰 사용 안 함</div></div></div>
+                  <sc-for list="{{ couponOpts }}" as="c" hint-placeholder-count="3">
+                    <div onClick="{{ c.onClick }}" style="{{ c.rowStyle }}"><span style="{{ c.radioStyle }}">{{ c.mark }}</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ c.name }}</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ c.desc }}</div></div><span style="font-size:13px;font-weight:800;color:var(--color-accent-strong);white-space:nowrap">{{ c.badge }}</span></div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:16px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaCoupon }}" hint-size="100%,52px">선택 완료</x-import></div>
+              </div>
+            </sc-if>
+
+            <!-- 리뷰 작성 -->
+            <sc-if value="{{ shReview }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:8px 20px 24px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1);max-height:92%;display:flex;flex-direction:column">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:6px auto 14px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-size:18px;font-weight:800;color:var(--gray-900)">리뷰 작성</span><span onClick="{{ closeSheet }}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+                <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:18px">{{ curOrder.name }}, 사용해 보니 어떠셨나요?</div>
+                <div style="display:flex;justify-content:center;gap:10px;margin-bottom:6px"><sc-for list="{{ reviewStars }}" as="s" hint-placeholder-count="5"><span onClick="{{ s.onClick }}" style="cursor:pointer;color:{{ s.color }}"><svg width="38" height="38" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2 15 8l6 .9-4.5 4.3 1 6.1L12 16.6 6.5 19.3l1-6.1L3 8.9 9 8z"></path></svg></span></sc-for></div>
+                <div style="text-align:center;font-size:13px;font-weight:700;color:var(--color-brand);margin-bottom:16px">{{ reviewLabel }}</div>
+                <textarea value="{{ reviewText }}" onChange="{{ onReview }}" placeholder="상품 품질, 배송 등 경험을 남겨주세요" style="width:100%;min-height:96px;resize:none;border:1px solid var(--border-strong);border-radius:12px;padding:13px 14px;font-size:13.5px;font-family:var(--font-sans);color:var(--gray-900);outline:none;line-height:1.5;background:var(--surface-page)"></textarea>
+                <div style="margin-top:18px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaReview }}" hint-size="100%,52px">{{ reviewCtaLabel }}</x-import></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import></div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 쇼핑몰 12개 화면 (탐색·상세·장바구니·결제·주문)</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 12</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="9">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);font-size:12px;color:var(--text-tertiary);line-height:1.6">
+        <b style="color:var(--text-secondary)">플로우 안내</b><br>탐색: 홈(01)→목록(02)/검색(10)→상품상세(03). 구매: 장바구니(04)→배송지(05)→주문결제(06)→결제완료(07). 사후: 주문내역(08)→주문상세·배송조회(09)→리뷰작성(12, 팝업). 찜 목록(11)은 홈·상세에서 접근하는 공용 화면입니다.
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em;font-family:var(--font-numeric)">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  state = {
+    screen: 'main', sheet: null,
+    cat: 'all', sortList: 'pop',
+    detailId: 'p1', qty: 1, optSel: {},
+    cart: {}, cartSel: {},
+    wish: {},
+    selectedAddr: 'a1', addAddrOpen: false, newName: '', newPhone: '', newAddr: '', addrExtra: [],
+    couponSel: null, pointUse: 0, payMethod: 'card',
+    search: '', recent: ['엔진오일', '블랙박스', '썬팅필름'],
+    orderDetailId: 'o1',
+    reviewStar: 0, reviewText: '',
+    toast: '', toastTone: 'default'
+  };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+
+  nav(name, active) {
+    const c = active ? 'var(--color-brand)' : 'var(--text-tertiary)';
+    const p = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      shop: '<path d="M4 8h16l-1 12H5L4 8Z"/><path d="M8.5 8a3.5 3.5 0 1 1 7 0"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+    };
+    return React.createElement('svg', { width: 23, height: 23, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: p[name] } });
+  }
+  catIcon(path) { return React.createElement('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: '<path d="' + path + '"/>' } }); }
+
+  products() {
+    return {
+      p1: { id: 'p1', brand: 'ZIC', name: 'ZIC M7 5W30 엔진오일 (4L)', cat: 'engineoil', price: 32000, orig: 38000, rating: '4.8', reviews: 342, img: 'assets/zic-m7.png', opts: ['1개', '2개 묶음'],
+        desc: 'API SN 규격의 100% 합성 엔진오일로, 저온 시동성과 연비 효율을 동시에 잡았어요. 국산·수입 대부분의 가솔린 차량에 사용 가능합니다.',
+        specs: [['용량', '4L'], ['점도등급', '5W-30'], ['원산지', '국내 생산'], ['교환주기', '10,000km 권장']] },
+      p2: { id: 'p2', brand: '아이나비', name: '아이나비 QXD3000 블랙박스', cat: 'blackbox', price: 189000, orig: 219000, rating: '4.7', reviews: 128, img: 'assets/car.png', opts: ['32GB', '64GB'],
+        desc: '전후방 2채널 4K 화질에 야간 인식률을 높인 신규 센서를 탑재했어요. 실시간 스마트폰 연동으로 영상 확인이 간편합니다.',
+        specs: [['채널', '전후방 2채널'], ['화질', '4K + 2K'], ['저장매체', 'microSD'], ['보증기간', '2년 무상 A/S']] },
+      p3: { id: 'p3', brand: '루마 (LLumar)', name: '루마 버텍스 300 썬팅필름 세트', cat: 'tint', price: 280000, orig: 320000, rating: '4.9', reviews: 96, img: 'assets/shop.png', opts: ['전차종 공용'],
+        desc: '멀티레이어 나노 세라믹 구조로 적외선(IR) 차단율이 높아 여름철 실내 온도 상승을 크게 줄여줍니다. 전자기기 신호 간섭이 없는 논메탈 필름이에요.',
+        specs: [['가시광선 투과율', '35% (VLT)'], ['적외선 차단율', '96% (IRR)'], ['필름 구조', '논메탈 세라믹'], ['제조사 보증', '평생 A/S']] },
+      p4: { id: 'p4', brand: '게코 (GYEON)', name: '게코 9H 세라믹 코팅제', cat: 'coating', price: 65000, orig: 78000, rating: '4.6', reviews: 210, img: 'assets/zic-m7.png', opts: ['200ml', '500ml'],
+        desc: '수입차 순정 도장에도 안전하게 사용 가능한 9H 경도의 세라믹 코팅제예요. 발수력과 광택 지속력이 우수합니다.',
+        specs: [['경도', '9H'], ['지속기간', '최대 2년'], ['적용범위', '차량 전체 도장면'], ['원산지', '체코']] },
+      p5: { id: 'p5', brand: '미쉐린', name: '미쉐린 프라이머시4 타이어 (1본)', cat: 'tire', price: 145000, orig: null, rating: '4.8', reviews: 421, img: 'assets/car.png', opts: ['205/55R16', '215/55R17'],
+        desc: '젖은 노면 제동력이 뛰어나고 마모 후에도 성능 저하가 적은 프리미엄 타이어예요. 정숙성과 승차감도 우수합니다.',
+        specs: [['규격', '205/55R16'], ['타입', '컴포트'], ['제조국', '한국 생산'], ['보증', '마모 보증 5년']] },
+      p6: { id: 'p6', brand: '모토케어', name: '차량용 방향제 세트', cat: 'etc', price: 18000, orig: 22000, rating: '4.5', reviews: 88, img: 'assets/shop.png', opts: ['우디향', '시트러스향'],
+        desc: '은은하게 퍼지는 향으로 차량 내부 냄새를 잡아줘요. 통풍구 거치형으로 설치가 간편합니다.',
+        specs: [['용량', '2개입 세트'], ['지속기간', '약 60일'], ['설치방식', '통풍구 거치형']] },
+      p7: { id: 'p7', brand: '크리스탈', name: '크리스탈 세라믹 유리막코팅 키트', cat: 'coating', price: 42000, orig: null, rating: '4.7', reviews: 154, img: 'assets/zic-m7.png', opts: ['DIY 키트'],
+        desc: '셀프 시공이 가능한 유리막 코팅 키트예요. 스크래치 커버와 발수 지속성이 뛰어난 스탠다드 등급입니다.',
+        specs: [['보증기간', '2년'], ['시공방식', 'DIY 셀프'], ['용량', '100ml + 도구 세트']] },
+      p8: { id: 'p8', brand: '김성네비', name: '김성네비 후방카메라', cat: 'blackbox', price: 89000, orig: 99000, rating: '4.4', reviews: 67, img: 'assets/car.png', opts: ['기본형', 'HD형'],
+        desc: '선명한 화질의 후방카메라로 주차 시 사각지대를 줄여줘요. 방수 설계로 우천 시에도 안정적으로 작동합니다.',
+        specs: [['화질', 'HD 130만화소'], ['방수등급', 'IP67'], ['시야각', '170도']] }
+    };
+  }
+
+  spec() {
+    return {
+      '01': { id: 'CU-SHOP-01', name: '쇼핑몰 (홈)', type: '주화면', url: '/shop', device: '공용(반응형)',
+        func: 'bottom navigation 진입 메인. 프로모션 배너, 카테고리 바로가기, 베스트 상품 그리드 노출.',
+        detail: '[UI요소] 프로모션 배너, 카테고리 아이콘 목록, 베스트 상품 그리드(찜 토글 포함), 검색·장바구니 아이콘, bottom navigation.\n[상태] 기본/장바구니 담김(뱃지 표시).\n[인터랙션] 카테고리 탭 시 상품목록으로, 상품 탭 시 상품상세로, 검색 아이콘 탭 시 검색화면으로 이동.\n[디자인고려사항] 베스트 상품은 4개만 노출하고 전체보기로 목록 유도.' },
+      '02': { id: 'CU-SHOP-02', name: '카테고리·상품 목록', type: '목록', url: '/shop/list', device: '공용(반응형)',
+        func: '카테고리별 상품 목록. 정렬(인기순·신상품순·낮은가격순·높은가격순) 및 찜 토글 제공.',
+        detail: '[UI요소] 카테고리 칩(가로 스크롤), 정렬 칩, 상품 리스트(이미지·브랜드·가격·평점·찜).\n[상태] 카테고리 전체/필터됨, 정렬 기준별.\n[인터랙션] 카테고리·정렬 변경 시 목록 즉시 갱신, 상품 탭 시 상세로 이동, 찜 아이콘 탭 시 찜 목록에 추가/제거.\n[디자인고려사항] 리스트형으로 가격·평점 비교가 쉽도록 구성.' },
+      '03': { id: 'CU-SHOP-03', name: '상품 상세', type: '상세', url: '/shop/list/detail', device: '공용(반응형)',
+        func: '상품 이미지·가격·옵션·수량 선택, 상세정보·리뷰 확인 후 장바구니 담기 또는 바로구매.',
+        detail: '[UI요소] 대표 이미지, 브랜드·상품명, 평점·후기수, 할인율·정가·판매가, 옵션 선택(팝업), 수량 스테퍼, 상세설명, 스펙 표, 리뷰 목록, 찜·장바구니·바로구매 하단 고정 바.\n[상태] 옵션 미선택/선택됨, 찜 여부.\n[인터랙션] 옵션 선택 팝업에서 옵션 확정, 장바구니 담기 시 토스트 노출 후 화면 유지, 바로구매 시 장바구니 경유 없이 배송지 선택으로 이동.\n[디자인고려사항] 할인율은 강조색으로, 정가는 취소선으로 구분.' },
+      '04': { id: 'CU-SHOP-04', name: '장바구니', type: '목록', url: '/shop/cart', device: '공용(반응형)',
+        func: '담은 상품 수량 조정·삭제, 선택 상품만 주문. 상품금액·배송비·결제예정금액 요약.',
+        detail: '[UI요소] 전체선택 체크박스, 상품별 체크박스·이미지·옵션·수량 스테퍼·삭제, 결제 요약(상품금액·배송비·총 결제예정금액), 주문하기 버튼.\n[상태] 비어있음/1개 이상 담김, 전체선택/부분선택.\n[인터랙션] 선택된 상품만 합산되어 주문하기 버튼에 반영, 주문하기 탭 시 배송지 선택으로 이동.\n[디자인고려사항] 비어있을 때 쇼핑 계속하기 CTA로 홈 복귀 유도.' },
+      '05': { id: 'CU-SHOP-05', name: '배송지 선택', type: '등록/수정', url: '/shop/cart/address', device: '공용(반응형)',
+        func: '저장된 배송지 중 선택하거나 새 배송지를 추가. 기본배송지 배지 표시.',
+        detail: '[UI요소] 저장 배송지 라디오 카드(이름·연락처·주소·기본배송지 배지), 새 배송지 추가 폼(이름·연락처·주소), 배송지 선택완료 버튼.\n[상태] 배송지 미선택 불가(기본값 자동 선택)/추가 폼 열림·닫힘.\n[인터랙션] 새 배송지 저장 시 목록에 추가되고 자동 선택, 선택완료 시 주문/결제 화면으로 복귀.\n[디자인고려사항] 기본배송지가 항상 최상단에 노출되도록 정렬.' },
+      '06': { id: 'CU-SHOP-06', name: '주문/결제', type: '외부연동', url: '-', device: '공용(반응형)',
+        func: '주문상품·배송지 확인 후 인앱 결제(PG 연동). 포인트 사용, 쿠폰 1장 선택 적용 가능.',
+        detail: '[UI요소] 주문 상품 요약, 배송지 카드(변경 가능), 포인트 사용, 쿠폰 선택(팝업), 결제수단 선택(무통장입금·신용/체크카드), 결제 요약(상품금액·쿠폰할인·포인트사용·총 결제금액), 결제하기 버튼.\n[상태] 결제 전/처리중/성공, 쿠폰 미선택/선택.\n[인터랙션] 쿠폰·포인트 적용 시 결제 요약 즉시 반영, 배송지 카드 탭 시 배송지 선택으로 재이동, 결제 성공 시 결제완료(CU-SHOP-07)로 이동.\n[디자인고려사항] 예약시공·신차패키지와 동일한 포인트·쿠폰·결제수단 UX 패턴 재사용.' },
+      '07': { id: 'CU-SHOP-07', name: '결제완료', type: '상세', url: '/shop/order-done', device: '공용(반응형)',
+        func: '결제 완료 안내와 주문 요약. 주문내역 보기로 이동.',
+        detail: '[UI요소] 결제 완료 안내, 주문 요약(주문번호·결제금액·결제수단), 상품 준비 안내, 주문내역 보기 버튼.\n[상태] 결제완료 단일 상태.\n[인터랙션] 주문내역 보기 탭 시 주문내역(CU-SHOP-08)으로 이동.\n[디자인고려사항] 예약시공 결제완료(CU-RSVC-15)와 동일한 UX 패턴 적용.' },
+      '08': { id: 'CU-SHOP-08', name: '주문내역', type: '목록', url: '/shop/orders', device: '공용(반응형)',
+        func: '과거 주문 목록. 상태 배지(상품준비중·배송중·배송완료)와 주문번호·금액 표시.',
+        detail: '[UI요소] 주문 카드 리스트(주문일자·주문번호·상태배지·상품 썸네일·수량·총액).\n[상태] 상품준비중/배송중/배송완료별 배지 색상 구분.\n[인터랙션] 카드 탭 시 주문상세(CU-SHOP-09)로 이동.\n[디자인고려사항] 최신 주문이 최상단에 노출.' },
+      '09': { id: 'CU-SHOP-09', name: '주문상세(배송조회)', type: '상세', url: '/shop/orders/detail', device: '공용(반응형)',
+        func: '주문 상품·배송 현황 타임라인·배송지·결제정보 확인. 배송완료 시 리뷰 작성 가능.',
+        detail: '[UI요소] 주문 상품 정보, 배송 현황 타임라인(결제완료→상품준비중→배송중→배송완료), 배송지, 결제 정보 요약, 하단 액션 버튼(배송조회/리뷰 작성하기).\n[상태] 상품준비중/배송중/배송완료.\n[인터랙션] 배송완료 상태에서 리뷰 작성하기 탭 시 리뷰 작성(CU-SHOP-12) 팝업 노출.\n[디자인고려사항] 예약시공 예약상세(CU-RSVC-20)와 동일한 타임라인 컴포넌트 재사용.' },
+      '10': { id: 'CU-SHOP-10', name: '검색', type: '목록', url: '/shop/search', device: '공용(반응형)',
+        func: '상품명·브랜드 검색. 최근 검색어·인기 검색어 제공, 검색결과 리스트 노출.',
+        detail: '[UI요소] 검색 입력창, 최근 검색어 칩(개별 삭제 가능), 인기 검색어 랭킹 리스트, 검색결과 리스트.\n[상태] 검색 전(최근·인기 검색어)/검색결과 있음/검색결과 없음.\n[인터랙션] 검색어 입력 시 실시간으로 상품 리스트 필터링, 결과 탭 시 상품상세로 이동.\n[디자인고려사항] 인기 검색어는 순위 숫자를 강조색으로 표시.' },
+      '11': { id: 'CU-SHOP-11', name: '찜 목록', type: '목록', url: '/shop/wish', device: '공용(반응형)',
+        func: '찜한 상품 그리드 목록. 하트 토글로 찜 해제 가능.',
+        detail: '[UI요소] 찜 상품 그리드(이미지·브랜드·상품명·가격·찜 해제 아이콘).\n[상태] 비어있음/1개 이상.\n[인터랙션] 하트 아이콘 탭 시 찜 목록에서 제거, 상품 탭 시 상세로 이동.\n[디자인고려사항] 홈·상품목록·상세 어디서든 찜 상태가 동기화되어 표시.' },
+      '12': { id: 'CU-SHOP-12', name: '리뷰 작성', type: '팝업', url: '-', device: '공용(반응형)',
+        func: '배송완료된 주문에 대해 별점(1~5)·텍스트 후기 작성.',
+        detail: '[UI요소] 별점 선택, 텍스트 입력, 리뷰 등록 버튼(팝업).\n[상태] 별점 미선택(버튼 비활성)/선택됨.\n[인터랙션] 등록 시 토스트 노출 후 주문상세로 복귀.\n[디자인고려사항] 예약시공 후기 작성(CU-RSVC-17)과 동일한 컴포넌트 재사용.' }
+    };
+  }
+
+  renderVals() {
+    const st = this.state, brand = 'var(--color-brand)';
+    const SPEC = this.spec(), P = this.products();
+    const nfmt = n => n.toLocaleString('en-US');
+    const bt = (over) => Object.assign({ variant: 'primary', size: 'lg', fullWidth: true }, over);
+
+    const aId = { main: '01', list: '02', detail: '03', cart: '04', address: '05', checkout: '06', paydone: '07', orders: '08', orderdtl: '09', search: '10', wish: '11' }[st.screen] || (st.sheet === 'review' ? '12' : '01');
+    const order = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+    const typeColors = { '주화면': 'var(--color-brand)', '목록': '#0EA5E9', '팝업': 'var(--color-accent)', '등록/수정': 'var(--status-success)', '상세': '#8B5CF6', '외부연동': '#EC4899' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id], active = id === aId, tc = typeColors[sp.type] || 'var(--text-tertiary)';
+      return { id, name: sp.name, type: sp.type, onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1px var(--color-brand)' : ''}`,
+        badgeStyle: `flex:none;font-size:10px;font-weight:800;color:#fff;background:${active ? brand : 'var(--gray-400)'};padding:2px 6px;border-radius:5px;font-family:var(--font-numeric)`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}17;padding:3px 7px;border-radius:5px` };
+    });
+
+    const navMeta = [['home', '홈', 0], ['resv', '예약시공', 0], ['shop', '쇼핑몰', 1], ['my', '내 정보', 0]];
+    const navItems = navMeta.map(n => ({ label: n[1], icon: this.nav(n[0], !!n[2]), color: n[2] ? brand : 'var(--text-tertiary)', weight: n[2] ? 700 : 500,
+      onClick: () => n[2] ? null : this.showToast(n[1] + ' 탭으로 이동해요') }));
+
+    const catIcons = [
+      ['engineoil', '엔진오일', 'M9 3h6v3H9z M8 6h8l1 15H7z M9 11h6'],
+      ['blackbox', '블랙박스', 'M4 8h16l-1 10H5z M9 8V6a3 3 0 0 1 6 0v2'],
+      ['tint', '썬팅', 'M4 5h16v14H4z M9 5v14 M15 5v14'],
+      ['coating', '코팅', 'M12 3l7 4v6c0 4-3 6-7 8-4-2-7-4-7-8V7z'],
+      ['tire', '타이어', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
+      ['etc', '기타용품', 'M4 8h16l-1 12H5z M8.5 8a3.5 3.5 0 1 1 7 0']
+    ].map(([k, label, path]) => ({ label, onClick: () => this.goList(k), icon: this.catIcon(path) }));
+
+    const catMeta = { all: '전체', engineoil: '엔진오일', blackbox: '블랙박스', tint: '썬팅', coating: '코팅', tire: '타이어', etc: '기타용품' };
+    const catChipStyle = (on) => `flex:none;font-size:12.5px;font-weight:${on ? 800 : 600};padding:8px 14px;border-radius:999px;cursor:pointer;${on ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}`;
+    const catChipsList = Object.keys(catMeta).map(k => ({ label: catMeta[k], onClick: () => this.setState({ cat: k }), style: catChipStyle(st.cat === k) }));
+    const sortMeta = [['pop', '인기순'], ['new', '신상품순'], ['low', '낮은가격순'], ['high', '높은가격순']];
+    const sortChipsList = sortMeta.map(([k, label]) => ({ label, onClick: () => this.setState({ sortList: k }), style: catChipStyle(st.sortList === k) }));
+
+    const wishFillOf = id => st.wish[id] ? 'var(--color-accent)' : 'none';
+    const wishColorOf = id => st.wish[id] ? 'var(--color-accent)' : 'var(--gray-400)';
+    const toggleWish = id => () => { this.setState(s => ({ wish: Object.assign({}, s.wish, { [id]: !s.wish[id] }) })); this.showToast(st.wish[id] ? '찜을 해제했어요' : '찜 목록에 담았어요'); };
+
+    const cardOf = p => {
+      const hasDisc = !!p.orig, discPct = hasDisc ? Math.round((1 - p.price / p.orig) * 100) : 0;
+      return { id: p.id, brand: p.brand, name: p.name, img: p.img, rating: p.rating, reviews: p.reviews,
+        price: nfmt(p.price) + '원', origPrice: nfmt(p.orig || 0) + '원', hasDisc, discPct,
+        wishColor: wishColorOf(p.id), wishFill: wishFillOf(p.id), onWish: (e) => { e && e.stopPropagation && e.stopPropagation(); toggleWish(p.id)(); },
+        onClick: () => this.goDetail(p.id) };
+    };
+    const allProdOrder = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
+    const bestItems = ['p1', 'p2', 'p3', 'p4'].map(id => cardOf(P[id]));
+
+    let listArr = allProdOrder.map(id => P[id]).filter(p => st.cat === 'all' || p.cat === st.cat);
+    if (st.sortList === 'low') listArr = listArr.slice().sort((a, b) => a.price - b.price);
+    if (st.sortList === 'high') listArr = listArr.slice().sort((a, b) => b.price - a.price);
+    if (st.sortList === 'new') listArr = listArr.slice().reverse();
+    const listItems = listArr.map(p => cardOf(p));
+    const listTitle = catMeta[st.cat] + ' 상품';
+
+    // 03 상품상세
+    const p = P[st.detailId];
+    const hasDisc = !!p.orig, discPct = hasDisc ? Math.round((1 - p.price / p.orig) * 100) : 0;
+    const optSel = st.optSel[p.id] || 0;
+    const curOptLabel = p.opts[optSel];
+    const curP = { name: p.name, brand: p.brand, img: p.img, rating: p.rating, reviews: p.reviews,
+      hasDisc, discPct, origPrice: nfmt(p.orig || 0) + '원', price: nfmt(p.price) + '원', desc: p.desc,
+      wishColorD: st.wish[p.id] ? 'var(--color-accent)' : '#fff', wishFill: wishFillOf(p.id), onWish: () => toggleWish(p.id)(),
+      specs: p.specs.map((r, i, arr) => ({ k: r[0], v: r[1], rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` })),
+      reviewList: [
+        { name: '박OO', stars: '★★★★★', text: '설명한 그대로예요. 배송도 빠르고 포장이 꼼꼼했어요.' },
+        { name: '최OO', stars: '★★★★☆', text: '가격 대비 만족스러운 품질이에요. 재구매 의사 있습니다.' }
+      ] };
+    const optionRows = p.opts.map((label, i) => { const on = optSel === i; return {
+      label, onClick: () => this.setState(s => ({ optSel: Object.assign({}, s.optSel, { [p.id]: i }), sheet: null })),
+      rowStyle: `display:flex;align-items:center;justify-content:space-between;border:1px solid ${on ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${on ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      markStyle: `font-size:13px;font-weight:800;color:${on ? brand : 'var(--gray-300)'}`, mark: on ? '✓' : '' }; });
+
+    const cartKeys = Object.keys(st.cart);
+    const cartCount = cartKeys.reduce((s, k) => s + st.cart[k].qty, 0);
+    const cartEmpty = cartKeys.length === 0, hasCartItems = cartKeys.length > 0;
+    const allSelected = cartKeys.length > 0 && cartKeys.every(k => st.cartSel[k]);
+    const cartItems = cartKeys.map(k => {
+      const c = st.cart[k], prod = P[c.pid], sel = !!st.cartSel[k];
+      return { key: k, name: prod.name, img: prod.img, opt: prod.opts[c.opt], qty: c.qty,
+        lineTotal: nfmt(prod.price * c.qty) + '원',
+        mark: sel ? '✓' : '', boxStyle: `flex:none;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:pointer;${sel ? `background:${brand}` : 'border:1.5px solid var(--gray-300)'}`,
+        toggle: () => this.setState(s => ({ cartSel: Object.assign({}, s.cartSel, { [k]: !s.cartSel[k] }) })),
+        inc: () => this.setState(s => ({ cart: Object.assign({}, s.cart, { [k]: Object.assign({}, s.cart[k], { qty: s.cart[k].qty + 1 }) }) })),
+        dec: () => this.setState(s => { if (s.cart[k].qty <= 1) return {}; const cart = Object.assign({}, s.cart, { [k]: Object.assign({}, s.cart[k], { qty: s.cart[k].qty - 1 }) }); return { cart }; }),
+        remove: () => this.setState(s => { const cart = Object.assign({}, s.cart); delete cart[k]; const cartSel = Object.assign({}, s.cartSel); delete cartSel[k]; return { cart, cartSel }; }) };
+    });
+    const selectAllMark = allSelected ? '✓' : '';
+    const selectAllBoxStyle = `flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;cursor:pointer;${allSelected ? `background:${brand}` : 'border:1.5px solid var(--gray-300)'}`;
+    const toggleSelectAll = () => this.setState(s => { const cartSel = {}; const next = !allSelected; Object.keys(s.cart).forEach(k => cartSel[k] = next); return { cartSel }; });
+    const selectedCartKeys = cartKeys.filter(k => st.cartSel[k]);
+    const cartSubtotal = selectedCartKeys.reduce((sum, k) => sum + P[st.cart[k].pid].price * st.cart[k].qty, 0);
+    const shipFee = selectedCartKeys.length > 0 && cartSubtotal < 50000 ? 3000 : 0;
+    const cartTotal = cartSubtotal + shipFee;
+    const cartRows = [['상품금액', nfmt(cartSubtotal) + '원', 600, 'var(--text-body)'], ['배송비', shipFee ? nfmt(shipFee) + '원' : '무료', 600, 'var(--text-body)'], ['총 결제예정금액', nfmt(cartTotal) + '원', 800, 'var(--color-brand)']]
+      .map((r, i, arr) => ({ k: r[0], v: r[1], w: r[2], c: r[3], rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+
+    // checkout items = selected cart, or buyNow single item
+    const checkoutSource = st.buyNow ? [st.buyNow] : selectedCartKeys.map(k => st.cart[k]);
+    const checkoutItems = checkoutSource.map(c => { const prod = P[c.pid]; return { name: prod.name, img: prod.img, opt: prod.opts[c.opt], qty: c.qty, lineTotal: nfmt(prod.price * c.qty) + '원' }; });
+    const checkoutCount = checkoutItems.length;
+    const checkoutTotal = checkoutSource.reduce((s, c) => s + P[c.pid].price * c.qty, 0);
+    const checkoutShip = checkoutTotal > 0 && checkoutTotal < 50000 ? 3000 : 0;
+
+    const addrDefs = [
+      { id: 'a1', name: '자택', phone: '010-1234-5678', addr: '서울 강남구 논현로 123, 101동 502호', isDefault: true },
+      { id: 'a2', name: '회사', phone: '010-1234-5678', addr: '서울 서초구 서초대로 45, 8층', isDefault: false }
+    ].concat(st.addrExtra);
+    const addrList = addrDefs.map(a => { const on = st.selectedAddr === a.id; return Object.assign({}, a, {
+      onClick: () => this.setState({ selectedAddr: a.id }),
+      rowStyle: `display:flex;align-items:flex-start;gap:11px;border:1px solid ${on ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${on ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      radioStyle: `flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;margin-top:1px;${on ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+      mark: on ? '✓' : '' }); });
+    const curAddr = addrDefs.find(a => a.id === st.selectedAddr) || addrDefs[0];
+    const selAddrName = curAddr.name, selAddrText = curAddr.phone + ' · ' + curAddr.addr;
+
+    const payTotal = checkoutTotal + checkoutShip, pointBal = 5000;
+    const couponDefs = [
+      { id: 'c1', name: '신규 쇼핑 5,000원 할인', desc: '전 금액 · 최소 주문 없음', type: 'amount', value: 5000 },
+      { id: 'c2', name: '쇼핑몰 10% 할인', desc: '최대 20,000원 할인', type: 'percent', value: 10, cap: 20000 },
+      { id: 'c3', name: '프리미엄 회원 3만원 할인', desc: '30만원 이상 결제 시', type: 'amount', value: 30000, minAmount: 300000 }
+    ];
+    const couponUsable = couponDefs.filter(c => !c.minAmount || payTotal >= c.minAmount);
+    const selCoupon = couponUsable.find(c => c.id === st.couponSel) || null;
+    const couponDiscount = selCoupon ? Math.min(selCoupon.type === 'amount' ? selCoupon.value : Math.round(payTotal * selCoupon.value / 100 / 10) * 10, selCoupon.cap || Infinity, payTotal) : 0;
+    const afterCoupon = payTotal - couponDiscount;
+    const pointMax = Math.min(pointBal, afterCoupon);
+    const pointsUsed = Math.max(0, Math.min(st.pointUse || 0, pointMax));
+    const payRemain = afterCoupon - pointsUsed;
+    const couponBadge = c => c.type === 'amount' ? '-' + nfmt(c.value) + '원' : '-' + c.value + '%';
+    const couponOpts = couponUsable.map(c => {
+      const sel = st.couponSel === c.id;
+      return { name: c.name, desc: c.desc, badge: couponBadge(c), onClick: () => this.setState({ couponSel: c.id }),
+        rowStyle: `display:flex;align-items:center;gap:11px;border:1px solid ${sel ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${sel ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+        radioStyle: `flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;${sel ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+        mark: sel ? '✓' : '' };
+    });
+    const noneSel = !st.couponSel;
+    const couponNoneOpt = { onClick: () => this.setState({ couponSel: null }),
+      rowStyle: `display:flex;align-items:center;gap:11px;border:1px solid ${noneSel ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${noneSel ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      radioStyle: `flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;${noneSel ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+      mark: noneSel ? '✓' : '' };
+    const payMethods = [
+      ['bank', '무통장 입금', '입금 계좌 · 국민 123456-01-234567 (모토페이)'],
+      ['card', '신용/체크카드', '']
+    ].map(([k, label, note]) => { const on = st.payMethod === k; return {
+      label, note, hasNote: on && !!note,
+      rowStyle: `display:flex;align-items:center;gap:11px;border:1px solid ${on ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:14px 15px;cursor:pointer;background:${on ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      radioStyle: `flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;${on ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+      mark: on ? '✓' : '', onClick: () => this.setState({ payMethod: k }) }; });
+    const payRowDefs = [['상품금액', nfmt(checkoutTotal) + '원', 600, 'var(--text-body)'], ['배송비', checkoutShip ? nfmt(checkoutShip) + '원' : '무료', 600, 'var(--text-body)']];
+    if (couponDiscount > 0) payRowDefs.push(['쿠폰 할인', '-' + nfmt(couponDiscount) + '원', 700, 'var(--green-600)']);
+    if (pointsUsed > 0) payRowDefs.push(['포인트 사용', '-' + nfmt(pointsUsed) + '원', 700, 'var(--green-600)']);
+    payRowDefs.push(['총 결제금액', nfmt(payRemain) + '원', 800, 'var(--color-brand)']);
+    const payRows = payRowDefs.map((r, i, arr) => ({ k: r[0], v: r[1], w: r[2], c: r[3], rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+    const payLabel = { card: '신용/체크카드', bank: '무통장 입금' }[st.payMethod];
+    const ctaPayLabel = st.payMethod === 'bank' ? (nfmt(payRemain) + '원 입금 예약하기') : (payRemain > 0 ? nfmt(payRemain) + '원 결제하기' : '포인트로 결제 완료하기');
+    const doneRows = [['주문 상품', checkoutItems.length ? (checkoutItems[0].name + (checkoutItems.length > 1 ? ' 외 ' + (checkoutItems.length - 1) + '건' : '')) : '-'], ['결제 금액', nfmt(payRemain) + '원'], ['결제 수단', payLabel], ['주문 번호', 'SHOP-240718']]
+      .map((r, i, arr) => ({ k: r[0], v: r[1], rowStyle: `display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+
+    // 08 주문내역
+    const orderDefs = {
+      o1: { pid: 'p1', qty: 2, date: '2026.07.18', no: 'SHOP-240718', status: 'prep' },
+      o2: { pid: 'p2', qty: 1, date: '2026.07.10', no: 'SHOP-240710', status: 'ship' },
+      o3: { pid: 'p3', qty: 1, date: '2026.06.28', no: 'SHOP-240628', status: 'done' }
+    };
+    const statusMeta = { prep: ['상품준비중', 'var(--color-accent-strong)', 'var(--color-accent-subtle)'], ship: ['배송중', 'var(--color-brand)', 'var(--surface-brand-subtle)'], done: ['배송완료', 'var(--green-600)', 'var(--status-success-bg)'] };
+    const orderCards = ['o1', 'o2', 'o3'].map(id => {
+      const o = orderDefs[id], prod = P[o.pid], sm = statusMeta[o.status];
+      return { id, date: o.date, no: o.no, img: prod.img, name: prod.name, itemsLabel: o.qty + '개 · ' + prod.opts[0],
+        total: nfmt(prod.price * o.qty) + '원', statusLabel: sm[0], badgeStyle: `font-size:10.5px;font-weight:800;color:${sm[1]};background:${sm[2]};padding:3px 9px;border-radius:6px`,
+        onClick: () => this.setState({ screen: 'orderdtl', orderDetailId: id }) };
+    });
+    const curOrderDef = orderDefs[st.orderDetailId], curOrderProd = P[curOrderDef.pid];
+    const curOrder = { name: curOrderProd.name, img: curOrderProd.img, itemsLabel: curOrderDef.qty + '개 · ' + curOrderProd.opts[0] + ' · ' + curOrderDef.no };
+    const stageIdx = { prep: 1, ship: 2, done: 3 }[curOrderDef.status];
+    const orderStages = ['결제완료', '상품준비중', '배송중', '배송완료'];
+    const orderTimeline = orderStages.map((label, i) => {
+      const done = i < stageIdx, active = i === stageIdx;
+      return { label, hasLine: i < orderStages.length - 1, hasDate: done || active,
+        date: i === 0 ? curOrderDef.date : (active ? '진행중' : (done ? '완료' : '')),
+        weight: active ? 800 : 600, color: active ? 'var(--color-brand)' : done ? 'var(--text-body)' : 'var(--text-tertiary)',
+        dotStyle: `width:12px;height:12px;border-radius:50%;margin-top:2px;background:${done || active ? brand : 'var(--gray-200)'}`,
+        lineStyle: `width:2px;flex:1;min-height:22px;background:${done ? brand : 'var(--gray-200)'}` };
+    });
+    const orderPayRows = [['결제 금액', nfmt(curOrderProd.price * curOrderDef.qty) + '원'], ['결제 수단', '신용/체크카드'], ['주문 번호', curOrderDef.no]]
+      .map((r, i, arr) => ({ k: r[0], v: r[1], rowStyle: `display:flex;align-items:center;justify-content:space-between;padding:13px 0;${i < arr.length - 1 ? 'border-bottom:1px solid var(--divider)' : ''}` }));
+    const isDelivered = curOrderDef.status === 'done';
+    const ctaOrderAction = bt({ variant: isDelivered ? 'primary' : 'outline', onClick: () => isDelivered ? this.setState({ sheet: 'review', reviewStar: 0, reviewText: '' }) : this.showToast('실시간 배송 위치를 조회해요') });
+    const ctaOrderActionLabel = isDelivered ? '리뷰 작성하기' : '배송조회';
+
+    // 검색
+    const searchVal = st.search;
+    const recentChips = (st.recent || []).map((r, i) => ({ label: r, onClick: () => this.setState({ search: r }), onRemove: () => this.setState(s => ({ recent: s.recent.filter((_, idx) => idx !== i) })) }));
+    const popularKeywords = ['엔진오일', '블랙박스', '타이어', '유리막 코팅', '썬팅필름', '와이퍼', '방향제', '차량용 청소용품'].map((label, i) => ({ rank: i + 1, label, rankColor: i < 3 ? 'var(--color-brand)' : 'var(--text-tertiary)', onClick: () => this.setState({ search: label }) }));
+    const searchEmpty = !searchVal;
+    const searchResultsArr = searchVal ? allProdOrder.map(id => P[id]).filter(pr => (pr.name + pr.brand).toLowerCase().includes(searchVal.toLowerCase())) : [];
+    const searchResults = searchResultsArr.map(pr => ({ img: pr.img, brand: pr.brand, name: pr.name, price: nfmt(pr.price) + '원', onClick: () => this.goDetail(pr.id) }));
+    const hasSearchResults = !!searchVal && searchResultsArr.length > 0;
+    const noSearchResults = !!searchVal && searchResultsArr.length === 0;
+    const searchResultCount = searchResultsArr.length;
+
+    // 찜
+    const wishIds = allProdOrder.filter(id => st.wish[id]);
+    const wishItems = wishIds.map(id => cardOf(P[id]));
+    const wishCount = wishIds.length;
+    const wishEmpty = wishCount === 0, hasWishItems = wishCount > 0;
+
+    // 리뷰
+    const reviewLabels = ['별점을 선택해주세요', '별로예요', '아쉬워요', '보통이에요', '좋아요', '최고예요'];
+    const reviewStars = [1, 2, 3, 4, 5].map(n => ({ onClick: () => this.setState({ reviewStar: n }), color: n <= st.reviewStar ? 'var(--color-accent)' : 'var(--gray-200)' }));
+    const reviewOk = st.reviewStar > 0;
+
+    return {
+      isMain: st.screen === 'main', isList: st.screen === 'list', isDetail: st.screen === 'detail', isCart: st.screen === 'cart',
+      isAddress: st.screen === 'address', isCheckout: st.screen === 'checkout', isPaydone: st.screen === 'paydone',
+      isOrders: st.screen === 'orders', isOrderdtl: st.screen === 'orderdtl', isSearch: st.screen === 'search', isWish: st.screen === 'wish',
+      hasSheet: !!st.sheet, shOption: st.sheet === 'option', shCoupon: st.sheet === 'coupon', shReview: st.sheet === 'review',
+      mapItems, curSpec: SPEC[aId], navItems,
+      catIcons, catChipsList, sortChipsList, listTitle,
+      bestItems, listItems,
+      cartCount, goCart: () => this.setState({ screen: 'cart' }), goSearch: () => this.setState({ screen: 'search' }),
+      curP, curOptLabel, optionRows, openOption: () => this.setState({ sheet: 'option' }),
+      qty: st.qty, qtyInc: () => this.setState(s => ({ qty: s.qty + 1 })), qtyDec: () => this.setState(s => ({ qty: Math.max(1, s.qty - 1) })),
+      ctaAddCart: bt({ variant: 'outline', onClick: () => this.addToCart(p.id, optSel, st.qty) }),
+      ctaBuyNow: bt({ onClick: () => this.buyNow(p.id, optSel, st.qty) }),
+      cartEmpty, hasCartItems, cartItems, cartRows,
+      selectAllMark, selectAllBoxStyle, toggleSelectAll,
+      ctaGoShop: bt({ onClick: () => this.setState({ screen: 'main' }) }),
+      ctaOrder: bt({ size: 'xl', disabled: selectedCartKeys.length === 0, onClick: () => selectedCartKeys.length ? this.setState({ screen: 'address', buyNow: null }) : null }),
+      ctaOrderLabel: selectedCartKeys.length ? '선택상품 주문하기 (' + selectedCartKeys.length + ')' : '상품을 선택하세요',
+      addrList, selAddrName, selAddrText,
+      addAddrOpen: st.addAddrOpen, toggleAddAddr: () => this.setState(s => ({ addAddrOpen: !s.addAddrOpen })),
+      newName: st.newName, newPhone: st.newPhone, newAddr: st.newAddr,
+      onNewName: (e) => this.setState({ newName: e.target.value }), onNewPhone: (e) => this.setState({ newPhone: e.target.value }), onNewAddr: (e) => this.setState({ newAddr: e.target.value }),
+      ctaSaveAddr: bt({ size: 'md', onClick: () => {
+        if (!st.newName || !st.newPhone || !st.newAddr) { this.showToast('배송지 정보를 모두 입력하세요'); return; }
+        const id = 'a' + (Date.now());
+        this.setState(s => ({ addrExtra: s.addrExtra.concat([{ id, name: s.newName, phone: s.newPhone, addr: s.newAddr, isDefault: false }]), selectedAddr: id, addAddrOpen: false, newName: '', newPhone: '', newAddr: '' }));
+        this.showToast('새 배송지가 저장됐어요', 'success');
+      } }),
+      goAddrBack: () => this.setState({ screen: st.buyNow ? 'detail' : 'cart' }),
+      ctaAddrDone: bt({ size: 'xl', onClick: () => this.setState({ screen: 'checkout' }) }),
+      goAddress: () => this.setState({ screen: 'address' }),
+      checkoutItems, checkoutCount,
+      pointBalTxt: nfmt(pointBal), pointMaxTxt: nfmt(pointMax), pointUseVal: String(pointsUsed),
+      onPointInput: (e) => { const n = parseInt((e.target.value || '').replace(/[^0-9]/g, ''), 10) || 0; this.setState({ pointUse: Math.min(n, pointMax) }); },
+      useAllPoint: () => this.setState({ pointUse: pointMax }),
+      couponLabel: selCoupon ? selCoupon.name : '보유 쿠폰 ' + couponUsable.length + '장',
+      couponSubLabel: selCoupon ? couponBadge(selCoupon) + ' 적용됨' : '적용 가능한 쿠폰이 있어요',
+      couponOpts, couponNoneOpt, openCouponSheet: () => this.setState({ sheet: 'coupon' }),
+      ctaCoupon: bt({ onClick: () => { this.setState({ sheet: null }); this.showToast(selCoupon ? selCoupon.name + ' 쿠폰이 적용됐어요' : '쿠폰 적용이 해제됐어요', 'success'); } }),
+      payMethods, payRows, ctaPayLabel,
+      ctaPay: bt({ size: 'xl', onClick: () => {
+        if (!st.buyNow) { const cart = Object.assign({}, st.cart); selectedCartKeys.forEach(k => delete cart[k]); const cartSel = Object.assign({}, st.cartSel); selectedCartKeys.forEach(k => delete cartSel[k]); this.setState({ cart, cartSel }); }
+        this.setState({ screen: 'paydone', buyNow: null });
+      } }),
+      doneRows,
+      ctaGoOrders: bt({ size: 'xl', onClick: () => this.setState({ screen: 'orders' }) }),
+      orderCards, goOrders: () => this.setState({ screen: 'orders' }),
+      curOrder, orderTimeline, orderPayRows, ctaOrderAction, ctaOrderActionLabel,
+      searchVal, onSearch: (e) => this.setState({ search: e.target.value }),
+      recentChips, popularKeywords, searchEmpty, hasSearchResults, noSearchResults, searchResults, searchResultCount,
+      wishItems, wishCount, wishEmpty, hasWishItems,
+      reviewStars, reviewLabel: reviewLabels[st.reviewStar] || reviewLabels[0], reviewText: st.reviewText, onReview: (e) => this.setState({ reviewText: e.target.value }),
+      reviewCtaLabel: reviewOk ? '리뷰 등록하기' : '별점을 선택하세요',
+      ctaReview: bt({ disabled: !reviewOk, onClick: () => reviewOk ? (this.showToast('소중한 리뷰가 등록됐어요', 'success'), setTimeout(() => this.setState({ sheet: null }), 700)) : null }),
+      closeSheet: () => this.setState({ sheet: null }),
+      goMain: () => this.setState({ screen: 'main', sheet: null }),
+      goListAll: () => this.setState({ screen: 'list', cat: 'all' }),
+      toast: st.toast, toastTone: st.toastTone
+    };
+  }
+
+  goTo(id) {
+    const map = { '01': 'main', '02': 'list', '03': 'detail', '04': 'cart', '05': 'address', '06': 'checkout', '07': 'paydone', '08': 'orders', '09': 'orderdtl', '10': 'search', '11': 'wish' };
+    if (id === '12') { this.setState({ sheet: 'review', reviewStar: 0, reviewText: '' }); return; }
+    this.setState({ screen: map[id] || 'main', sheet: null });
+  }
+  goList(cat) { this.setState({ screen: 'list', cat, sheet: null }); }
+  goDetail(id) { this.setState({ screen: 'detail', detailId: id, qty: 1, sheet: null }); }
+  addToCart(pid, opt, qty) {
+    const key = pid + '-' + opt;
+    this.setState(s => { const cart = Object.assign({}, s.cart); const cartSel = Object.assign({}, s.cartSel);
+      cart[key] = { pid, opt, qty: (cart[key] ? cart[key].qty : 0) + qty }; cartSel[key] = true;
+      return { cart, cartSel }; });
+    this.showToast('장바구니에 담았어요', 'success');
+  }
+  buyNow(pid, opt, qty) { this.setState({ buyNow: { pid, opt, qty }, screen: 'address' }); }
+}
+
+</script>
+</body>
+</html>

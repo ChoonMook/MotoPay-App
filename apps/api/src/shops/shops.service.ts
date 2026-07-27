@@ -1,0 +1,143 @@
+// 시공업체 조회 — 목록(시공가능 카테고리 필터·거리순 정렬)/상세(사진·시공가능 카테고리 포함)/내 업체 수정(파트너 전용)
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Shop, ShopPhoto } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import type { UpdateShopDto } from './dto/update-shop.dto';
+
+export interface ShopListItem extends Shop {
+  mainPhoto: ShopPhoto | null;
+  categories: string[]; // 시공가능 자동차 시공코드 목록
+  distanceKm: number | null; // 기준 위치(lat/lng) 지정 시에만 값 존재
+}
+
+export interface ShopDetail extends Shop {
+  photos: ShopPhoto[];
+  categories: string[];
+}
+
+export interface ListShopsParams {
+  instCodes?: string[]; // 지정하면 이 시공코드를 모두 지원하는 업체만 조회
+  lat?: number; // 기준 위치 — lat/lng을 함께 지정하면 거리순 정렬
+  lng?: number;
+}
+
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function toRad(deg: number): number {
+  return (deg * Math.PI) / 180;
+}
+
+@Injectable()
+export class ShopsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async list(params: ListShopsParams): Promise<ShopListItem[]> {
+    const { instCodes, lat, lng } = params;
+
+    const shops = await this.prisma.shop.findMany({
+      where: {
+        useYn: true,
+        ...(instCodes && instCodes.length > 0
+          ? {
+              AND: instCodes.map((instCode) => ({
+                categories: { some: { instCode } },
+              })),
+            }
+          : {}),
+      },
+      include: {
+        photos: { where: { photoType: 'MAIN' }, take: 1 },
+        categories: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const items: ShopListItem[] = shops.map((shop) => {
+      const { photos, categories, ...rest } = shop;
+      const distanceKm =
+        lat !== undefined &&
+        lng !== undefined &&
+        shop.latitude !== null &&
+        shop.longitude !== null
+          ? haversineKm(lat, lng, shop.latitude, shop.longitude)
+          : null;
+      return {
+        ...rest,
+        mainPhoto: photos[0] ?? null,
+        categories: categories.map((c) => c.instCode),
+        distanceKm,
+      };
+    });
+
+    if (lat !== undefined && lng !== undefined) {
+      items.sort(
+        (a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity),
+      );
+    }
+
+    return items;
+  }
+
+  async getDetail(shopCode: string): Promise<ShopDetail> {
+    const shop = await this.prisma.shop.findUnique({
+      where: { shopCode },
+      include: {
+        photos: { orderBy: { sortOrder: 'asc' } },
+        categories: true,
+      },
+    });
+    if (!shop || !shop.useYn) {
+      throw new NotFoundException('시공업체를 찾을 수 없습니다.');
+    }
+
+    const { categories, ...rest } = shop;
+    return { ...rest, categories: categories.map((c) => c.instCode) };
+  }
+
+  /** 파트너 로그인 계정의 소속 업체(기본정보 관리 화면) 수정 — 보낸 필드만 반영, categories는 보내면 전체 교체 */
+  async updateMyShop(
+    shopCode: string,
+    dto: UpdateShopDto,
+  ): Promise<ShopDetail> {
+    const shop = await this.prisma.shop.findUnique({ where: { shopCode } });
+    if (!shop) {
+      throw new NotFoundException('시공업체를 찾을 수 없습니다.');
+    }
+
+    await this.prisma.shop.update({
+      where: { shopCode },
+      data: {
+        intro: dto.intro,
+        greeting: dto.greeting,
+        address: dto.address,
+        addressDetail: dto.addressDetail,
+        phone: dto.phone,
+        businessHours: dto.businessHours,
+      },
+    });
+
+    if (dto.categories) {
+      await this.prisma.shopInstCategory.deleteMany({ where: { shopCode } });
+      if (dto.categories.length > 0) {
+        await this.prisma.shopInstCategory.createMany({
+          data: dto.categories.map((instCode) => ({ shopCode, instCode })),
+        });
+      }
+    }
+
+    return this.getDetail(shopCode);
+  }
+}

@@ -1,0 +1,49 @@
+// apps/api의 내 업체(Shop) 조회·수정 엔드포인트(/shops/me) 호출 — 파트너 로그인 전용
+import { authedRequest } from "./http";
+
+export interface ShopPhoto {
+  id: number;
+  shopCode: string;
+  photoPath: string;
+  photoType: string;
+  sortOrder: number;
+}
+
+export interface MyShop {
+  id: number;
+  shopCode: string;
+  name: string;
+  greeting: string | null;
+  intro: string | null;
+  zipCode: string | null;
+  address: string | null;
+  addressDetail: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
+  businessHours: string | null;
+  useYn: boolean;
+  photos: ShopPhoto[];
+  categories: string[];
+}
+
+export interface UpdateShopInput {
+  intro?: string;
+  greeting?: string;
+  address?: string;
+  addressDetail?: string;
+  phone?: string;
+  businessHours?: string;
+  categories?: string[];
+}
+
+export function getMyShop(): Promise<MyShop> {
+  return authedRequest<MyShop>("/shops/me");
+}
+
+export function updateMyShop(input: UpdateShopInput): Promise<MyShop> {
+  return authedRequest<MyShop>("/shops/me", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">파트너(시공업체)앱</span> · 로그인</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · PT-AUTH-02 ~ 04</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:760px;line-height:1.6;margin-bottom:32px">메뉴구조도의 시공업체(파트너)앱 1depth <b>로그인</b> 관련 3개 화면(PT-AUTH-02~04)을, 고객앱 로그인 플로우(CU-AUTH-02~04)와 동일한 방식·컴포넌트로 구현한 인터랙티브 프로토타입입니다. 파트너 계정은 자체 가입이 아닌 카닥 영업팀 심사 후 발급되므로 SNS 로그인·회원가입 진입점은 제외했어요.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE PROTOTYPE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-card);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <!-- status bar -->
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="display:inline-flex;align-items:center;gap:2px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span></span>
+          </span>
+        </div>
+
+        <!-- LOGIN (PT-AUTH-02) -->
+        <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+          <div class="mp-scroll" style="position:absolute;inset:0;padding:78px 24px 32px;overflow-y:auto;animation:mp-screen .32s ease">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--gray-900)">Moto<span style="color:var(--color-brand)">Pay</span></span>
+              <span style="font-size:10.5px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:2.5px 7px;border-radius:5px">파트너</span>
+            </div>
+            <div style="margin-top:8px;font-size:15px;color:var(--text-secondary);margin-bottom:28px">시공업체 회원님, 파트너센터에 오신 걸 환영해요.</div>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ loginIdP }}" hint-size="100%,52px"></x-import>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ loginPwP }}" hint-size="100%,52px"></x-import>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 2px 20px">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Checkbox" dc-props="{{ cbAutoLogin }}" hint-size="120px,22px"></x-import>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary)">
+                <span onClick="{{ openFindId }}" style="cursor:pointer">아이디 찾기</span>
+                <span style="color:var(--border-default)">|</span>
+                <span onClick="{{ openFindPw }}" style="cursor:pointer">비밀번호 찾기</span>
+              </div>
+            </div>
+
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ loginBtn }}" hint-size="100%,56px">로그인</x-import>
+
+            <div style="margin-top:24px;background:var(--surface-sunken);border-radius:var(--radius-lg);padding:16px;display:flex;gap:10px">
+              <span style="font-size:18px;line-height:1">🔧</span>
+              <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6">파트너 계정은 자체 가입이 불가해요. 계정 발급은 <span onClick="{{ openCallcenter }}" style="color:var(--color-brand);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px">콜센터</span>로 문의해주세요.</div>
+            </div>
+
+            <div style="margin-top:34px;padding-top:18px;border-top:1px solid var(--divider);text-align:center">
+              <span onClick="{{ toastCustomer }}" style="font-size:12.5px;color:var(--text-tertiary);cursor:pointer">고객이신가요? <span style="color:var(--text-secondary);font-weight:600;text-decoration:underline;text-underline-offset:2px">고객앱 로그인 ›</span></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ SHEETS ============ -->
+        <sc-if value="{{ hasSheet }}">
+          <div style="position:absolute;inset:0;z-index:70">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+
+            <!-- 아이디 찾기 (참고용, PT 화면번호 외) -->
+            <sc-if value="{{ shFindId }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:78%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">아이디 찾기</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">계정 발급 시 등록한 휴대폰 번호로 아이디를 찾아드려요.</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px">휴대폰 번호</div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fiPhoneP }}" hint-size="100%,52px"></x-import></div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ reqFiBtn }}" hint-size="98px,52px">인증요청</x-import>
+                </div>
+                <sc-if value="{{ fiSent }}">
+                  <div style="animation:mp-screen .3s ease">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px">인증번호</div>
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                      <div style="flex:1;position:relative"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fiOtpP }}" hint-size="100%,52px"></x-import><sc-if value="{{ showTimer }}"><span style="position:absolute;right:14px;top:16px;font-size:14px;font-weight:700;color:var(--status-danger);font-variant-numeric:tabular-nums">{{ otpTimer }}</span></sc-if></div>
+                      <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verFiBtn }}" hint-size="88px,52px">확인</x-import>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ fiVerified }}">
+                  <div style="margin:8px 0 18px;background:var(--surface-brand-subtle);border-radius:var(--radius-lg);padding:20px;text-align:center;animation:mp-screen .3s ease">
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">시공업체 회원님의 아이디는</div>
+                    <div style="font-size:22px;font-weight:800;color:var(--color-brand);letter-spacing:-.02em">shop****45</div>
+                  </div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ fiDoneBtn }}" hint-size="100%,56px">로그인하기</x-import>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- 비밀번호 찾기 (PT-AUTH-03) -->
+            <sc-if value="{{ shFindPw }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:78%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">비밀번호 찾기</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">아이디와 등록된 휴대폰 인증 후 새 비밀번호로 재설정할 수 있어요.</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px">아이디</div>
+                <div style="margin-bottom:14px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fpIdP }}" hint-size="100%,52px"></x-import></div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px">휴대폰 번호</div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fpPhoneP }}" hint-size="100%,52px"></x-import></div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ reqFpBtn }}" hint-size="98px,52px">인증요청</x-import>
+                </div>
+                <sc-if value="{{ fpSent }}">
+                  <div style="animation:mp-screen .3s ease">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px">인증번호</div>
+                    <div style="display:flex;gap:8px">
+                      <div style="flex:1;position:relative"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fpOtpP }}" hint-size="100%,52px"></x-import><sc-if value="{{ showTimer }}"><span style="position:absolute;right:14px;top:16px;font-size:14px;font-weight:700;color:var(--status-danger);font-variant-numeric:tabular-nums">{{ otpTimer }}</span></sc-if></div>
+                      <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verFpBtn }}" hint-size="88px,52px">확인</x-import>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- 비밀번호 재설정 (PT-AUTH-04) -->
+            <sc-if value="{{ shResetPw }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:80%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">비밀번호 재설정</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">새로운 비밀번호를 입력해 주세요.</div>
+                <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:14px">
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ rpPwP }}" hint-size="100%,74px"></x-import>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ rpPw2P }}" hint-size="100%,74px"></x-import>
+                </div>
+                <div style="background:var(--surface-sunken);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleLenColor }}"><span>{{ ruleLenMark }}</span> 8자 이상</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleMixColor }}"><span>{{ ruleMixMark }}</span> 영문·숫자·특수문자 조합</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleMatchColor }}"><span>{{ ruleMatchMark }}</span> 비밀번호 일치</div>
+                </div>
+                <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ rpDoneBtn }}" hint-size="100%,56px">완료</x-import>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- 콜센터 안내 팝업 -->
+        <sc-if value="{{ shCallcenter }}">
+          <div style="position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:0 28px">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+            <div style="position:relative;width:100%;background:var(--surface-card);border-radius:20px;padding:32px 24px 22px;text-align:center;animation:mp-fade .22s ease">
+              <div style="width:64px;height:64px;border-radius:50%;background:var(--surface-brand-subtle);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </div>
+              <div style="font-size:19px;font-weight:800;color:var(--gray-900);margin-bottom:10px">모토페이 콜센터</div>
+              <div style="font-size:14px;color:var(--text-secondary);line-height:1.55;margin-bottom:18px">로그인·계정 관련 문의는<br>콜센터로 연락해 주세요</div>
+              <div style="font-size:28px;font-weight:800;color:var(--color-brand);letter-spacing:-.02em;margin-bottom:16px;font-family:var(--font-numeric)">1588-0000</div>
+              <div style="background:var(--surface-sunken);border-radius:var(--radius-md);padding:10px;font-size:13px;color:var(--text-secondary);margin-bottom:18px">평일 09:00 ~ 18:00 (주말·공휴일 휴무)</div>
+              <div style="margin-bottom:14px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ callBtn }}" hint-size="100%,56px"><span style="display:inline-flex;align-items:center;gap:8px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>전화 걸기</span></x-import></div>
+              <span onClick="{{ closeSheet }}" style="font-size:14px;color:var(--text-tertiary);cursor:pointer">닫기</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import>
+          </div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 스플래시(PT-AUTH-01)는 고객앱과 공유</div>
+    </div>
+
+    <!-- ============ SCREEN MAP / OVERVIEW ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 3</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="3">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'login', sheet: null, toast: '', toastTone: 'default',
+    loginId: '', loginPw: '', autoLogin: true,
+    fiPhone: '', fiOtp: '', fiSent: false, fiVerified: false,
+    fpId: '', fpPhone: '', fpOtp: '', fpSent: false,
+    rpPw: '', rpPw2: '', countdown: 0,
+  };
+
+  componentWillUnmount() { clearInterval(this._t); clearTimeout(this._toastT); }
+  showToast(msg, tone) { clearTimeout(this._toastT); this.setState({ toast: msg, toastTone: tone || 'default' }); this._toastT = setTimeout(() => this.setState({ toast: '' }), 2200); }
+  startTimer() {
+    clearInterval(this._t);
+    this._t = setInterval(() => {
+      this.setState(s => { if (s.countdown <= 1) { clearInterval(this._t); return { countdown: 0 }; } return { countdown: s.countdown - 1 }; });
+    }, 1000);
+  }
+  fmt(sec) { const m = String(Math.floor(sec / 60)).padStart(2, '0'); const s = String(sec % 60).padStart(2, '0'); return m + ':' + s; }
+  f(key, extra) { return Object.assign({ value: this.state[key], onChange: e => this.setState({ [key]: e.target.value }) }, extra || {}); }
+
+  spec() {
+    return {
+      '02': { id:'PT-AUTH-02', name:'로그인', type:'주화면', url:'/partner/auth/login', device:'공용(반응형)',
+        func:'아이디/비밀번호 로그인. 자동로그인. 하단 아이디·비밀번호 찾기, 입점 문의, 고객앱 로그인 링크.',
+        detail:'[UI요소] 아이디/비밀번호 입력, 자동로그인 체크박스, 로그인 버튼, 아이디·비밀번호 찾기 링크, 입점 문의 안내 배너, 고객앱 링크.\n[상태] 기본/입력중/에러/로딩.\n[인터랙션] 파트너 계정은 카닥 영업팀 심사 후 발급되므로 SNS 로그인·자체 회원가입 없음. 로그인 성공 시 파트너 홈으로 이동.\n[디자인] 고객앱 로그인(CU-AUTH-02)과 동일한 레이아웃·컴포넌트를 사용하되 SNS 영역과 회원가입 링크를 입점 문의 배너로 대체.' },
+      '03': { id:'PT-AUTH-03', name:'비밀번호 찾기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'아이디 입력 + 등록된 휴대폰 SMS 인증 후 비밀번호 재설정(바텀시트).',
+        detail:'[UI요소] 아이디, 휴대폰 번호, 인증요청, OTP 입력(바텀시트).\n[상태] 발송 전/카운트다운(03:00)/성공/실패(재발송 유도, 계정 불일치 에러).\n[인터랙션] 인증 완료 시 비밀번호 재설정 화면으로 자동 전환.\n[디자인] 고객앱과 동일한 바텀시트 패턴. 아이디 필드가 추가되어 계정 특정 후 인증.' },
+      '04': { id:'PT-AUTH-04', name:'비밀번호 재설정', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'새 비밀번호·확인 입력 후 재설정 완료. 완료 후 로그인 화면 이동.',
+        detail:'[UI요소] 새 비밀번호·확인, 규칙 안내(영문·숫자·특수문자 8자↑), 완료 버튼.\n[상태] 입력중/규칙 미충족/불일치/완료.\n[인터랙션] 완료 시 로그인 이동, 성공 토스트.\n[디자인] CU-AUTH-04와 동일 컴포넌트·규칙 체크 UI 재사용.' },
+    };
+  }
+  activeId() {
+    const sh = this.state.sheet;
+    if (sh) return { 'find-id':'02','find-pw':'03','reset-pw':'04' }[sh] || '03';
+    return { login:'02' }[this.state.screen];
+  }
+
+  goTo(id) {
+    const map = {
+      '02':{screen:'login',sheet:null},
+      '03':{screen:'login',sheet:'find-pw'},
+      '04':{screen:'login',sheet:'reset-pw'},
+    }[id];
+    this.setState(map);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const SPEC = this.spec();
+    const aId = this.activeId();
+    const brand = 'var(--color-brand)', ok = 'var(--status-success)', muted = 'var(--text-tertiary)';
+
+    const rpLen = st.rpPw.length >= 8;
+    const rpMix = /[a-zA-Z]/.test(st.rpPw) && /[0-9]/.test(st.rpPw) && /[^a-zA-Z0-9]/.test(st.rpPw);
+    const rpMatch = st.rpPw.length > 0 && st.rpPw === st.rpPw2;
+
+    const order = ['02','03','04'];
+    const typeColors = { '주화면':'var(--color-brand)','팝업':'var(--color-accent)' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id]; const active = id === aId; const tc = typeColors[sp.type] || muted;
+      return {
+        id: sp.id.replace('PT-AUTH-',''), name: sp.name, type: sp.type,
+        onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1.5px var(--color-brand)' : 'background:transparent'}`,
+        badgeStyle: `flex:none;width:26px;text-align:center;font-size:11px;font-weight:800;font-family:var(--font-numeric);color:${active ? '#fff' : muted};background:${active ? brand : 'var(--surface-sunken)'};padding:3px 0;border-radius:6px`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}14;padding:3px 8px;border-radius:5px`,
+      };
+    });
+
+    return {
+      isLogin: st.screen === 'login',
+      hasSheet: !!st.sheet,
+      shFindId: st.sheet === 'find-id', shFindPw: st.sheet === 'find-pw', shResetPw: st.sheet === 'reset-pw',
+      toast: st.toast, toastTone: st.toastTone,
+      mapItems, curSpec: SPEC[aId],
+      fiSent: st.fiSent, fiVerified: st.fiVerified, fpSent: st.fpSent,
+      showTimer: st.countdown > 0, otpTimer: this.fmt(st.countdown),
+
+      openFindId: () => this.setState({ sheet:'find-id' }),
+      openFindPw: () => this.setState({ sheet:'find-pw' }),
+      openCallcenter: () => this.setState({ sheet:'callcenter' }),
+      closeSheet: () => this.setState({ sheet:null }),
+      toastApply: () => this.showToast('입점 문의 페이지로 이동해요'),
+      toastCustomer: () => this.showToast('고객앱 로그인으로 이동해요'),
+      shCallcenter: st.sheet === 'callcenter',
+      callBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => this.showToast('1588-0000으로 전화를 겁니다') },
+
+      loginIdP: this.f('loginId', { label:'아이디', placeholder:'파트너 아이디를 입력하세요' }),
+      loginPwP: this.f('loginPw', { label:'비밀번호', type:'password', placeholder:'비밀번호를 입력하세요' }),
+      cbAutoLogin: { label:'자동로그인', checked: st.autoLogin, onChange: () => this.setState(s => ({ autoLogin: !s.autoLogin })) },
+      loginBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !(st.loginId && st.loginPw), onClick: () => this.showToast('로그인되었어요. 파트너 홈으로 이동합니다', 'success') },
+
+      fiPhoneP: this.f('fiPhone', { placeholder:'01012345678', inputMode:'numeric' }),
+      fiOtpP: this.f('fiOtp', { placeholder:'인증번호 6자리', inputMode:'numeric', maxLength:6 }),
+      reqFiBtn: { variant:'secondary', size:'lg', disabled: st.fiPhone.length < 10, onClick: () => { this.setState({ fiSent:true, countdown:180 }); this.startTimer(); } },
+      verFiBtn: { variant:'primary', size:'lg', disabled: st.fiOtp.length < 4, onClick: () => { clearInterval(this._t); this.setState({ fiVerified:true, countdown:0 }); } },
+      fiDoneBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => this.setState({ sheet:null, fiPhone:'', fiOtp:'', fiSent:false, fiVerified:false }) },
+
+      fpIdP: this.f('fpId', { placeholder:'아이디를 입력하세요' }),
+      fpPhoneP: this.f('fpPhone', { placeholder:'01012345678', inputMode:'numeric' }),
+      fpOtpP: this.f('fpOtp', { placeholder:'인증번호 6자리', inputMode:'numeric', maxLength:6 }),
+      reqFpBtn: { variant:'secondary', size:'lg', disabled: st.fpId.length < 2 || st.fpPhone.length < 10, onClick: () => { this.setState({ fpSent:true, countdown:180 }); this.startTimer(); } },
+      verFpBtn: { variant:'primary', size:'lg', disabled: st.fpOtp.length < 4, onClick: () => { clearInterval(this._t); this.setState({ sheet:'reset-pw', countdown:0, fpSent:false, fpOtp:'' }); } },
+
+      rpPwP: this.f('rpPw', { label:'새 비밀번호', type:'password', placeholder:'새 비밀번호' }),
+      rpPw2P: this.f('rpPw2', { label:'새 비밀번호 확인', type:'password', placeholder:'새 비밀번호 확인' }),
+      ruleLenColor: rpLen ? ok : muted, ruleLenMark: rpLen ? '✓' : '○',
+      ruleMixColor: rpMix ? ok : muted, ruleMixMark: rpMix ? '✓' : '○',
+      ruleMatchColor: rpMatch ? ok : muted, ruleMatchMark: rpMatch ? '✓' : '○',
+      rpDoneBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !(rpLen && rpMix && rpMatch), onClick: () => { this.setState({ sheet:null, rpPw:'', rpPw2:'' }); this.showToast('비밀번호가 변경되었어요', 'success'); } },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

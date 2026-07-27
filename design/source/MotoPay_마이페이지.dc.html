@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 마이페이지</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-MYPG-01 ~ CU-MYPG-16</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:900px;line-height:1.6;margin-bottom:32px">마이페이지 <b>전체 여정(CU-MYPG-01~16)</b>을 담은 프로토타입입니다. 메뉴구조도 기준으로 <b>내 차량 관리</b>(목록·등록·수정·대표차량 지정) → <b>이용내역</b>(시공내역·쇼핑몰 주문내역·취소반품내역·보유 쿠폰함) → <b>알림</b>(알림함·알림설정) → <b>계정</b>(정보변경·비밀번호변경·SNS관리·로그아웃·회원탈퇴)까지 이어져요. FAQ·1:1문의 등 고객지원 기능은 별도의 <b>고객센터(CU-CS-01~05)</b> 모듈로 분리되어 있어요. 오른쪽 <b>화면 목록</b>에서 화면을 누르면 이동하고, 폰 안의 버튼·카드를 눌러 실제 플로우를 클릭해볼 수 있어요. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE PROTOTYPE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ===== 01 마이페이지 (홈) ===== -->
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:0 0 10px">
+              <div style="padding:56px 20px 22px;background:linear-gradient(135deg,var(--color-brand),var(--color-brand-strong));color:#fff">
+                <div style="display:flex;align-items:center;gap:13px">
+                  <span style="flex:none;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">홍</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:nowrap"><span style="font-size:17px;font-weight:800;white-space:nowrap">{{ userName }} 님</span><span style="flex:none;font-size:10.5px;font-weight:800;background:rgba(255,255,255,.22);padding:3px 8px;border-radius:999px;white-space:nowrap">{{ userGrade }}</span></div>
+                    <div style="font-size:12px;color:rgba(255,255,255,.85);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ userCarLabel }}</div>
+                  </div>
+                  <span onClick="{{ goInfoEdit }}" style="flex:none;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></span>
+                </div>
+              </div>
+              <div style="padding:16px 20px 0">
+                <sc-for list="{{ menuSections }}" as="sec" hint-placeholder-count="5">
+                  <div style="margin-top:22px">
+                    <div style="font-size:11.5px;font-weight:800;color:var(--text-tertiary);letter-spacing:.02em;margin:0 4px 6px">{{ sec.title }}</div>
+                    <div style="display:flex;flex-direction:column">
+                      <sc-for list="{{ sec.rows }}" as="m" hint-placeholder-count="3">
+                        <div onClick="{{ m.onClick }}" style="display:flex;align-items:center;gap:12px;padding:14px 4px;cursor:pointer;border-bottom:1px solid var(--divider)">
+                          <span style="flex:1;font-size:14px;font-weight:{{ m.weight }};color:{{ m.color }}">{{ m.label }}</span>
+                          <sc-if value="{{ m.chevron }}"><span style="flex:none;color:var(--text-tertiary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:none;height:56px;display:flex;background:var(--surface-card);border-top:1px solid var(--divider)">
+              <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ n.color }}">{{ n.icon }}<span style="font-size:10px;font-weight:{{ n.weight }}">{{ n.label }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 02 내 차량 목록 ===== -->
+        <sc-if value="{{ isCars }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">내 차량 목록</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ carCards }}" as="c" hint-placeholder-count="2">
+                  <div onClick="{{ c.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:11px">
+                      <span style="flex:none;width:44px;height:44px;border-radius:12px;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V10l2-5h12l2 5v6.5"></path><path d="M4 16.5h16v2.5H4z"></path><circle cx="7.5" cy="16.5" r="1.4"></circle><circle cx="16.5" cy="16.5" r="1.4"></circle></svg></span>
+                      <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:14.5px;font-weight:800;color:var(--text-strong)">{{ c.model }}</span><sc-if value="{{ c.isDefault }}"><span style="font-size:9.5px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:2px 6px;border-radius:4px">대표차량</span></sc-if><sc-if value="{{ c.fromDealer }}"><span style="font-size:9.5px;font-weight:800;color:var(--color-accent-strong);background:var(--color-accent-subtle);padding:2px 6px;border-radius:4px">딜러사 구매</span></sc-if></div><div style="font-size:12px;color:var(--text-tertiary);margin-top:3px">{{ c.plateLabel }}</div></div>
+                      <span style="flex:none;color:var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+                    </div>
+                    <sc-if value="{{ c.fromDealer }}"><div style="margin-top:11px;padding-top:11px;border-top:1px solid var(--divider);font-size:11.5px;color:var(--text-tertiary)">구매처 {{ c.dealerName }} · VIN {{ c.vinShort }}</div></sc-if>
+                    <sc-if value="{{ c.canSetDefault }}"><div onClick="{{ c.onSetDefault }}" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--divider);font-size:12px;font-weight:700;color:var(--color-brand)">대표차량으로 지정</div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ goCarAdd }}" style="display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border-strong);border-radius:12px;padding:14px;margin-top:14px;cursor:pointer;color:var(--text-secondary);font-size:13px;font-weight:700"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>차량 등록</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 03/04 차량 등록·수정 ===== -->
+        <sc-if value="{{ isCarEdit }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goCars }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">{{ carEditTitle }}</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 24px">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 8px">제조사</div>
+              <select value="{{ carMakerVal }}" onChange="{{ onCarMaker }}" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+                <sc-for list="{{ makerOptions }}" as="mk" hint-placeholder-count="8"><option value="{{ mk }}">{{ mk }}</option></sc-for>
+              </select>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">모델명</div>
+              <input value="{{ carModelVal }}" onChange="{{ onCarModel }}" placeholder="예) 아반떼 CN7" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">연식</div>
+              <input value="{{ carYearVal }}" onChange="{{ onCarYear }}" inputMode="numeric" placeholder="예) 2023" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page);font-family:var(--font-numeric)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">차량번호</div>
+              <input value="{{ carPlateVal }}" onChange="{{ onCarPlate }}" placeholder="예) 12가 3456" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <sc-if value="{{ isDealerCar }}">
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:20px 2px 8px">딜러사 구매 정보</div>
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;background:var(--surface-sunken)"><span style="font-size:12px;color:var(--text-tertiary)">구매처(딜러사)</span><span style="font-size:13.5px;font-weight:700;color:var(--text-secondary)">{{ carDealerName }}</span></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;background:var(--surface-sunken)"><span style="font-size:12px;color:var(--text-tertiary)">VIN</span><span style="font-size:13.5px;font-weight:700;color:var(--text-secondary);font-family:var(--font-numeric)">{{ carVinVal }}</span></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ isEditMode }}"><div onClick="{{ ctaCarDelete }}" style="margin-top:20px;text-align:center;font-size:13px;font-weight:700;color:var(--status-error);cursor:pointer">차량 삭제하기</div></sc-if>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaCarSave }}" hint-size="100%,56px">저장하기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 06 시공내역 ===== -->
+        <sc-if value="{{ isCstHist }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">시공내역</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{ cstHistCards }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:11.5px;color:var(--text-tertiary)">{{ o.date }}</span><span style="{{ o.badgeStyle }}">{{ o.statusLabel }}</span></div>
+                  <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ o.shop }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">{{ o.items }}</div>
+                  <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin-top:8px;font-variant-numeric:tabular-nums">{{ o.price }}</div>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 07 알림 설정 ===== -->
+        <sc-if value="{{ isNotiSettings }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">알림 설정</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:8px 20px 24px">
+              <div style="display:flex;flex-direction:column"><sc-for list="{{ notiSettingRows }}" as="s" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 2px;border-bottom:1px solid var(--divider)">
+                  <div><div style="font-size:14px;font-weight:700;color:var(--text-body)">{{ s.label }}</div><sc-if value="{{ s.desc }}"><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ s.desc }}</div></sc-if></div>
+                  <span onClick="{{ s.toggle }}" style="{{ s.track }}"><span style="{{ s.thumb }}"></span></span>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 08 내 정보 변경 ===== -->
+        <sc-if value="{{ isInfoEdit }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">내 정보 변경</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:22px 20px 24px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:22px">
+                <span style="position:relative;width:78px;height:78px;border-radius:50%;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800">홍<span style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:var(--color-brand);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span></span>
+                <span style="font-size:12px;font-weight:700;color:var(--color-brand);cursor:pointer">프로필 사진 변경</span>
+              </div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 8px">이름</div>
+              <input value="{{ profName }}" onChange="{{ onProfName }}" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:18px 2px 8px">휴대폰 번호</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-subtle);border-radius:12px;padding:14px 15px;background:var(--surface-sunken)"><span style="font-size:14px;font-weight:600;color:var(--text-tertiary)">{{ profPhone }}</span><span style="font-size:11px;font-weight:700;color:var(--green-600);background:var(--status-success-bg);padding:3px 8px;border-radius:6px">인증됨</span></div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:18px 2px 8px">이메일</div>
+              <input value="{{ profEmail }}" onChange="{{ onProfEmail }}" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div onClick="{{ goPwEdit }}" style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding:15px 2px;border-top:1px solid var(--divider)"><span style="font-size:14px;font-weight:700;color:var(--text-body)">비밀번호 변경</span><span style="color:var(--text-tertiary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaProfSave }}" hint-size="100%,56px">저장하기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 09 비밀번호 변경 ===== -->
+        <sc-if value="{{ isPwEdit }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goInfoEdit }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">비밀번호 변경</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:22px 20px 24px">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 8px">현재 비밀번호</div>
+              <input value="{{ pwCur }}" onChange="{{ onPwCur }}" type="password" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">새 비밀번호</div>
+              <input value="{{ pwNew }}" onChange="{{ onPwNew }}" type="password" placeholder="영문·숫자·특수문자 조합 8자 이상" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">새 비밀번호 확인</div>
+              <input value="{{ pwConfirm }}" onChange="{{ onPwConfirm }}" type="password" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <sc-if value="{{ pwMismatch }}"><div style="font-size:12px;color:var(--status-error);margin-top:8px">비밀번호가 일치하지 않아요</div></sc-if>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaPwSave }}" hint-size="100%,56px">변경하기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 10 쇼핑몰 주문내역 ===== -->
+        <sc-if value="{{ isShopHist }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">쇼핑몰 주문내역</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{ shopOrderCards }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm);cursor:pointer">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:11.5px;color:var(--text-tertiary)">{{ o.date }} · {{ o.no }}</span><span style="{{ o.badgeStyle }}">{{ o.statusLabel }}</span></div>
+                  <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ o.name }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">{{ o.itemsLabel }}</div>
+                  <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin-top:8px;font-variant-numeric:tabular-nums">{{ o.total }}</div>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 11 취소·반품 내역 ===== -->
+        <sc-if value="{{ isCancelHist }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">취소·반품 내역</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <sc-if value="{{ cancelEmpty }}"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:60px 20px;text-align:center;color:var(--text-tertiary)"><div style="font-size:14px;font-weight:700;color:var(--text-secondary)">취소·반품 내역이 없어요</div></div></sc-if>
+              <div style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{ cancelCards }}" as="c" hint-placeholder-count="2">
+                <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm)">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:11.5px;color:var(--text-tertiary)">{{ c.date }} · {{ c.type }}</span><span style="{{ c.badgeStyle }}">{{ c.statusLabel }}</span></div>
+                  <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ c.name }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">{{ c.reason }}</div>
+                  <div style="font-size:14px;font-weight:800;color:var(--gray-900);margin-top:8px;font-variant-numeric:tabular-nums">{{ c.amount }}</div>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 16 보유 쿠폰함 ===== -->
+        <sc-if value="{{ isCouponBox }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">보유 쿠폰함</span></div></div>
+            <div style="flex:none;display:flex;gap:7px;padding:14px 20px 6px;background:var(--surface-card)">
+              <sc-for list="{{ couponTabs }}" as="t" hint-placeholder-count="3">
+                <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+              </sc-for>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:14px 20px 24px">
+              <sc-if value="{{ couponEmpty }}"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:60px 20px;text-align:center;color:var(--text-tertiary)"><div style="font-size:14px;font-weight:700;color:var(--text-secondary)">해당 쿠폰이 없어요</div></div></sc-if>
+              <div style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{ couponCards }}" as="c" hint-placeholder-count="3">
+                <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:15px;box-shadow:var(--shadow-sm);opacity:{{ c.opacity }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
+                    <span style="{{ c.issuerBadge }}">{{ c.issuer }}</span>
+                    <span style="{{ c.statusBadge }}">{{ c.statusLabel }}</span>
+                  </div>
+                  <div style="font-size:14.5px;font-weight:800;color:var(--text-strong)">{{ c.name }}</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">{{ c.desc }}</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:11px;border-top:1px dashed var(--divider)">
+                    <span style="font-size:11.5px;color:var(--text-tertiary)">{{ c.expiryLabel }}</span>
+                    <span style="font-size:15px;font-weight:800;color:var(--color-brand)">{{ c.discountLabel }}</span>
+                  </div>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 12 알림함 ===== -->
+        <sc-if value="{{ isNotis }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">알림함</span><span onClick="{{ goNotiSettings }}" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--text-tertiary);cursor:pointer">알림 설정</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:8px 20px 24px">
+              <div style="display:flex;flex-direction:column"><sc-for list="{{ notiRows }}" as="n" hint-placeholder-count="6">
+                <div onClick="{{ n.onClick }}" style="display:flex;gap:11px;padding:14px 2px;border-bottom:1px solid var(--divider);cursor:pointer">
+                  <span style="flex:none;width:38px;height:38px;border-radius:11px;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center">{{ n.icon }}</span>
+                  <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:{{ n.titleWeight }};color:var(--text-strong)">{{ n.title }}</div><div style="font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4">{{ n.body }}</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:5px">{{ n.time }}</div></div>
+                  <sc-if value="{{ n.unread }}"><span style="flex:none;width:8px;height:8px;border-radius:50%;background:var(--color-accent);margin-top:4px"></span></sc-if>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 14 회원 탈퇴 ===== -->
+        <sc-if value="{{ isWithdraw }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">회원 탈퇴</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 24px">
+              <div style="background:var(--color-accent-subtle);border-radius:12px;padding:14px 15px;font-size:12.5px;color:var(--text-secondary);line-height:1.55">탈퇴 시 보유 포인트·쿠폰이 모두 소멸되며, 진행중인 예약·주문이 있으면 탈퇴가 제한될 수 있어요. 탈퇴 후에는 계정 복구가 불가능해요.</div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:20px 2px 10px">탈퇴 사유를 알려주세요</div>
+              <div style="display:flex;flex-direction:column;gap:9px"><sc-for list="{{ withdrawReasons }}" as="r" hint-placeholder-count="4">
+                <div onClick="{{ r.onClick }}" style="{{ r.rowStyle }}"><span style="{{ r.radioStyle }}">{{ r.mark }}</span><span style="font-size:13.5px;font-weight:600;color:var(--text-body)">{{ r.label }}</span></div>
+              </sc-for></div>
+              <div onClick="{{ toggleWithdrawAgree }}" style="display:flex;align-items:center;gap:10px;margin-top:20px;cursor:pointer"><span style="{{ withdrawAgreeBoxStyle }}">{{ withdrawAgreeMark }}</span><span style="font-size:12.5px;color:var(--text-secondary)">위 내용을 확인했으며 탈퇴에 동의합니다.</span></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaWithdraw }}" hint-size="100%,56px">탈퇴하기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 15 연결된 SNS 관리 ===== -->
+        <sc-if value="{{ isSns }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">연결된 SNS 관리</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:11px"><sc-for list="{{ snsRows }}" as="s" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow-sm)">
+                  <span style="flex:none;width:38px;height:38px;border-radius:11px;background:{{ s.iconBg }};color:{{ s.iconColor }};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">{{ s.initial }}</span>
+                  <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ s.label }}</div><div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ s.statusText }}</div></div>
+                  <span onClick="{{ s.onClick }}" style="{{ s.btnStyle }}">{{ s.btnLabel }}</span>
+                </div>
+              </sc-for></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ SHEETS (팝업) ============ -->
+        <sc-if value="{{ hasSheet }}">
+          <div style="position:absolute;inset:0;z-index:70">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+
+            <!-- 05 대표차량 지정 -->
+            <sc-if value="{{ shDefaultCar }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:8px 20px 22px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:6px auto 14px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><span style="font-size:18px;font-weight:800;color:var(--gray-900)">대표차량 지정</span><span onClick="{{ closeSheet }}" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+                <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:14px">'{{ defaultTargetName }}'을(를) 대표차량으로 지정할까요?</div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaDefaultCancel }}" hint-size="100%,52px">취소</x-import></div>
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaDefaultOk }}" hint-size="100%,52px">지정하기</x-import></div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 13 로그아웃 확인 -->
+            <sc-if value="{{ shLogout }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:22px 20px 24px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:0 auto 18px"></div>
+                <div style="font-size:17px;font-weight:800;color:var(--gray-900);text-align:center">로그아웃 하시겠어요?</div>
+                <div style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:8px">다시 로그인하면 그대로 이용할 수 있어요.</div>
+                <div style="display:flex;gap:10px;margin-top:22px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaLogoutCancel }}" hint-size="100%,52px">취소</x-import></div>
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaLogoutOk }}" hint-size="100%,52px">로그아웃</x-import></div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 14 회원탈퇴 최종확인 -->
+            <sc-if value="{{ shWithdrawConfirm }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:22px 20px 24px;animation:mp-sheet .32s cubic-bezier(.16,1,.3,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-200);margin:0 auto 18px"></div>
+                <div style="font-size:17px;font-weight:800;color:var(--gray-900);text-align:center">정말 탈퇴하시겠어요?</div>
+                <div style="font-size:12.5px;color:var(--text-secondary);text-align:center;margin-top:8px;line-height:1.5">이 작업은 되돌릴 수 없어요.</div>
+                <div style="display:flex;gap:10px;margin-top:20px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaWithdrawCancel2 }}" hint-size="100%,52px">취소</x-import></div>
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaWithdrawFinal }}" hint-size="100%,52px">탈퇴하기</x-import></div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import></div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 마이페이지 16개 화면 (차량관리·이용내역·알림·계정관리)</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 16</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="9">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);font-size:12px;color:var(--text-tertiary);line-height:1.6">
+        <b style="color:var(--text-secondary)">플로우 안내</b><br>차량: 목록(02)→등록(03)/수정(04)→대표차량 지정(05, 팝업). 이용내역: 시공내역(06)·쇼핑몰 주문내역(10)·취소반품내역(11)·보유 쿠폰함(16)은 각 모듈 상세로 연결되는 조회 전용 화면. 알림: 알림함(12)→알림설정(07). 계정: 정보변경(08)→비밀번호변경(09), SNS관리(15), 로그아웃(13)·회원탈퇴(14). FAQ·1:1문의는 고객센터(CU-CS-01~05) 모듈입니다.
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em;font-family:var(--font-numeric)">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  state = {
+    screen: 'main', sheet: null,
+    cars: [
+      { id: 'v1', maker: 'Benz', model: 'E-Class', year: '2023', plate: '', isDefault: true, fromDealer: true, dealerName: 'KCC 오토', vin: 'WDD2130xxxxxxxx23' },
+      { id: 'v2', maker: '기아', model: '셀토스', year: '2021', plate: '34나 7890', isDefault: false, fromDealer: false }
+    ],
+    carEditId: null, carMakerVal: '현대', carModelVal: '', carYearVal: '', carPlateVal: '',
+    defaultTargetId: null,
+    notiRead: {},
+    notiSettings: { all: true, event: true, resv: true, order: true, night: false },
+    profName: '홍길동', profPhone: '010-1234-5678', profEmail: 'motouser@email.com',
+    pwCur: '', pwNew: '', pwConfirm: '',
+    withdrawReason: null, withdrawAgree: false,
+    snsLinked: { kakao: true, naver: false, google: true },
+    couponFilter: 'usable',
+    toast: '', toastTone: 'default'
+  };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+
+  nav(name, active) {
+    const c = active ? 'var(--color-brand)' : 'var(--text-tertiary)';
+    const p = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      shop: '<path d="M4 8h16l-1 12H5L4 8Z"/><path d="M8.5 8a3.5 3.5 0 1 1 7 0"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+    };
+    return React.createElement('svg', { width: 23, height: 23, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: p[name] } });
+  }
+  icon(path, sw) { return React.createElement('svg', { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw || 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: path } }); }
+
+  spec() {
+    return {
+      '01': { id: 'CU-MYPG-01', name: '마이페이지 (홈)', type: '주화면', url: '/myp', device: '공용(반응형)',
+        func: 'bottom navigation 진입 메인. 프로필 요약과 퀵메뉴, 차량·이용내역·알림·계정 메뉴 그룹 제공.',
+        detail: '[UI요소] 프로필 카드(이름·등급·대표차량), 퀵메뉴(알림함·시공내역·쇼핑몰 주문내역), 그룹별 메뉴 리스트(차량·이용내역·알림·계정), bottom navigation.\n[상태] 기본.\n[인터랙션] 각 메뉴 탭 시 해당 화면으로 이동, 고객센터는 별도 모듈(CU-CS-01)로 이동.\n[디자인고려사항] FAQ·1:1문의 등 고객지원 기능은 이 모듈에 포함하지 않고 고객센터 모듈로 분리.' },
+      '02': { id: 'CU-MYPG-02', name: '내 차량 목록', type: '목록', url: '/myp/my-car-list', device: '공용(반응형)',
+        func: '등록된 차량 목록 조회. 대표차량 배지 표시, 차량 등록·수정·대표차량 지정 진입.',
+        detail: '[UI요소] 차량 카드 리스트(모델명·번호판·연식·대표차량 배지·대표차량 지정 링크), 차량 등록 버튼.\n[상태] 1대 이상 등록.\n[인터랙션] 카드 탭 시 차량 수정(CU-MYPG-04)으로, 차량 등록 탭 시 차량 등록(CU-MYPG-03)으로, 대표차량으로 지정 탭 시 대표차량 지정(CU-MYPG-05) 팝업 노출.\n[디자인고려사항] 대표차량은 예약시공·신차패키지 요청 시 기본값으로 사용됨을 암시.' },
+      '03': { id: 'CU-MYPG-03', name: '차량 등록', type: '등록/수정', url: '/myp/my-car-list/car-reg', device: '공용(반응형)',
+        func: '신규 차량의 제조사·모델명, 연식, 차량번호 등록.',
+        detail: '[UI요소] 제조사·모델명 입력, 연식 입력, 차량번호 입력, 저장하기 버튼.\n[상태] 미입력/입력완료.\n[인터랙션] 저장 시 내 차량 목록(CU-MYPG-02)에 추가되어 복귀.\n[디자인고려사항] 등록 즉시 목록에 반영되어 예약시공 등에서 선택 가능.' },
+      '04': { id: 'CU-MYPG-04', name: '차량 수정', type: '등록/수정', url: '/myp/my-car-list/car-edit', device: '공용(반응형)',
+        func: '등록된 차량 정보 수정 및 삭제.',
+        detail: '[UI요소] 제조사·모델명, 연식, 차량번호 입력(기존값 프리필), 저장하기 버튼, 차량 삭제 링크.\n[상태] 수정됨/미수정.\n[인터랙션] 저장 시 내 차량 목록으로 복귀, 삭제 시 목록에서 즉시 제거.\n[디자인고려사항] 삭제는 톤다운된 텍스트 링크로 하단에 배치해 실수 클릭 방지.' },
+      '05': { id: 'CU-MYPG-05', name: '대표차량 지정', type: '팝업', url: '-', device: '공용(반응형)',
+        func: '내 차량 목록에서 특정 차량을 대표차량으로 지정.',
+        detail: '[UI요소] 지정 확인 문구, 취소·지정하기 버튼(팝업).\n[상태] 확인 전.\n[인터랙션] 지정하기 시 기존 대표차량은 자동 해제되고 선택 차량이 대표차량으로 설정됨.\n[디자인고려사항] 실수 방지를 위해 반드시 확인 팝업을 거치도록 구성.' },
+      '06': { id: 'CU-MYPG-06', name: '시공내역', type: '목록', url: '/myp/cst-hist', device: '공용(반응형)',
+        func: '예약시공·신차패키지 등 시공 이용 이력 조회.',
+        detail: '[UI요소] 시공 이력 카드 리스트(일자·업체명·시공항목·상태배지·결제금액).\n[상태] 시공완료/시공중/예약확정별 배지 구분.\n[인터랙션] 카드 탭 시 예약시공 모듈의 상세 화면으로 이동(외부 모듈 연결).\n[디자인고려사항] 예약시공·신차패키지 모듈의 이력을 통합 조회하는 화면.' },
+      '07': { id: 'CU-MYPG-07', name: '알림 설정', type: '등록/수정', url: '/myp/noti-cfg', device: '공용(반응형)',
+        func: '전체 알림 및 카테고리별(이벤트/혜택·예약·주문/배송·야간) 수신 여부 설정.',
+        detail: '[UI요소] 알림 종류별 토글 스위치.\n[상태] 각 항목 켜짐/꺼짐.\n[인터랙션] 토글 즉시 반영(별도 저장 버튼 없음).\n[디자인고려사항] 야간 알림은 기본값 꺼짐으로 설정.' },
+      '08': { id: 'CU-MYPG-08', name: '내 정보 변경', type: '등록/수정', url: '/myp/my-info-chg', device: '공용(반응형)',
+        func: '프로필 사진·이름·이메일 수정, 비밀번호 변경·SNS 관리로 진입.',
+        detail: '[UI요소] 프로필 사진 변경, 이름 입력, 휴대폰 번호(인증됨, 읽기전용), 이메일 입력, 비밀번호 변경 링크, 저장하기 버튼.\n[상태] 미변경/변경됨.\n[인터랙션] 저장 시 토스트 노출 후 마이페이지 홈 복귀, 비밀번호 변경 탭 시 CU-MYPG-09로 이동.\n[디자인고려사항] 휴대폰 번호는 본인인증 수단이므로 직접 수정 불가.' },
+      '09': { id: 'CU-MYPG-09', name: '비밀번호 변경', type: '등록/수정', url: '/myp/pwd-chg', device: '공용(반응형)',
+        func: '현재 비밀번호 확인 후 새 비밀번호로 변경.',
+        detail: '[UI요소] 현재 비밀번호, 새 비밀번호, 새 비밀번호 확인 입력, 변경하기 버튼.\n[상태] 불일치 시 에러 문구 노출.\n[인터랙션] 변경 완료 시 토스트 노출 후 내 정보 변경으로 복귀.\n[디자인고려사항] 새 비밀번호 확인 불일치 시 즉시 인라인 에러 표시.' },
+      '10': { id: 'CU-MYPG-10', name: '쇼핑몰 주문내역', type: '목록', url: '/myp/shop-order-hist', device: '공용(반응형)',
+        func: '쇼핑몰 모듈에서의 주문 이력 조회.',
+        detail: '[UI요소] 주문 카드 리스트(주문일자·주문번호·상태배지·상품명·수량·총액).\n[상태] 상품준비중/배송중/배송완료별 배지 구분.\n[인터랙션] 카드 탭 시 쇼핑몰 모듈의 주문상세(CU-SHOP-11)로 이동.\n[디자인고려사항] 쇼핑몰 모듈과 동일한 상태 배지 컬러 체계 사용.' },
+      '11': { id: 'CU-MYPG-11', name: '취소·반품 내역', type: '목록', url: '/myp/cancel-return-hist', device: '공용(반응형)',
+        func: '쇼핑몰 주문의 취소·반품 신청 이력 조회.',
+        detail: '[UI요소] 취소·반품 카드 리스트(신청일자·유형·상품명·사유·처리상태·환불금액).\n[상태] 처리중/처리완료, 0건 시 빈 상태.\n[인터랙션] 카드 탭 시 상세 확인(프로토타입에서는 조회 전용).\n[디자인고려사항] 취소와 반품을 유형 배지로 구분.' },
+      '12': { id: 'CU-MYPG-12', name: '알림함', type: '리스트', url: '/myp/noti', device: '공용(반응형)',
+        func: '서비스 전반의 알림을 시간순으로 조회, 읽음 처리.',
+        detail: '[UI요소] 알림 리스트(아이콘·제목·본문 요약·시간·읽음 여부), 알림 설정 바로가기.\n[상태] 읽음/안읽음.\n[인터랙션] 알림 탭 시 읽음 처리.\n[디자인고려사항] 안읽음 알림은 점 배지로 구분.' },
+      '13': { id: 'CU-MYPG-13', name: '로그아웃', type: '팝업', url: '-', device: '공용(반응형)',
+        func: '현재 계정에서 로그아웃.',
+        detail: '[UI요소] 로그아웃 확인 문구, 취소·로그아웃 버튼(팝업).\n[상태] 확인 전.\n[인터랙션] 로그아웃 시 시작(로그인) 화면으로 이동(프로토타입은 토스트로 시연).\n[디자인고려사항] 실수 로그아웃 방지를 위한 확인 팝업.' },
+      '14': { id: 'CU-MYPG-14', name: '회원 탈퇴', type: '등록/수정', url: '/myp/mbr', device: '공용(반응형)',
+        func: '탈퇴 사유 입력과 유의사항 동의 후 회원 탈퇴 진행.',
+        detail: '[UI요소] 탈퇴 유의사항 안내, 탈퇴 사유 선택, 동의 체크박스, 탈퇴하기 버튼, 최종 확인 팝업.\n[상태] 동의 전(버튼 비활성)/동의 완료.\n[인터랙션] 탈퇴하기 탭 시 최종 확인 팝업 노출, 확인 시 탈퇴 처리 후 토스트 안내.\n[디자인고려사항] 위험 동작이므로 사유 선택과 동의, 최종 확인의 2단계 확인 절차를 거침.' },
+      '15': { id: 'CU-MYPG-15', name: '연결된 SNS 관리', type: '등록/수정', url: '/myp/sns-link', device: '공용(반응형)',
+        func: '카카오·네이버·구글 등 연동된 SNS 계정의 연결·해제 관리.',
+        detail: '[UI요소] SNS 계정별 연결 상태 리스트, 연결·연결해제 버튼.\n[상태] 연결됨/연결안됨.\n[인터랙션] 연결 버튼 탭 시 SNS 인증 후 연동(프로토타입은 토스트로 시연), 연결해제 시 즉시 해제.\n[디자인고려사항] 최소 1개 이상의 로그인 수단(SNS 또는 비밀번호)은 유지되어야 함을 암시.' },
+      '16': { id: 'CU-MYPG-16', name: '보유 쿠폰함', type: '목록', url: '/myp/cpn-box', device: '공용(반응형)',
+        func: '보유 쿠폰(신차패키지쿠폰 + 이벤트 할인권·교환권·금액권) 조회, 사용가능/사용완료/만료 필터 탭 제공.',
+        detail: '[UI요소] 사용가능·사용완료·만료 필터 탭, 쿠폰 카드 리스트(발행주체 배지·쿠폰명·조건·유효기간·할인액).\n[상태] 필터별 목록 전환, 0건 시 빈 상태.\n[인터랙션] 탭 전환 시 리스트 재조회, 결제화면의 쿠폰 선택은 각 모듈(예약시공·신차패키지·쇼핑몰)의 쿠폰함 팝업에서 공용 처리.\n[디자인고려사항] 발행주체(운영사/딜러사) 표시로 어떤 프로모션에서 받은 쿠폰인지 인지 가능하도록 구성, 사용완료·만료 쿠폰은 톤다운 처리.' }
+    };
+  }
+
+  renderVals() {
+    const st = this.state, brand = 'var(--color-brand)';
+    const SPEC = this.spec();
+    const bt = (over) => Object.assign({ variant: 'primary', size: 'lg', fullWidth: true }, over);
+    const trackStyle = (on) => `width:46px;height:26px;border-radius:999px;padding:3px;display:flex;cursor:pointer;transition:background .2s;background:${on ? brand : 'var(--gray-200)'};justify-content:${on ? 'flex-end' : 'flex-start'}`;
+    const thumbStyle = 'width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)';
+
+    const aId = { main: '01', cars: '02', carreg: '03', caredit: '04', cst: '06', notisettings: '07', infoedit: '08', pwedit: '09', shophist: '10', cancelhist: '11', notis: '12', withdraw: '14', sns: '15', couponbox: '16' }[st.screen]
+      || (st.sheet === 'defaultcar' ? '05' : st.sheet === 'logout' ? '13' : '01');
+    const order = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16'];
+    const typeColors = { '주화면': 'var(--color-brand)', '목록': '#0EA5E9', '팝업': 'var(--color-accent)', '등록/수정': 'var(--status-success)', '리스트': '#0EA5E9' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id], active = id === aId, tc = typeColors[sp.type] || 'var(--text-tertiary)';
+      return { id, name: sp.name, type: sp.type, onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1px var(--color-brand)' : ''}`,
+        badgeStyle: `flex:none;font-size:10px;font-weight:800;color:#fff;background:${active ? brand : 'var(--gray-400)'};padding:2px 6px;border-radius:5px;font-family:var(--font-numeric)`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}17;padding:3px 7px;border-radius:5px` };
+    });
+
+    const navMeta = [['home', '홈', 0], ['resv', '예약시공', 0], ['shop', '쇼핑몰', 0], ['my', '내 정보', 1]];
+    const navItems = navMeta.map(n => ({ label: n[1], icon: this.nav(n[0], !!n[2]), color: n[2] ? brand : 'var(--text-tertiary)', weight: n[2] ? 700 : 500,
+      onClick: () => n[2] ? null : this.showToast(n[1] + ' 탭으로 이동해요') }));
+
+    const userName = st.profName, userGrade = '골드회원';
+    const defCar = st.cars.find(c => c.isDefault) || st.cars[0];
+    const shortVin = (v) => v && v.length > 12 ? v.slice(0, 4) + '···' + v.slice(-4) : v;
+    const userCarLabel = defCar ? defCar.maker + ' ' + defCar.model + (defCar.plate ? ' · ' + defCar.plate : '') : '등록된 차량이 없어요';
+    const rowStyleFor = (danger) => ({ weight: danger ? 700 : 600, color: danger ? 'var(--status-error)' : 'var(--text-body)' });
+    const menuSections = [
+      { title: '차량', rows: [ Object.assign({ label: '내 차량 목록', chevron: true, onClick: () => this.setState({ screen: 'cars' }) }, rowStyleFor(false)) ] },
+      { title: '이용내역', rows: [
+        Object.assign({ label: '시공내역', chevron: true, onClick: () => this.setState({ screen: 'cst' }) }, rowStyleFor(false)),
+        Object.assign({ label: '쇼핑몰 주문내역', chevron: true, onClick: () => this.setState({ screen: 'shophist' }) }, rowStyleFor(false)),
+        Object.assign({ label: '취소·반품 내역', chevron: true, onClick: () => this.setState({ screen: 'cancelhist' }) }, rowStyleFor(false)),
+        Object.assign({ label: '보유 쿠폰함', chevron: true, onClick: () => this.setState({ screen: 'couponbox' }) }, rowStyleFor(false))
+      ] },
+      { title: '알림', rows: [
+        Object.assign({ label: '알림함', chevron: true, onClick: () => this.setState({ screen: 'notis' }) }, rowStyleFor(false)),
+        Object.assign({ label: '알림 설정', chevron: true, onClick: () => this.setState({ screen: 'notisettings' }) }, rowStyleFor(false))
+      ] },
+      { title: '계정', rows: [
+        Object.assign({ label: '내 정보 변경', chevron: true, onClick: () => this.setState({ screen: 'infoedit' }) }, rowStyleFor(false)),
+        Object.assign({ label: '연결된 SNS 관리', chevron: true, onClick: () => this.setState({ screen: 'sns' }) }, rowStyleFor(false))
+      ] },
+      { title: '', rows: [
+        Object.assign({ label: '로그아웃', chevron: false, onClick: () => this.setState({ sheet: 'logout' }) }, rowStyleFor(false)),
+        Object.assign({ label: '회원 탈퇴', chevron: false, onClick: () => this.setState({ screen: 'withdraw', withdrawReason: null, withdrawAgree: false }) }, rowStyleFor(true))
+      ] }
+    ];
+
+    // 02/03/04 차량
+    const makerOptions = ['현대', '기아', '제네시스', 'Benz', 'BMW', '아우디', '폭스바겐', '테슬라', '기타'];
+    const carCards = st.cars.map(c => ({ id: c.id, model: c.maker + ' ' + c.model, year: c.year, plate: c.plate, isDefault: c.isDefault, canSetDefault: !c.isDefault,
+      plateLabel: (c.plate ? c.plate + ' · ' : '') + c.year + '년식',
+      fromDealer: c.fromDealer, dealerName: c.dealerName, vinShort: shortVin(c.vin),
+      onClick: () => this.goCarEdit(c.id), onSetDefault: (e) => { e && e.stopPropagation && e.stopPropagation(); this.setState({ sheet: 'defaultcar', defaultTargetId: c.id }); } }));
+    const carEditTitle = st.carEditId ? '차량 수정' : '차량 등록';
+    const isEditMode = !!st.carEditId;
+    const editingCar = st.cars.find(c => c.id === st.carEditId);
+    const isDealerCar = !!(editingCar && editingCar.fromDealer);
+    const carDealerName = editingCar ? editingCar.dealerName : '';
+    const carVinVal = editingCar ? editingCar.vin : '';
+    const ctaCarDelete = () => this.setState(s => ({ cars: s.cars.filter(c => c.id !== s.carEditId), screen: 'cars' }));
+
+    // 05 대표차량 지정
+    const defaultTarget = st.cars.find(c => c.id === st.defaultTargetId);
+    const defaultTargetName = defaultTarget ? defaultTarget.model : '';
+    const ctaDefaultCancel = bt({ variant: 'outline', onClick: () => this.setState({ sheet: null }) });
+    const ctaDefaultOk = bt({ onClick: () => { this.setState(s => ({ cars: s.cars.map(c => Object.assign({}, c, { isDefault: c.id === s.defaultTargetId })), sheet: null })); this.showToast('대표차량으로 지정됐어요', 'success'); } });
+
+    // 06 시공내역
+    const cstHistDefs = [
+      { date: '2026.07.15', shop: '강남 카프로 디테일링', items: '썬팅 · 블랙박스', price: '640,000원', status: 'done' },
+      { date: '2026.07.02', shop: '서초 오토스타일', items: '유리막 코팅', price: '360,000원', status: 'ing' },
+      { date: '2026.06.10', shop: '프리미엄 카케어 방배', items: '하부 언더코팅', price: '280,000원', status: 'done' }
+    ];
+    const cstStatusMeta = { done: ['시공완료', 'var(--green-600)', 'var(--status-success-bg)'], ing: ['시공중', 'var(--color-brand)', 'var(--surface-brand-subtle)'] };
+    const cstHistCards = cstHistDefs.map(o => { const sm = cstStatusMeta[o.status]; return Object.assign({}, o, {
+      statusLabel: sm[0], badgeStyle: `font-size:10.5px;font-weight:800;color:${sm[1]};background:${sm[2]};padding:3px 9px;border-radius:6px`,
+      onClick: () => this.showToast('예약시공 모듈의 상세로 이동해요') }); });
+
+    // 07 알림설정
+    const ns = st.notiSettings;
+    const notiSettingDefs = [
+      ['all', '전체 알림', '', () => this.setState(s => ({ notiSettings: Object.assign({}, s.notiSettings, { all: !s.notiSettings.all }) }))],
+      ['event', '이벤트 · 혜택 알림', '쿠폰·포인트 지급 등', () => this.setState(s => ({ notiSettings: Object.assign({}, s.notiSettings, { event: !s.notiSettings.event }) }))],
+      ['resv', '예약시공 알림', '예약 확정·시공 진행 안내', () => this.setState(s => ({ notiSettings: Object.assign({}, s.notiSettings, { resv: !s.notiSettings.resv }) }))],
+      ['order', '주문 · 배송 알림', '쇼핑몰 주문·배송 현황', () => this.setState(s => ({ notiSettings: Object.assign({}, s.notiSettings, { order: !s.notiSettings.order }) }))],
+      ['night', '야간 알림 수신', '21:00 ~ 08:00', () => this.setState(s => ({ notiSettings: Object.assign({}, s.notiSettings, { night: !s.notiSettings.night }) }))]
+    ];
+    const notiSettingRows = notiSettingDefs.map(([k, label, desc, toggle]) => ({ label, desc, toggle, track: trackStyle(ns[k]), thumb: thumbStyle }));
+
+    // 08/09 계정
+    const ctaProfSave = bt({ onClick: () => { this.showToast('정보가 저장됐어요', 'success'); this.setState({ screen: 'main' }); } });
+    const pwMismatch = !!st.pwConfirm && st.pwNew !== st.pwConfirm;
+    const pwOk = st.pwCur && st.pwNew && st.pwNew === st.pwConfirm;
+    const ctaPwSave = bt({ disabled: !pwOk, onClick: () => { if (!pwOk) return; this.showToast('비밀번호가 변경됐어요', 'success'); this.setState({ screen: 'infoedit', pwCur: '', pwNew: '', pwConfirm: '' }); } });
+
+    // 10 쇼핑몰 주문내역
+    const shopOrderDefs = [
+      { date: '2026.07.18', no: 'SHOP-240718', name: 'ZIC M7 5W30 엔진오일 외 1건', itemsLabel: '2종 · 총 2개', total: '82,000원', status: 'prep' },
+      { date: '2026.07.10', no: 'SHOP-240710', name: '아이나비 QXD3000 블랙박스', itemsLabel: '1종 · 1개', total: '189,000원', status: 'ship' },
+      { date: '2026.06.28', no: 'SHOP-240628', name: '루마 버텍스 300 썬팅필름 세트', itemsLabel: '1종 · 1개', total: '280,000원', status: 'done' }
+    ];
+    const shopStatusMeta = { prep: ['상품준비중', 'var(--color-accent-strong)', 'var(--color-accent-subtle)'], ship: ['배송중', 'var(--color-brand)', 'var(--surface-brand-subtle)'], done: ['배송완료', 'var(--green-600)', 'var(--status-success-bg)'] };
+    const shopOrderCards = shopOrderDefs.map(o => { const sm = shopStatusMeta[o.status]; return Object.assign({}, o, {
+      statusLabel: sm[0], badgeStyle: `font-size:10.5px;font-weight:800;color:${sm[1]};background:${sm[2]};padding:3px 9px;border-radius:6px`,
+      onClick: () => this.showToast('쇼핑몰 모듈의 주문상세로 이동해요') }); });
+
+    // 11 취소반품
+    const cancelDefs = [
+      { date: '2026.07.05', type: '반품', name: '차량용 방향제 세트', reason: '단순 변심', amount: '-18,000원', status: 'done' },
+      { date: '2026.06.20', type: '취소', name: '미쉐린 프라이머시4 타이어', reason: '주문 실수', amount: '-145,000원', status: 'done' }
+    ];
+    const cancelStatusMeta = { done: ['처리완료', 'var(--green-600)', 'var(--status-success-bg)'], ing: ['처리중', 'var(--color-accent-strong)', 'var(--color-accent-subtle)'] };
+    const cancelCards = cancelDefs.map(c => { const sm = cancelStatusMeta[c.status]; return Object.assign({}, c, { statusLabel: sm[0], badgeStyle: `font-size:10.5px;font-weight:800;color:${sm[1]};background:${sm[2]};padding:3px 9px;border-radius:6px` }); });
+    const cancelEmpty = cancelCards.length === 0;
+
+    // 16 보유 쿠폰함
+    const couponDefs = [
+      { id: 'cp1', issuer: '운영사', name: '전 모듈 5,000원 할인 쿠폰', desc: '3만원 이상 결제 시 사용 가능', expiryLabel: '2026.08.31까지', discountLabel: '5,000원', status: 'usable' },
+      { id: 'cp2', issuer: '딜러사', name: 'KCC 오토 신차패키지 쿠폰', desc: '신차패키지 시공 10% 할인', expiryLabel: '2026.09.15까지', discountLabel: '10%', status: 'usable' },
+      { id: 'cp3', issuer: '운영사', name: '쇼핑몰 무료배송 쿠폰', desc: '금액 제한 없이 배송비 무료', expiryLabel: '2026.08.10까지', discountLabel: '무료배송', status: 'usable' },
+      { id: 'cp4', issuer: '운영사', name: '여름맞이 3,000원 할인 쿠폰', desc: '전 모듈 공통 사용', expiryLabel: '2026.06.30 사용완료', discountLabel: '3,000원', status: 'used' },
+      { id: 'cp5', issuer: '딜러사', name: 'KCC 오토 엔진오일 교환권', desc: '엔진오일 무상 교환 1회', expiryLabel: '2026.05.31 만료', discountLabel: '교환권', status: 'expired' }
+    ];
+    const couponStatusMeta = { usable: ['사용가능', 'var(--green-600)', 'var(--status-success-bg)'], used: ['사용완료', 'var(--text-tertiary)', 'var(--surface-sunken)'], expired: ['만료', 'var(--text-tertiary)', 'var(--surface-sunken)'] };
+    const couponIssuerMeta = { '운영사': ['var(--color-brand)', 'var(--surface-brand-subtle)'], '딜러사': ['var(--color-accent-strong)', 'var(--color-accent-subtle)'] };
+    const couponTabDefs = [['usable', '사용가능'], ['used', '사용완료'], ['expired', '만료']];
+    const couponTabs = couponTabDefs.map(([k, label]) => { const on = st.couponFilter === k; return {
+      label, onClick: () => this.setState({ couponFilter: k }),
+      style: `font-size:13px;font-weight:700;padding:9px 15px;border-radius:999px;cursor:pointer;color:${on ? '#fff' : 'var(--text-secondary)'};background:${on ? brand : 'var(--surface-sunken)'}` }; });
+    const couponCards = couponDefs.filter(c => c.status === st.couponFilter).map(c => { const sm = couponStatusMeta[c.status], im = couponIssuerMeta[c.issuer]; return Object.assign({}, c, {
+      statusLabel: sm[0], statusBadge: `font-size:10.5px;font-weight:800;color:${sm[1]};background:${sm[2]};padding:3px 9px;border-radius:6px`,
+      issuerBadge: `font-size:10.5px;font-weight:800;color:${im[0]};background:${im[1]};padding:3px 9px;border-radius:6px`,
+      opacity: c.status === 'usable' ? 1 : 0.6 }); });
+    const couponEmpty = couponCards.length === 0;
+
+    // 12 알림함
+    const notiDefs = [
+      { id: 'a1', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', title: '시공 예약이 확정됐어요', body: '강남 카프로 디테일링 · 07.15 시공 예정', time: '2시간 전' },
+      { id: 'a2', icon: '<path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M2 8h20v4H2z"/>', title: '신규 쿠폰이 도착했어요', body: '전 모듈 5,000원 할인 쿠폰이 지급됐어요', time: '어제' },
+      { id: 'a3', icon: '<path d="M20 8v13H4V8"/><path d="M2 3h20v5H2z"/>', title: '주문하신 상품이 배송을 시작했어요', body: 'ZIC M7 5W30 엔진오일 외 1건', time: '2일 전' },
+      { id: 'a4', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>', title: '차량 정보를 확인해주세요', body: '대표차량 번호판 정보가 오래됐어요', time: '3일 전' }
+    ];
+    const notiRows = notiDefs.map(n => { const unread = !st.notiRead[n.id]; return {
+      icon: this.icon(n.icon, 1.7), title: n.title, body: n.body, time: n.time, unread, titleWeight: unread ? 800 : 600,
+      onClick: () => this.setState(s => ({ notiRead: Object.assign({}, s.notiRead, { [n.id]: true }) })) }; });
+
+    // 14 회원탈퇴
+    const withdrawReasonDefs = ['서비스를 잘 이용하지 않아요', '원하는 기능이 없어요', '다른 서비스를 이용해요', '개인정보 우려'];
+    const withdrawReasons = withdrawReasonDefs.map(label => { const on = st.withdrawReason === label; return {
+      label, onClick: () => this.setState({ withdrawReason: label }),
+      rowStyle: `display:flex;align-items:center;gap:11px;border:1px solid ${on ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;padding:13px 15px;cursor:pointer;background:${on ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+      radioStyle: `flex:none;width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:#fff;${on ? `background:${brand}` : 'border:2px solid var(--gray-300)'}`,
+      mark: on ? '✓' : '' }; });
+    const withdrawAgreeBoxStyle = `flex:none;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;${st.withdrawAgree ? `background:${brand}` : 'border:1.5px solid var(--gray-300)'}`;
+    const withdrawOk = !!st.withdrawReason && st.withdrawAgree;
+    const ctaWithdraw = bt({ disabled: !withdrawOk, onClick: () => withdrawOk ? this.setState({ sheet: 'withdrawconfirm' }) : null });
+    const ctaWithdrawFinal = bt({ onClick: () => { this.setState({ sheet: null, screen: 'main' }); this.showToast('탈퇴가 처리되었어요', 'default'); } });
+    const ctaWithdrawCancel2 = bt({ variant: 'outline', onClick: () => this.setState({ sheet: null }) });
+
+    // 13 로그아웃
+    const ctaLogoutCancel = bt({ variant: 'outline', onClick: () => this.setState({ sheet: null }) });
+    const ctaLogoutOk = bt({ onClick: () => { this.setState({ sheet: null }); this.showToast('로그아웃 되었어요', 'success'); } });
+
+    // 15 SNS 관리
+    const snsDefs = [
+      { key: 'kakao', label: '카카오', initial: '카', iconBg: '#FEE500', iconColor: '#3C1E1E' },
+      { key: 'naver', label: '네이버', initial: 'N', iconBg: '#03C75A', iconColor: '#fff' },
+      { key: 'google', label: '구글', initial: 'G', iconBg: 'var(--surface-sunken)', iconColor: 'var(--text-secondary)' }
+    ];
+    const snsRows = snsDefs.map(s => { const linked = st.snsLinked[s.key]; return {
+      label: s.label, initial: s.initial, iconBg: s.iconBg, iconColor: s.iconColor,
+      statusText: linked ? '연결됨' : '연결 안됨',
+      btnLabel: linked ? '연결해제' : '연결하기',
+      btnStyle: `flex:none;font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px;cursor:pointer;${linked ? 'color:var(--status-error);background:transparent;box-shadow:inset 0 0 0 1px var(--status-error)' : `color:#fff;background:${brand}`}`,
+      onClick: () => { this.setState(s2 => ({ snsLinked: Object.assign({}, s2.snsLinked, { [s.key]: !s2.snsLinked[s.key] }) })); this.showToast(linked ? s.label + ' 연결이 해제됐어요' : s.label + ' 계정이 연결됐어요', 'success'); } }; });
+
+    return {
+      isMain: st.screen === 'main', isCars: st.screen === 'cars', isCarEdit: st.screen === 'carreg' || st.screen === 'caredit',
+      isCstHist: st.screen === 'cst', isNotiSettings: st.screen === 'notisettings', isInfoEdit: st.screen === 'infoedit', isPwEdit: st.screen === 'pwedit',
+      isShopHist: st.screen === 'shophist', isCancelHist: st.screen === 'cancelhist', isNotis: st.screen === 'notis',
+      isWithdraw: st.screen === 'withdraw', isSns: st.screen === 'sns', isCouponBox: st.screen === 'couponbox',
+      hasSheet: !!st.sheet, shDefaultCar: st.sheet === 'defaultcar', shLogout: st.sheet === 'logout', shWithdrawConfirm: st.sheet === 'withdrawconfirm',
+      mapItems, curSpec: SPEC[aId], navItems,
+      userName, userGrade, userCarLabel, menuSections,
+      goMain: () => this.setState({ screen: 'main', sheet: null }),
+      carCards, goCars: () => this.setState({ screen: 'cars' }), goCarAdd: () => this.goCarEdit(null),
+      carEditTitle, isEditMode, makerOptions, carMakerVal: st.carMakerVal, carModelVal: st.carModelVal, carYearVal: st.carYearVal, carPlateVal: st.carPlateVal,
+      isDealerCar, carDealerName, carVinVal,
+      onCarMaker: (e) => this.setState({ carMakerVal: e.target.value }),
+      onCarModel: (e) => this.setState({ carModelVal: e.target.value }), onCarYear: (e) => this.setState({ carYearVal: e.target.value }), onCarPlate: (e) => this.setState({ carPlateVal: e.target.value }),
+      ctaCarSave: bt({ onClick: () => this.saveCar() }), ctaCarDelete,
+      defaultTargetName, ctaDefaultCancel, ctaDefaultOk,
+      cstHistCards,
+      notiSettingRows,
+      goInfoEdit: () => this.setState({ screen: 'infoedit' }), goPwEdit: () => this.setState({ screen: 'pwedit', pwCur: '', pwNew: '', pwConfirm: '' }),
+      profName: st.profName, profPhone: st.profPhone, profEmail: st.profEmail,
+      onProfName: (e) => this.setState({ profName: e.target.value }), onProfEmail: (e) => this.setState({ profEmail: e.target.value }),
+      ctaProfSave,
+      pwCur: st.pwCur, pwNew: st.pwNew, pwConfirm: st.pwConfirm, pwMismatch,
+      onPwCur: (e) => this.setState({ pwCur: e.target.value }), onPwNew: (e) => this.setState({ pwNew: e.target.value }), onPwConfirm: (e) => this.setState({ pwConfirm: e.target.value }),
+      ctaPwSave,
+      shopOrderCards, cancelCards, cancelEmpty,
+      notiRows, goNotiSettings: () => this.setState({ screen: 'notisettings' }),
+      withdrawReasons, withdrawAgreeBoxStyle, withdrawAgreeMark: st.withdrawAgree ? '✓' : '',
+      toggleWithdrawAgree: () => this.setState(s => ({ withdrawAgree: !s.withdrawAgree })),
+      ctaWithdraw, ctaWithdrawFinal, ctaWithdrawCancel2,
+      ctaLogoutCancel, ctaLogoutOk,
+      snsRows,
+      couponTabs, couponCards, couponEmpty,
+      closeSheet: () => this.setState({ sheet: null }),
+      toast: st.toast, toastTone: st.toastTone
+    };
+  }
+
+  goTo(id) {
+    const map = { '01': 'main', '02': 'cars', '03': 'carreg', '04': 'caredit', '06': 'cst', '07': 'notisettings', '08': 'infoedit', '09': 'pwedit', '10': 'shophist', '11': 'cancelhist', '12': 'notis', '14': 'withdraw', '15': 'sns', '16': 'couponbox' };
+    if (id === '05') { this.setState({ sheet: 'defaultcar', defaultTargetId: this.state.cars[1] ? this.state.cars[1].id : this.state.cars[0].id, screen: 'cars' }); return; }
+    if (id === '13') { this.setState({ sheet: 'logout', screen: 'main' }); return; }
+    if (id === '03') { this.goCarEdit(null); return; }
+    if (id === '04') { this.goCarEdit(this.state.cars[0] ? this.state.cars[0].id : null); return; }
+    this.setState({ screen: map[id] || 'main', sheet: null });
+  }
+  goCarEdit(id) {
+    const car = id ? this.state.cars.find(c => c.id === id) : null;
+    this.setState({ screen: car ? 'caredit' : 'carreg', carEditId: id, carMakerVal: car ? car.maker : '현대', carModelVal: car ? car.model : '', carYearVal: car ? car.year : '', carPlateVal: car ? car.plate : '' });
+  }
+  saveCar() {
+    const st = this.state;
+    if (!st.carModelVal || !st.carPlateVal) { this.showToast('차량 정보를 모두 입력하세요'); return; }
+    this.setState(s => {
+      let cars = s.cars.slice();
+      if (s.carEditId) {
+        cars = cars.map(c => c.id === s.carEditId ? Object.assign({}, c, { maker: s.carMakerVal, model: s.carModelVal, year: s.carYearVal, plate: s.carPlateVal }) : c);
+      } else {
+        const id = 'v' + Date.now();
+        cars = cars.concat([{ id, maker: s.carMakerVal, model: s.carModelVal, year: s.carYearVal, plate: s.carPlateVal, isDefault: cars.length === 0, fromDealer: false }]);
+      }
+      return { cars, screen: 'cars' };
+    });
+    this.showToast('차량 정보가 저장됐어요', 'success');
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+// Prisma schema — MotoPay API
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// output을 커스텀 경로로 지정하면 nest build 컴파일 후 dist/에서 상대경로 깊이가 달라져 require가 깨짐
+// (src/prisma/prisma.service.ts → dist/src/prisma/prisma.service.js) → 기본 node_modules/@prisma/client 사용
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// 플랫폼 관리자 / 파트너사(딜러) / 시공업체 / 공급업체 / 일반고객 — 5개 사용자 유형을 role로 구분하는 통합 사용자 테이블
+enum UserRole {
+  ADMIN
+  PARTNER
+  SHOP
+  SUPPLIER
+  CUSTOMER
+}
+
+model User {
+  id               String   @id @default(uuid())
+  username         String   @unique
+  passwordHash     String
+  name             String
+  email            String? // apps/customer-app 회원가입 화면(SignupInfoScreen)이 이미 수집하고 있어 함께 추가
+  phoneEncrypted   String? // AES-256-GCM으로 암호화된 휴대폰번호(평문 저장 안 함)
+  phoneHash        String? // HMAC-SHA256 결정적 해시 — 평문 대조 없이 동일 번호 검색용(암호문은 IV가 매번 달라 검색 불가)
+  profileImagePath String? // 서버 uploads/ 기준 상대경로(예: "profile/<uuid>.jpg") — 절대 URL이 아닌 경로만 저장
+  role             UserRole
+
+  // 약관 동의
+  agreedTerms          Boolean @default(false) // 서비스 이용약관 동의(필수)
+  agreedPrivacy        Boolean @default(false) // 개인정보 처리방침 동의(필수)
+  agreedMarketingSms   Boolean @default(false) // 마케팅 SMS 수신 동의(선택)
+  agreedMarketingEmail Boolean @default(false) // 마케팅 이메일 수신 동의(선택)
+  agreedMarketingPush  Boolean @default(false) // 마케팅 푸시 수신 동의(선택)
+
+  // TIMESTAMP(DATETIME 대신)로 저장 — 이 앱의 DB 커넥션은 세션 타임존을 UTC로 고정해서 쓰고,
+  // 다른 DB 클라이언트(서버 기본 세션=한국시간)로 직접 열어봐도 TIMESTAMP는 세션 타임존 기준으로 자동 변환되어 보임
+  lastLoginAt DateTime? @db.Timestamp(3) // 최종 로그인 일시
+  createdAt   DateTime  @default(now()) @db.Timestamp(3) // 가입일시
+  updatedAt   DateTime  @updatedAt @db.Timestamp(3)
+
+  carPurchases NewCarPurchaseCustomer[] // 이 회원으로 매핑된 신차 구매 고객 정보(여러 대 구매 가능)
+  cars         MyCar[] // 이 회원 소유의 내 차량 목록
+  reservations Reservation[] // 이 회원이 등록한 시공 예약 목록
+
+  @@index([phoneHash])
+  @@map("users")
+}
+
+// 공통코드 마스터 — 딜러사/차량브랜드/차종/틴팅농도/시공유형 등 플랫폼 전반에서 참조하는 코드 그룹
+model CommonCode {
+  code      String             @id // 공통코드(pk), 예: "CAR_BRAND"
+  name      String // 공통코드명, 예: "차량브랜드"
+  useYn     Boolean            @default(true) // 사용여부
+  details   CommonCodeDetail[]
+  createdAt DateTime           @default(now()) @db.Timestamp(3)
+  updatedAt DateTime           @updatedAt @db.Timestamp(3)
+
+  @@map("common_codes")
+}
+
+// 공통코드 상세 — 마스터 코드 그룹에 속한 개별 코드값
+model CommonCodeDetail {
+  code       String // FK -> CommonCode.code
+  detailCode String // 상세코드(pk)
+  detailName String // 상세코드명
+  ref1       String? // 참조1 — 예: CAR_MODEL의 소속 브랜드코드(CAR_BRAND.code)
+  ref2       String? // 참조2
+  useYn      Boolean  @default(true) // 사용여부
+  createdAt  DateTime @default(now()) @db.Timestamp(3)
+  updatedAt  DateTime @updatedAt @db.Timestamp(3)
+
+  commonCode CommonCode @relation(fields: [code], references: [code])
+
+  @@id([code, detailCode])
+  @@map("common_code_details")
+}
+
+// 상품정보 — 쇼핑몰/시공서비스/패키지 등 모토페이가 취급하는 모든 상품의 마스터
+// prodType/brand/prodCat/dealerCode는 CommonCodeDetail(code='PROD_TYPE'|'PROD_BRAND'|'PROD_CAT'|'DEALER')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, CAR_MODEL.ref1과 동일한 방식)
+model Product {
+  id          Int      @id @default(autoincrement()) // 내부 시퀀스 — productCode 채번에만 사용, 외부엔 노출 안 함
+  productCode String   @unique @db.Char(10) // 상품코드 — id를 10자리로 0-padding해 자동 채번(예: "0000000003")
+  prodType    String // 상품유형 -> CommonCodeDetail(code='PROD_TYPE')
+  brand       String? // 브랜드 -> CommonCodeDetail(code='PROD_BRAND') — 패키지(PKG)는 구성상품마다 브랜드가 다를 수 있어 null 허용
+  prodCat     String? // 상품분류명 -> CommonCodeDetail(code='PROD_CAT') — 패키지(PKG)는 구성상품마다 분류가 다를 수 있어 null 허용
+  dealerCode  String? // 딜러사 -> CommonCodeDetail(code='DEALER') — 패키지(PKG)만 값이 있음(딜러사 1곳에 귀속, GOODS/SVC는 null)
+  name        String // 상품명
+  price       Int // 판매가(원) — 소비자가
+  originPrice Int? // 정가(할인 전 가격) — 없으면 할인 없는 상품
+  supplyPrice Int? // 공급가(원) — 공급업체 매입원가. 고객에게 노출하지 않는 내부 정산용 값
+  description String?  @db.Text
+  imagePath   String? // 프로필 사진과 동일한 정책: 서버 uploads/ 기준 상대경로
+  useYn       Boolean  @default(true) // 판매여부
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @updatedAt @db.Timestamp(3)
+
+  purchases NewCarPurchaseCustomer[] // 이 패키지로 매핑된 신차 구매 고객 정보
+
+  @@index([dealerCode])
+  @@map("products")
+}
+
+// 패키지 구성상품 매핑 — 패키지(PKG) 상품이 어떤 구성상품(SVC/GOODS)들로 이루어지는지 정의(Product 자기참조)
+// itemType은 CommonCodeDetail(code='BUNDLE_ITEM_TYPE')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, prodType과 동일한 방식)
+model ProductBundleItem {
+  packageCode   String // 패키지 상품코드 -> Product.productCode (prodType='PKG')
+  componentCode String // 구성상품 상품코드 -> Product.productCode (prodType='SVC' 또는 'GOODS')
+  itemType      String @default("BASIC") // BASIC(기본상품,무상)/OPTION(업그레이드옵션 — 같은 componentCode.prodCat 내 대체, 유상)/ADD(추가옵션 — 패키지 미포함 분류, 유상) -> CommonCodeDetail(code='BUNDLE_ITEM_TYPE')
+  price         Int? // 이 패키지 안에서 구성상품에 적용하는 가격(원) — 동일 구성상품도 패키지마다 가격이 다를 수 있어 지정. null이면 Product.price를 그대로 사용
+  qty           Int    @default(1) // 수량
+  sortOrder     Int    @default(0) // 표시 순서
+
+  @@id([packageCode, componentCode])
+  @@map("product_bundle_items")
+}
+
+// 신차 구매 고객 정보 — 딜러사 웹에서 신차 구매 고객 정보를 등록. 고객이 모토페이 회원가입하면 고객명+휴대폰번호로 매핑(자동 매핑 로직 자체는 별도 작업)
+model NewCarPurchaseCustomer {
+  vin            String  @id @db.VarChar(17) // 차대번호(VIN, 17자리) — 딜러가 제공하는 자연키라 별도 채번 없이 PK로 사용
+  dealerCode     String // 딜러사코드 -> CommonCodeDetail(code='DEALER')
+  customerName   String // 고객명
+  phoneEncrypted String // 휴대폰번호(AES-256-GCM 암호화) — User.phoneEncrypted와 동일 정책
+  phoneHash      String // 회원가입 시 이름+휴대폰 매핑 조회용 해시 — User.phoneHash와 동일 정책
+  carBrandCode   String // 차량브랜드코드 -> CommonCodeDetail(code='CAR_BRAND')
+  carModelCode   String // 차종코드 -> CommonCodeDetail(code='CAR_MODEL')
+  trimName       String // 세부차종명(자유 텍스트, 예: "E 200")
+  modelYear      String? // 연식 — 딜러가 등록 시점에 받을 수 있으면 채움(신차매핑된 MyCar.modelYear로 그대로 복사)
+  packageCode    String? // 패키지상품코드 -> Product.productCode(prodType='PKG')
+
+  isMapped Boolean   @default(false) // 매핑여부
+  mappedAt DateTime? @db.Timestamp(3) // 매핑일시
+  memberId String? // 매핑된 회원id -> User.id
+
+  createdBy String? // 등록자id — 딜러사 직원 계정(파트너 로그인)이 아직 없어 FK 없이 문자열로만 보관
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedBy String? // 수정자id
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  package Product? @relation(fields: [packageCode], references: [productCode])
+  member  User?    @relation(fields: [memberId], references: [id])
+  myCars  MyCar[] // 이 구매정보로 생성된 내 차량 정보(신차매핑)
+
+  @@index([phoneHash])
+  @@map("new_car_purchase_customers")
+}
+
+// 내 차량 정보 — 회원이 보유한 차량 목록. 신차 구매 매핑 시 자동 생성되거나(regType='MAP') 고객이 직접 등록(regType='MANUAL')
+model MyCar {
+  id           Int      @id @default(autoincrement())
+  memberId     String // 소유 회원 -> User.id
+  regType      String // 등록구분 -> CommonCodeDetail(code='CAR_REG_TYPE': MAP=신차매핑/MANUAL=수기등록)
+  purchaseVin  String? // 신차 구매정보 연결 -> NewCarPurchaseCustomer.vin(신차매핑인 경우만)
+  dealerCode   String? // 딜러사코드 -> CommonCodeDetail(code='DEALER') — 신차매핑 시 구매정보에서 그대로 복사, 수기등록은 null
+  carBrandCode String // 차량브랜드코드 -> CommonCodeDetail(code='CAR_BRAND')
+  carModelCode String // 차종코드 -> CommonCodeDetail(code='CAR_MODEL')
+  trimName     String? // 세부차종명
+  modelYear    String? // 연식 — 신차매핑 시 NewCarPurchaseCustomer.modelYear가 있으면 그대로 복사, 없으면 고객이 직접 입력
+  plateNumber  String? // 차량번호 — 출고 직후엔 번호판 미배정일 수 있어 nullable
+  vin          String? // 차대번호
+  isDefault    Boolean  @default(false) // 대표차량여부
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+  updatedAt    DateTime @updatedAt @db.Timestamp(3)
+
+  member   User                    @relation(fields: [memberId], references: [id])
+  purchase NewCarPurchaseCustomer? @relation(fields: [purchaseVin], references: [vin])
+
+  @@index([memberId])
+  @@map("my_cars")
+}
+
+// 시공업체 마스터 — 틴팅/블랙박스/코팅 등 시공을 수행하는 업체 정보
+model Shop {
+  id            Int      @id @default(autoincrement()) // 내부 시퀀스 — shopCode 채번에만 사용, 외부엔 노출 안 함
+  shopCode      String   @unique @db.Char(10) // 업체코드 — id를 10자리로 0-padding해 자동 채번(Product.productCode와 동일 방식)
+  name          String // 업체명
+  greeting      String?  @db.Text // 인사말
+  intro         String?  @db.Text // 소개
+  zipCode       String? // 우편번호
+  address       String? // 주소
+  addressDetail String? // 상세주소
+  latitude      Float? // 위도 — 지도 표시·거리 계산용, 주소 등록 후 지오코딩으로 채움
+  longitude     Float? // 경도
+  phone         String? // 대표전화번호
+  businessHours String? // 운영시간 안내(자유 텍스트, 예: "평일 09:00 ~ 19:00, 토요일 10:00 ~ 18:00, 일요일 휴무")
+  useYn         Boolean  @default(true) // 사용여부
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+
+  photos       ShopPhoto[]
+  categories   ShopInstCategory[]
+  holidays     ShopHoliday[]
+  timeSlots    ShopTimeSlot[]
+  dailySlots   ShopDailySlot[]
+  reservations Reservation[]
+  partnerUsers PartnerUser[]
+
+  @@map("shops")
+}
+
+// 파트너(시공업체) 사용자 — apps/partner-app 로그인 계정. 자체 가입 없이 콜센터 등을 통해 발급되며, 발급 직후에는
+// 반드시 최초 비밀번호 변경을 거쳐야 함(mustChangePassword). User(일반고객) 테이블과는 완전히 분리된 별도 로그인 realm.
+model PartnerUser {
+  id                 String   @id @default(uuid())
+  username           String   @unique
+  passwordHash       String
+  name               String // 담당자명
+  phoneEncrypted     String // AES-256-GCM으로 암호화된 휴대폰번호(평문 저장 안 함) — User.phoneEncrypted와 동일 정책
+  phoneHash          String // HMAC-SHA256 결정적 해시 — 검색용(User.phoneHash와 동일 정책)
+  email              String // 알림 수신용 이메일
+  shopCode           String   @db.Char(10) // 소속 업체 -> Shop.shopCode
+  mustChangePassword Boolean  @default(true) // 최초 로그인 시 true — 비밀번호 변경 완료 시 false로 전환
+  useYn              Boolean  @default(true) // 사용여부(퇴사 등으로 인한 계정 비활성화)
+  lastLoginAt        DateTime? @db.Timestamp(3) // 최종 로그인 일시
+  createdAt          DateTime @default(now()) @db.Timestamp(3) // 계정 발급일시
+  updatedAt          DateTime @updatedAt @db.Timestamp(3)
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@index([phoneHash])
+  @@index([shopCode])
+  @@map("partner_users")
+}
+
+// 시공업체 사진 — 대표사진(MAIN)/시공 사례(CASE) 등 용도별로 여러 장 등록
+// photoType은 CommonCodeDetail(code='SHOP_PHOTO_TYPE')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, prodType과 동일한 방식)
+model ShopPhoto {
+  id        Int      @id @default(autoincrement())
+  shopCode  String // 소속 업체 -> Shop.shopCode
+  photoPath String // 서버 uploads/ 기준 상대경로
+  photoType String // 사진유형(MAIN=대표사진/CASE=시공사례) -> CommonCodeDetail(code='SHOP_PHOTO_TYPE')
+  sortOrder Int      @default(0) // 표시 순서
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@index([shopCode])
+  @@map("shop_photos")
+}
+
+// 시공업체 시공가능 카테고리 매핑 — 업체가 지원하는 자동차 시공 항목을 정의
+// instCode는 CommonCodeDetail(code='CAR_INST')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, prodType과 동일한 방식)
+model ShopInstCategory {
+  shopCode String // 업체코드 -> Shop.shopCode
+  instCode String // 자동차 시공코드 -> CommonCodeDetail(code='CAR_INST')
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@id([shopCode, instCode])
+  @@map("shop_inst_categories")
+}
+
+// 시공업체 휴무일 — 행이 존재하면 해당 일자는 휴무(고객앱 시공 일정 예약에서 선택 불가)
+model ShopHoliday {
+  shopCode    String // 업체코드 -> Shop.shopCode
+  holidayDate DateTime @db.Date // 휴무 일자
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@id([shopCode, holidayDate])
+  @@map("shop_holidays")
+}
+
+// 시공업체 예약가능 시간대 템플릿 — 요일구분별 반복되는 기본 시간대·정원
+// dayType은 CommonCodeDetail(code='SHOP_DAY_TYPE')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, prodType과 동일한 방식)
+model ShopTimeSlot {
+  shopCode String // 업체코드 -> Shop.shopCode
+  dayType  String // 요일구분(WEEKDAY/SAT/SUN/HOLIDAY) -> CommonCodeDetail(code='SHOP_DAY_TYPE')
+  time     DateTime @db.Time(0) // 예약 시간
+  capacity Int // 예약 가능 대수
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@id([shopCode, dayType, time])
+  @@map("shop_time_slots")
+}
+
+// 시공업체 일자별 예약 슬롯 오버라이드 — 특정 날짜·시간에 한해 템플릿(ShopTimeSlot)과 다른 정원을 적용하거나 잠글 때만 행이 생김
+model ShopDailySlot {
+  shopCode String // 업체코드 -> Shop.shopCode
+  date     DateTime @db.Date // 예약 일자
+  time     DateTime @db.Time(0) // 예약 시간
+  capacity Int? // 이 날짜·시간 한정 정원 — null이면 ShopTimeSlot 템플릿값을 그대로 사용
+  isLocked Boolean  @default(false) // 잠금 처리 여부(예약 불가)
+
+  shop Shop @relation(fields: [shopCode], references: [shopCode])
+
+  @@id([shopCode, date, time])
+  @@map("shop_daily_slots")
+}
+
+// 시공 예약 — 고객이 시공업체의 특정 일자·시간에 등록한 예약 건
+// reservationType/status/progressStatus/cancelReason은 각각 CommonCodeDetail(code='RESERVATION_TYPE'/'RESERVATION_STATUS'/'RESERVATION_PROGRESS'/'CANCEL_REASON')의
+// 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음, prodType과 동일한 방식)
+model Reservation {
+  id              Int      @id @default(autoincrement()) // 내부 시퀀스 — reservationNo 채번에만 사용, 외부엔 노출 안 함
+  reservationNo   String   @unique @db.Char(10) // 예약번호 — id를 10자리로 0-padding해 자동 채번(Product/Shop과 동일 방식)
+  shopCode        String // 시공업체 -> Shop.shopCode
+  date            DateTime @db.Date // 예약 일자
+  time            DateTime @db.Time(0) // 예약 시간
+  seq             Int // 같은 shopCode+date+time 내 순번(1부터)
+  reservationType String // 예약유형(PKG=신차패키지/BID=일반입찰) -> CommonCodeDetail(code='RESERVATION_TYPE')
+  memberId        String // 예약 고객 -> User.id
+  status          String   @default("CONFIRMED") // 예약상태(CONFIRMED/CANCELLED) -> CommonCodeDetail(code='RESERVATION_STATUS')
+  progressStatus  String   @default("APPLIED") // 시공 진행상태(APPLIED=신청/IN_PROGRESS=시공중/DONE=시공완료) -> CommonCodeDetail(code='RESERVATION_PROGRESS')
+  cancelReason    String? // 취소 사유 -> CommonCodeDetail(code='CANCEL_REASON') — 취소된 건만 값 존재
+  cancelReasonEtc String?  @db.Text // 취소 사유가 기타(ETC)일 때의 자유 입력 텍스트
+  cancelledAt     DateTime? @db.Timestamp(3) // 취소 처리 일시
+  createdAt       DateTime @default(now()) @db.Timestamp(3)
+  updatedAt       DateTime @updatedAt @db.Timestamp(3)
+
+  shop   Shop @relation(fields: [shopCode], references: [shopCode])
+  member User @relation(fields: [memberId], references: [id])
+
+  @@index([shopCode, date, time])
+  @@map("reservations")
+}

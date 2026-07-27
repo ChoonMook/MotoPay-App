@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 고객센터</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-CS-01 ~ CU-CS-05</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:900px;line-height:1.6;margin-bottom:32px">고객센터 <b>전체 여정(CU-CS-01~05)</b>을 담은 프로토타입입니다. <b>고객센터 홈</b> → <b>FAQ 조회</b> → <b>1:1 문의 등록</b> → <b>문의 처리현황 조회</b> → <b>문의 상세</b>까지 이어져요. 마이페이지의 차량·이용내역·설정과는 분리된 고객지원 전용 모듈입니다. 오른쪽 <b>화면 목록</b>에서 화면을 누르면 이동하고, 폰 안의 버튼·카드를 눌러 실제 플로우를 클릭해볼 수 있어요. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE PROTOTYPE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ===== 01 고객센터 (홈) ===== -->
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;height:98px;padding:46px 18px 0;display:flex;align-items:center;background:var(--surface-card);border-bottom:1px solid var(--divider)"><span style="font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">고객센터</span></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 26px">
+              <div style="background:linear-gradient(135deg,var(--color-brand),var(--color-brand-strong));border-radius:16px;padding:20px 18px;color:#fff">
+                <div style="font-size:15.5px;font-weight:800;letter-spacing:-.02em">무엇을 도와드릴까요?</div>
+                <div style="font-size:12.5px;color:rgba(255,255,255,.88);margin-top:5px;line-height:1.5">자주 묻는 질문을 먼저 확인하시면<br>더 빠르게 답을 찾을 수 있어요</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
+                <sc-for list="{{ menuCards }}" as="m" hint-placeholder-count="3">
+                  <div onClick="{{ m.onClick }}" style="display:flex;align-items:center;gap:13px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm);cursor:pointer">
+                    <span style="flex:none;width:44px;height:44px;border-radius:12px;background:var(--surface-brand-subtle);color:var(--color-brand);display:flex;align-items:center;justify-content:center">{{ m.icon }}</span>
+                    <div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:800;color:var(--text-strong)">{{ m.title }}</div><div style="font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.4">{{ m.desc }}</div></div>
+                    <span style="flex:none;color:var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg></span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;background:var(--surface-sunken);border-radius:12px;padding:13px 15px;margin-top:22px"><span style="flex:none;color:var(--text-tertiary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></span><div style="font-size:12px;color:var(--text-secondary);line-height:1.5">전화 상담 <b style="color:var(--gray-900)">1544-0000</b> · 평일 09:00~18:00 (주말·공휴일 휴무)</div></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 02 FAQ 조회 ===== -->
+        <sc-if value="{{ isFaq }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">자주 묻는 질문</span></div></div>
+            <div style="flex:none;display:flex;gap:7px;overflow-x:auto;padding:12px 20px;background:var(--surface-card);border-bottom:1px solid var(--divider)" class="mp-scroll"><sc-for list="{{ faqCats }}" as="c" hint-placeholder-count="5"><span onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:8px 20px 24px">
+              <div style="display:flex;flex-direction:column"><sc-for list="{{ faqRows }}" as="f" hint-placeholder-count="6">
+                <div style="border-bottom:1px solid var(--divider)">
+                  <div onClick="{{ f.toggle }}" style="display:flex;align-items:center;gap:10px;padding:15px 2px;cursor:pointer"><span style="font-size:13px;font-weight:800;color:var(--color-brand)">Q</span><span style="flex:1;font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ f.q }}</span><span style="color:var(--text-tertiary);transform:{{ f.rotate }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></span></div>
+                  <sc-if value="{{ f.open }}"><div style="display:flex;gap:10px;padding:0 2px 16px"><span style="font-size:13px;font-weight:800;color:var(--text-tertiary)">A</span><span style="flex:1;font-size:12.5px;color:var(--text-secondary);line-height:1.6">{{ f.a }}</span></div></sc-if>
+                </div>
+              </sc-for></div>
+              <div style="display:flex;align-items:flex-start;gap:9px;background:var(--surface-sunken);border-radius:12px;padding:13px 15px;margin-top:18px"><span style="flex:none;color:var(--text-tertiary);margin-top:1px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg></span><div style="font-size:12px;color:var(--text-secondary);line-height:1.5">원하는 답을 찾지 못하셨나요? <span onClick="{{ goInquiryReg }}" style="color:var(--color-brand);font-weight:700;cursor:pointer">1:1 문의</span>로 남겨주세요.</div></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 03 1:1 문의 등록 ===== -->
+        <sc-if value="{{ isInquiryReg }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">1:1 문의 등록</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 24px">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:0 2px 10px">문의 유형</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ inquiryCatChips }}" as="c" hint-placeholder-count="5"><span onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:20px 2px 8px">제목</div>
+              <input value="{{ inqTitleVal }}" onChange="{{ onInqTitle }}" placeholder="문의 제목을 입력하세요" style="width:100%;border:1px solid var(--border-strong);border-radius:12px;padding:14px 15px;font-size:14px;color:var(--gray-900);outline:none;background:var(--surface-page)">
+              <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin:16px 2px 8px">내용</div>
+              <textarea value="{{ inqBodyVal }}" onChange="{{ onInqBody }}" placeholder="문의 내용을 자세히 알려주세요" style="width:100%;min-height:140px;resize:none;border:1px solid var(--border-strong);border-radius:12px;padding:13px 14px;font-size:13.5px;font-family:var(--font-sans);color:var(--gray-900);outline:none;line-height:1.5;background:var(--surface-page)"></textarea>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:14px"><span style="width:64px;height:64px;border-radius:12px;border:1.5px dashed var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg></span><span style="font-size:12px;color:var(--text-tertiary)">사진 첨부 · 선택</span></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaInqSubmit }}" hint-size="100%,56px">{{ ctaInqSubmitLabel }}</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 04 문의 처리현황 조회 ===== -->
+        <sc-if value="{{ isInquiryStat }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">문의 처리현황</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 20px 24px">
+              <div style="display:flex;flex-direction:column;gap:11px"><sc-for list="{{ inquiryCards }}" as="q" hint-placeholder-count="3">
+                <div onClick="{{ q.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px;box-shadow:var(--shadow-sm);cursor:pointer">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:var(--color-brand)">{{ q.cat }}</span><span style="{{ q.statusStyle }}">{{ q.statusLabel }}</span></div>
+                  <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ q.title }}</div>
+                  <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:6px">{{ q.date }}</div>
+                </div>
+              </sc-for></div>
+            </div>
+            <div style="flex:none;padding:14px 20px 24px;border-top:1px solid var(--divider);background:var(--surface-card)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ ctaInquiryWrite }}" hint-size="100%,56px">문의하기</x-import></div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 05 1:1 문의 상세 ===== -->
+        <sc-if value="{{ isInquiryDtl }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 10px 0;background:var(--surface-card)"><div style="display:flex;align-items:center;gap:6px"><span onClick="{{ goInquiryStat }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--gray-800);cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></span><span style="font-size:16px;font-weight:700;color:var(--gray-900)">문의 상세</span></div></div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px 20px 24px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:11.5px;font-weight:700;color:var(--color-brand)">{{ curInquiry.cat }}</span><span style="{{ curInquiry.statusStyle }}">{{ curInquiry.statusLabel }}</span></div>
+              <div style="font-size:16.5px;font-weight:800;color:var(--gray-900)">{{ curInquiry.title }}</div>
+              <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:6px;padding-bottom:16px;border-bottom:1px solid var(--divider)">{{ curInquiry.date }}</div>
+              <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-top:16px">{{ curInquiry.body }}</div>
+              <sc-if value="{{ curInquiry.answered }}">
+                <div style="background:var(--surface-brand-subtle);border-radius:12px;padding:15px;margin-top:20px"><div style="font-size:12.5px;font-weight:800;color:var(--color-brand);margin-bottom:6px">모토페이 고객센터 답변</div><div style="font-size:13px;color:var(--text-secondary);line-height:1.6">{{ curInquiry.answer }}</div></div>
+              </sc-if>
+              <sc-if value="{{ curInquiry.pending }}">
+                <div style="display:flex;align-items:flex-start;gap:9px;background:var(--surface-sunken);border-radius:12px;padding:13px 15px;margin-top:20px"><span style="flex:none;color:var(--text-tertiary);margin-top:1px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg></span><div style="font-size:12px;color:var(--text-secondary);line-height:1.5">평균 <b>1~2영업일 이내</b> 답변드려요. 답변이 등록되면 알림으로 안내해 드릴게요.</div></div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import></div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 고객센터 5개 화면 (FAQ·1:1문의)</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 5</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="5">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);font-size:12px;color:var(--text-tertiary);line-height:1.6">
+        <b style="color:var(--text-secondary)">플로우 안내</b><br>홈(01)→FAQ 조회(02) 또는 문의 처리현황(04). FAQ에서 원하는 답을 못 찾으면 1:1 문의 등록(03)으로 연결. 등록된 문의는 문의 처리현황(04) 목록에 쌓이고, 카드 탭 시 문의 상세(05)에서 답변을 확인합니다.
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em;font-family:var(--font-numeric)">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  state = {
+    screen: 'main',
+    faqCat: 'all', faqOpen: {},
+    inqCat: '결제/포인트', inqTitleVal: '', inqBodyVal: '',
+    inquiries: [
+      { id: 'q1', cat: '결제/포인트', title: '포인트가 적립되지 않았어요', date: '2026.07.15', answered: true, answer: '확인 결과 결제 승인 지연으로 적립이 늦어졌어요. 포인트는 정상 반영되었으니 확인 부탁드립니다 :)', body: '지난주 시공 결제 후 포인트가 안 들어왔는데 확인 부탁드려요.' },
+      { id: 'q2', cat: '예약/시공', title: '예약 일정을 변경하고 싶어요', date: '2026.07.19', answered: false, body: '이번 주 예약된 시공 일정을 다음 주로 변경하고 싶습니다.' }
+    ],
+    inquiryDtlId: 'q1',
+    toast: '', toastTone: 'default'
+  };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+  icon(path, sw) { return React.createElement('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw || 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: path } }); }
+
+  spec() {
+    return {
+      '01': { id: 'CU-CS-01', name: '고객센터 (홈)', type: '주화면', url: '/cs', device: '공용(반응형)',
+        func: '고객지원 메인. FAQ·1:1문의 등록·문의 처리현황 조회로 진입, 전화 상담 안내 노출.',
+        detail: '[UI요소] FAQ 조회, 1:1 문의 등록, 문의 처리현황 조회 메뉴 카드, 전화 상담 안내 배너.\n[상태] 기본.\n[인터랙션] 각 메뉴 카드 탭 시 해당 화면으로 이동.\n[디자인고려사항] FAQ를 먼저 안내해 불필요한 문의 등록을 줄이도록 유도.' },
+      '02': { id: 'CU-CS-02', name: 'FAQ 조회', type: '목록', url: '/cs/faq', device: '공용(반응형)',
+        func: '카테고리별 FAQ 아코디언 목록. 질문 탭 시 답변 펼침/접힘, 미해결 시 1:1 문의로 연결.',
+        detail: '[UI요소] 카테고리 칩(전체·포인트·예약시공·쇼핑몰·계정), 질문·답변 아코디언 리스트, 1:1 문의 연결 링크.\n[상태] 카테고리 필터, 항목별 펼침/접힘.\n[인터랙션] 카테고리 변경 시 목록 필터링, 질문 탭 시 답변 토글, 하단 링크 탭 시 1:1 문의 등록(CU-CS-03)으로 이동.\n[디자인고려사항] 한 번에 여러 항목을 펼칠 수 있어 비교 열람이 쉬움.' },
+      '03': { id: 'CU-CS-03', name: '1:1 문의 등록', type: '등록/수정', url: '/cs/inquiry-reg', device: '공용(반응형)',
+        func: '문의 유형 선택 후 제목·내용·사진 첨부하여 등록.',
+        detail: '[UI요소] 문의 유형 칩 선택, 제목 입력, 내용 텍스트 영역, 사진 첨부(선택), 등록 버튼.\n[상태] 미입력(버튼 비활성)/입력완료.\n[인터랙션] 등록 시 문의 처리현황(CU-CS-04)에 답변대기 상태로 추가되고 토스트 노출 후 이동.\n[디자인고려사항] 유형별 예상 답변 소요시간 안내 문구 고려 가능.' },
+      '04': { id: 'CU-CS-04', name: '문의 처리현황 조회', type: '목록', url: '/cs/inquiry-proc-stat', device: '공용(반응형)',
+        func: '등록한 문의 이력 목록. 답변대기/답변완료 상태 배지 표시, 신규 문의 작성 진입.',
+        detail: '[UI요소] 문의 카드 리스트(카테고리·제목·날짜·상태 배지), 문의하기 버튼.\n[상태] 답변대기/답변완료.\n[인터랙션] 카드 탭 시 1:1 문의 상세(CU-CS-05)로, 문의하기 탭 시 1:1 문의 등록(CU-CS-03)으로 이동.\n[디자인고려사항] 최신 문의가 최상단에 노출.' },
+      '05': { id: 'CU-CS-05', name: '1:1 문의 상세', type: '상세', url: '/cs/inquiry-dtl', device: '공용(반응형)',
+        func: '작성한 문의 내용과 답변완료 시 고객센터 답변 확인.',
+        detail: '[UI요소] 문의 유형·상태 배지, 제목·작성일·본문, 답변완료 시 답변 박스, 답변대기 시 안내 문구.\n[상태] 답변대기/답변완료.\n[인터랙션] 답변 등록 시 알림으로 안내(다른 화면에서 트리거).\n[디자인고려사항] 답변은 시각적으로 구분되는 강조 박스로 표시.' }
+    };
+  }
+
+  renderVals() {
+    const st = this.state, brand = 'var(--color-brand)';
+    const SPEC = this.spec();
+    const bt = (over) => Object.assign({ variant: 'primary', size: 'lg', fullWidth: true }, over);
+
+    const aId = { main: '01', faq: '02', inquiryreg: '03', inquirystat: '04', inquirydtl: '05' }[st.screen] || '01';
+    const order = ['01', '02', '03', '04', '05'];
+    const typeColors = { '주화면': 'var(--color-brand)', '목록': '#0EA5E9', '등록/수정': 'var(--status-success)', '상세': '#8B5CF6' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id], active = id === aId, tc = typeColors[sp.type] || 'var(--text-tertiary)';
+      return { id, name: sp.name, type: sp.type, onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1px var(--color-brand)' : ''}`,
+        badgeStyle: `flex:none;font-size:10px;font-weight:800;color:#fff;background:${active ? brand : 'var(--gray-400)'};padding:2px 6px;border-radius:5px;font-family:var(--font-numeric)`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}17;padding:3px 7px;border-radius:5px` };
+    });
+
+    const menuCards = [
+      ['<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .8-1 1.7"/><path d="M12 17h.01"/>', '자주 묻는 질문', '많이 묻는 질문의 답을 바로 확인해보세요', () => this.setState({ screen: 'faq' })],
+      ['<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 10h8M8 13h5"/>', '1:1 문의 등록', '궁금한 점을 직접 남기고 답변받아요', () => this.setState({ screen: 'inquiryreg', inqTitleVal: '', inqBodyVal: '' })],
+      ['<path d="M4 5h16v13a2 2 0 0 1-2 2H4z"/><path d="M8 9h8M8 13h6M8 17h4"/>', '문의 처리현황 조회', '남긴 문의의 답변 상태를 확인해요', () => this.setState({ screen: 'inquirystat' })]
+    ].map(([path, title, desc, onClick]) => ({ icon: this.icon(path, 1.8), title, desc, onClick }));
+
+    // FAQ
+    const faqCatMeta = { all: '전체', point: '포인트', resv: '예약시공', shop: '쇼핑몰', account: '계정' };
+    const faqCatStyle = (on) => `flex:none;font-size:12.5px;font-weight:${on ? 800 : 600};padding:8px 14px;border-radius:999px;cursor:pointer;${on ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}`;
+    const faqCats = Object.keys(faqCatMeta).map(k => ({ label: faqCatMeta[k], onClick: () => this.setState({ faqCat: k }), style: faqCatStyle(st.faqCat === k) }));
+    const faqDefs = [
+      { id: 'f1', cat: 'point', q: '포인트는 언제 적립되나요?', a: '결제 완료 시점에 자동으로 적립되며, 결제 금액의 일부가 포인트로 환급돼요.' },
+      { id: 'f2', cat: 'resv', q: '예약 후 취소하면 환불되나요?', a: '업체 착수 전 취소는 전액 환불되며, 착수 후 취소는 업체 사유에 한해 환불돼요.' },
+      { id: 'f3', cat: 'shop', q: '배송은 얼마나 걸리나요?', a: '평균 1~3영업일 내 배송되며, 마이페이지 쇼핑몰 주문내역에서 실시간 배송 조회가 가능해요.' },
+      { id: 'f4', cat: 'account', q: '비밀번호를 잊어버렸어요', a: '로그인 화면의 비밀번호 찾기에서 휴대폰 본인인증으로 재설정할 수 있어요.' },
+      { id: 'f5', cat: 'point', q: '포인트 유효기간이 있나요?', a: '적립일로부터 1년간 유효하며, 만료 30일 전 알림으로 안내드려요.' },
+      { id: 'f6', cat: 'resv', q: '전문가 추천과 일반 입찰의 차이는 무엇인가요?', a: '일반 입찰은 직접 항목·제품을 선택하고, 전문가 추천은 예산만 입력하면 전문가가 구성을 추천해드려요.' }
+    ];
+    const faqFiltered = faqDefs.filter(f => st.faqCat === 'all' || f.cat === st.faqCat);
+    const faqRows = faqFiltered.map(f => { const open = !!st.faqOpen[f.id]; return {
+      q: f.q, a: f.a, open, rotate: open ? 'rotate(180deg)' : 'rotate(0deg)',
+      toggle: () => this.setState(s => ({ faqOpen: Object.assign({}, s.faqOpen, { [f.id]: !s.faqOpen[f.id] }) })) }; });
+
+    // 1:1 문의
+    const statusStyleOf = (answered) => `font-size:10.5px;font-weight:800;color:${answered ? 'var(--green-600)' : 'var(--color-accent-strong)'};background:${answered ? 'var(--status-success-bg)' : 'var(--color-accent-subtle)'};padding:3px 9px;border-radius:6px`;
+    const inquiryCards = st.inquiries.slice().reverse().map(q => ({ cat: q.cat, title: q.title, date: q.date,
+      statusLabel: q.answered ? '답변완료' : '답변대기', statusStyle: statusStyleOf(q.answered),
+      onClick: () => this.setState({ screen: 'inquirydtl', inquiryDtlId: q.id }) }));
+    const inqCatMeta = ['결제/포인트', '예약/시공', '쇼핑몰/주문', '계정/로그인', '기타'];
+    const inquiryCatChips = inqCatMeta.map(label => { const on = st.inqCat === label; return {
+      label, onClick: () => this.setState({ inqCat: label }),
+      style: `flex:none;font-size:12.5px;font-weight:${on ? 800 : 600};padding:8px 14px;border-radius:999px;cursor:pointer;${on ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}` }; });
+    const inqOk = !!st.inqTitleVal && !!st.inqBodyVal;
+    const ctaInqSubmit = bt({ disabled: !inqOk, onClick: () => {
+      if (!inqOk) return;
+      const id = 'q' + Date.now();
+      this.setState(s => ({ inquiries: s.inquiries.concat([{ id, cat: s.inqCat, title: s.inqTitleVal, date: '2026.07.22', answered: false, body: s.inqBodyVal }]), inqTitleVal: '', inqBodyVal: '', screen: 'inquirystat' }));
+      this.showToast('문의가 등록됐어요', 'success');
+    } });
+    const ctaInqSubmitLabel = inqOk ? '문의 등록하기' : '제목과 내용을 입력하세요';
+    const curInquiry = (() => { const q = st.inquiries.find(x => x.id === st.inquiryDtlId) || st.inquiries[0];
+      return { cat: q.cat, title: q.title, date: q.date, body: q.body, answered: q.answered, pending: !q.answered, answer: q.answer,
+        statusLabel: q.answered ? '답변완료' : '답변대기', statusStyle: statusStyleOf(q.answered) }; })();
+
+    return {
+      isMain: st.screen === 'main', isFaq: st.screen === 'faq', isInquiryReg: st.screen === 'inquiryreg',
+      isInquiryStat: st.screen === 'inquirystat', isInquiryDtl: st.screen === 'inquirydtl',
+      mapItems, curSpec: SPEC[aId],
+      menuCards, goMain: () => this.setState({ screen: 'main' }),
+      faqCats, faqRows, goInquiryReg: () => this.setState({ screen: 'inquiryreg', inqTitleVal: '', inqBodyVal: '' }),
+      inquiryCatChips, inqTitleVal: st.inqTitleVal, inqBodyVal: st.inqBodyVal,
+      onInqTitle: (e) => this.setState({ inqTitleVal: e.target.value }), onInqBody: (e) => this.setState({ inqBodyVal: e.target.value }),
+      ctaInqSubmit, ctaInqSubmitLabel,
+      inquiryCards, curInquiry, goInquiryStat: () => this.setState({ screen: 'inquirystat' }),
+      ctaInquiryWrite: bt({ size: 'xl', onClick: () => this.setState({ screen: 'inquiryreg', inqTitleVal: '', inqBodyVal: '' }) }),
+      toast: st.toast, toastTone: st.toastTone
+    };
+  }
+
+  goTo(id) {
+    const map = { '01': 'main', '02': 'faq', '03': 'inquiryreg', '04': 'inquirystat', '05': 'inquirydtl' };
+    this.setState({ screen: map[id] || 'main' });
+  }
+}
+
+</script>
+</body>
+</html>

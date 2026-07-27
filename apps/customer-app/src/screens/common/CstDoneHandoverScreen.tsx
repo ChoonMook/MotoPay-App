@@ -1,0 +1,123 @@
+// CU-RSVC-16 / CU-NCPK-10: 시공완료·인수확인 - 업체 업로드 시공 사진 확인 후 인수확인, 3일 미확인 시 자동확정
+// 신차패키지·예약시공 등 여러 채널에서 공통으로 쓰는 화면. 신차패키지는 시공 정보 요약 카드(차량·VIN·품목)를 함께 보여준다.
+import Button from "../../components/ui/Button";
+import shopThumb from "../../assets/images/shop.png";
+import CommonHeader from "./CommonHeader";
+import { WarnIcon } from "./commonIcons";
+import type { HandoverStatus } from "./commonTypes";
+
+const GALLERY_COUNT = 6;
+
+export interface VehicleSummaryItem {
+  name: string;
+  prod?: string;
+  sub: string;
+  tag: "기본" | "업그레이드";
+}
+
+export interface VehicleSummary {
+  car: string;
+  vin: string;
+  items: VehicleSummaryItem[];
+}
+
+interface CstDoneHandoverScreenProps {
+  selName: string;
+  handover: HandoverStatus;
+  vehicleSummary?: VehicleSummary;
+  onBack: () => void;
+  onConfirmHandover: () => void;
+  onTapPhoto?: (index: number) => void;
+}
+
+export default function CstDoneHandoverScreen({
+  selName,
+  handover,
+  vehicleSummary,
+  onBack,
+  onConfirmHandover,
+  onTapPhoto,
+}: CstDoneHandoverScreenProps) {
+  const done = handover === "done";
+
+  return (
+    <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
+      <CommonHeader title="시공완료 · 인수확인" onBack={onBack} />
+
+      <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-[18px] pb-6">
+        <div className="flex items-center gap-2 rounded-xl bg-status-success-bg px-[15px] py-3">
+          <span className="flex-none text-green-600">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <span className="text-[13px] font-bold text-green-600">{selName} 시공이 완료됐어요</span>
+        </div>
+
+        {vehicleSummary && (
+          <div className="mt-[18px] rounded-[14px] border border-gray-200 bg-white px-4 pt-4 pb-1.5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[11px] font-bold text-gray-500">시공 차량</span>
+                <span className="text-[15px] font-extrabold tracking-tight text-gray-900">{vehicleSummary.car}</span>
+              </div>
+              <span className="text-[11px] font-semibold text-gray-500 tabular-nums">VIN {vehicleSummary.vin}</span>
+            </div>
+            <div className="border-t border-gray-100 pt-0.5">
+              {vehicleSummary.items.map((it, i) => (
+                <div
+                  key={it.name}
+                  className={`flex items-center justify-between gap-2.5 py-3 ${i < vehicleSummary.items.length - 1 ? "border-b border-gray-100" : ""}`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] font-bold text-gray-900">{it.name}</div>
+                    {it.prod && <div className="mt-0.5 text-xs font-semibold text-gray-600">{it.prod}</div>}
+                    <div className="mt-px text-[11.5px] text-gray-500">{it.sub}</div>
+                  </div>
+                  <span
+                    className={`flex-none rounded-md px-2 py-[3px] text-[10.5px] font-extrabold ${
+                      it.tag === "업그레이드" ? "bg-brand-subtle text-brand" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {it.tag}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mx-0.5 mt-5 mb-2.5 flex items-center justify-between">
+          <span className="text-sm font-extrabold text-gray-900">시공 완료 사진</span>
+          <span className="text-xs text-gray-500">업체 업로드 · {GALLERY_COUNT}장</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {Array.from({ length: GALLERY_COUNT }, (_, i) => (
+            <span
+              key={i}
+              onClick={() => onTapPhoto?.(i)}
+              className={`relative aspect-square overflow-hidden rounded-[10px] bg-gray-100 ${onTapPhoto ? "cursor-pointer" : ""}`}
+            >
+              <img src={shopThumb} alt="시공 사진" className="h-full w-full object-cover object-center" />
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-[18px] flex items-start gap-[9px] rounded-xl bg-gray-100 px-[15px] py-[13px]">
+          <span className="mt-px flex-none text-gray-500">
+            <WarnIcon />
+          </span>
+          <div className="text-xs leading-relaxed text-gray-600">
+            <b>3일 이내 인수확인</b>하지 않으면 자동으로 확정 처리돼요. 착수 후 업체가 취소하는 경우 결제 금액은 전액 환불돼요.
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-6">
+        <Button size="xl" onClick={onConfirmHandover}>
+          {done ? "후기 작성하기" : "인수 확인하기"}
+        </Button>
+      </div>
+    </div>
+  );
+}

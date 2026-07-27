@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 홈</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-HOME-01</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:780px;line-height:1.6;margin-bottom:32px">로그인 후 진입하는 <b>서비스 홈</b>입니다. 프로그램목록표 정의대로 <b>3가지 상태별 배너</b>(신차패키지 시공대기 · 견적도착 · 시공완료)를 지원하며, 우측 <b>상태</b>를 눌러 각 배너를 전환해 볼 수 있어요. 빠른메뉴·예약시공 진행현황·프로모션·하단 네비게이션 포함. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <!-- status bar -->
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- top app bar -->
+        <div style="position:absolute;top:46px;left:0;right:0;height:52px;z-index:50;display:flex;align-items:center;gap:8px;padding:0 18px;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+          <span style="font-size:21px;font-weight:800;letter-spacing:-.04em;color:var(--gray-900)">Moto<span style="color:var(--color-brand)">Pay</span></span>
+          <span style="flex:1"></span>
+          <span onClick="{{ tapCash }}" style="display:flex;align-items:center;gap:5px;background:var(--surface-brand-subtle);padding:5px 11px;border-radius:999px;cursor:pointer">
+            <span style="width:14px;height:14px;border-radius:50%;background:var(--color-brand);color:#fff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">P</span>
+            <span style="font-size:12.5px;font-weight:700;color:var(--color-brand);font-variant-numeric:tabular-nums">5,000</span>
+          </span>
+          <span onClick="{{ tapBell }}" style="position:relative;cursor:pointer;color:var(--gray-700);display:inline-flex">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+            <span style="position:absolute;top:-1px;right:0;width:7px;height:7px;border-radius:50%;background:var(--status-danger);border:1.5px solid var(--surface-card)"></span>
+          </span>
+        </div>
+
+        <!-- scroll body -->
+        <div class="mp-scroll" style="position:absolute;top:98px;bottom:66px;left:0;right:0;overflow-y:auto;padding:16px 18px 24px;animation:mp-screen .32s ease">
+
+          <!-- greeting -->
+          <div style="margin:2px 2px 14px">
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">{{ greetName }}님, 안녕하세요</div>
+            <div style="font-size:13.5px;color:var(--text-secondary);margin-top:3px">내 차를 위한 오늘의 케어를 확인해 보세요.</div>
+          </div>
+
+          <!-- ===== STATE BANNER ===== -->
+          <!-- ① 기본: 신차패키지 시공대기 -->
+          <sc-if value="{{ stDefault }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ tapBanner }}" style="position:relative;overflow:hidden;background:var(--color-brand);border-radius:16px;padding:18px;cursor:pointer;animation:mp-fade .3s ease;box-shadow:0 8px 22px -8px rgba(27,100,242,.5)">
+              <div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.2);padding:3px 10px 3px 8px;border-radius:999px;margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"></rect><path d="M12 8v13M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path><path d="M12 8S10.5 3 8 3a2.5 2.5 0 0 0 0 5M12 8s1.5-5 4-5a2.5 2.5 0 0 1 0 5"></path></svg> 신차패키지</div>
+              <div style="font-size:18px;font-weight:800;letter-spacing:-.02em;color:#fff">대기 중인 신차패키지가 있어요</div>
+              <div style="font-size:13px;color:rgba(255,255,255,.85);margin-top:6px">지금 첫 시공을 예약하고 케어를 시작하세요.</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:12px;background:rgba(255,255,255,.15);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:600;color:#fff">이름·휴대폰으로 자동 매핑된 패키지예요</div>
+              <div style="display:inline-flex;align-items:center;gap:4px;margin-top:14px;background:#fff;color:var(--color-brand);font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:10px">패키지 확인하기 ›</div>
+            </div>
+          </sc-if>
+
+          <!-- ② 견적 도착 -->
+          <sc-if value="{{ stBidding }}">
+            <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:18px;animation:mp-fade .3s ease;box-shadow:var(--shadow-sm)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent)"></span>
+                <span style="font-size:12px;font-weight:800;color:var(--color-accent-strong)">견적 도착 · 외장수리</span>
+              </div>
+              <div style="font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--gray-900)">업체 <span style="color:var(--color-brand)">3곳</span>의 견적서가 도착했어요</div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-top:5px;margin-bottom:14px">틴팅 외2 · 요청 후 6시간 경과</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+                <sc-for list="{{ quotes }}" as="q" hint-placeholder-count="3">
+                  <div onClick="{{ q.onClick }}" style="{{ q.rowStyle }}">
+                    <span style="width:36px;height:36px;border-radius:10px;background:var(--surface-sunken);flex:none;overflow:hidden"><img src="assets/shop.png" alt="{{ q.name }}" style="width:100%;height:100%;object-fit:cover;display:block"></span>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:5px"><span style="font-size:13.5px;font-weight:700;color:var(--text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.name }}</span><sc-if value="{{ q.official }}"><span style="font-size:9.5px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:1.5px 5px;border-radius:4px">공식</span></sc-if></div>
+                      <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:1px">★ {{ q.rating }} · {{ q.dist }}</div>
+                    </div>
+                    <span style="font-size:15px;font-weight:800;color:var(--text-price);font-variant-numeric:tabular-nums;letter-spacing:-.02em">{{ q.price }}<span style="font-size:11px;font-weight:600">원</span></span>
+                  </div>
+                </sc-for>
+              </div>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ bidBtn }}" hint-size="100%,52px">견적 3곳 비교하기</x-import>
+            </div>
+          </sc-if>
+
+          <!-- ③ 시공 완료 -->
+          <sc-if value="{{ stComplete }}">
+            <div style="background:var(--status-success-bg);border:1px solid var(--green-500);border-radius:16px;padding:18px;animation:mp-fade .3s ease">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="width:26px;height:26px;border-radius:50%;background:var(--status-success);display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                <span style="font-size:12px;font-weight:800;color:var(--green-600)">시공 완료</span>
+              </div>
+              <div style="font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--gray-900)">시공이 완료되었어요</div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 6px">Benz E-Class· 글라스틴트 펜더(기본)</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:12px;background:rgba(255,255,255,.6);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--green-600)">차량 인수 후 7일 이내 인수 확인이 필요해요</div>
+              <div style="margin-top:14px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ cmpConfirmBtn }}" hint-size="100%,52px">인수 확인하기</x-import></div>
+            </div>
+          </sc-if>
+
+          <!-- ===== quick menu ===== -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:20px">
+            <sc-for list="{{ quickMenu }}" as="m" hint-placeholder-count="4">
+              <div onClick="{{ m.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 12px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;cursor:pointer">
+                <span style="color:var(--color-brand)">{{ m.icon }}</span>
+                <span style="font-size:12px;font-weight:600;color:var(--text-body)">{{ m.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- ===== 예약시공 진행현황 ===== -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 2px 10px">
+            <span style="font-size:16px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">예약시공 진행현황</span>
+            <span onClick="{{ tapResvAll }}" style="font-size:12.5px;color:var(--text-tertiary);cursor:pointer">전체보기 ›</span>
+          </div>
+          <div onClick="{{ tapResv }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:18px;cursor:pointer;box-shadow:var(--shadow-sm)">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <span style="width:44px;height:44px;border-radius:12px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden"><img src="assets/car.png" alt="차량" style="width:40px;height:auto;object-fit:contain"></span>
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:700;color:var(--text-strong)">틴팅 · 블랙박스</div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">강남 오토바디 · 3.14(목) 방문 예정</div>
+              </div>
+              <span style="font-size:11px;font-weight:800;color:var(--color-brand);background:var(--surface-brand-subtle);padding:4px 9px;border-radius:6px">{{ resvStatusLabel }}</span>
+            </div>
+            <div style="display:flex;align-items:center">
+              <sc-for list="{{ resvSteps }}" as="s" hint-placeholder-count="4">
+                <sc-if value="{{ s.connector }}"><span style="{{ s.lineStyle }}"></span></sc-if>
+                <sc-if value="{{ s.step }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;width:52px">
+                    <span style="{{ s.dotStyle }}">{{ s.mark }}</span>
+                    <span style="{{ s.labelStyle }}">{{ s.label }}</span>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- ===== promo ===== -->
+          <div onClick="{{ tapPromo }}" style="display:flex;align-items:center;gap:12px;padding:16px;border-radius:16px;background:var(--color-accent-subtle);border:1px solid var(--orange-100);margin-top:16px;cursor:pointer">
+            <span style="flex:none;width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--orange-100);display:flex;align-items:center;justify-content:center"><img src="assets/zic-m7.png" alt="ZIC M7 엔진오일" style="height:38px;width:auto;object-fit:contain"></span>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:800;color:var(--color-accent-strong)">엔진오일 교체 최대 40% 할인</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:1px">내 차 스펙 추천 + 공임 포함가 비교</div>
+            </div>
+            <span style="color:var(--color-accent)">›</span>
+          </div>
+
+        </div>
+
+        <!-- ===== bottom navigation ===== -->
+        <div style="position:absolute;bottom:0;left:0;right:0;height:66px;z-index:50;display:flex;background:var(--surface-card);border-top:1px solid var(--divider);padding-bottom:8px">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+            <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:{{ n.color }}">
+              {{ n.icon }}
+              <span style="font-size:10.5px;font-weight:{{ n.weight }}">{{ n.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:24px;right:24px;bottom:82px;z-index:90;background:rgba(22,25,28,.92);color:#fff;border-radius:var(--radius-md);padding:13px 18px;font-size:13px;text-align:center;animation:mp-screen .3s ease">{{ toast }}</div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 로그인 후 진입 · bottom navigation</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { banner: 'default', toast: '' };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: '' }), 2000); }
+
+  icon(name, active) {
+    const c = active ? 'var(--color-brand)' : 'var(--text-tertiary)';
+    const paths = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      shop: '<path d="M4 8h16l-1 12H5L4 8Z"/><path d="M8.5 8a3.5 3.5 0 1 1 7 0"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+    };
+    return React.createElement('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: c, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: paths[name] } });
+  }
+  qicon(name) {
+    if (name === 'point') return React.createElement('span', { style: { width: 24, height: 24, borderRadius: '50%', border: '1.9px solid currentColor', color: 'currentColor', fontSize: 13, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } }, 'P');
+    const paths = {
+      coupon: '<path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
+      pay: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21V4a1 1 0 0 1 1-1Z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>',
+      cs: '<path d="M4 12a8 8 0 0 1 16 0"/><rect x="3" y="12" width="4" height="6" rx="1.4"/><rect x="17" y="12" width="4" height="6" rx="1.4"/><path d="M19 18v1a2 2 0 0 1-2 2h-3"/>'
+    };
+    return React.createElement('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: paths[name] } });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const brand = 'var(--color-brand)', muted = 'var(--text-tertiary)';
+    const quotes = [
+      { name: '강남 오토바디', official: true, rating: '4.9', dist: '2.1km', price: '1,240,000' },
+      { name: '역삼 카케어', official: false, rating: '4.8', dist: '3.4km', price: '1,090,000' },
+      { name: '서초 바디샵', official: false, rating: '4.7', dist: '4.0km', price: '980,000' },
+    ].map((q, i) => Object.assign({}, q, {
+      onClick: () => this.showToast(q.name + ' 견적서를 확인해요'),
+      rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid ${i === 0 ? 'var(--color-brand)' : 'var(--border-subtle)'};border-radius:12px;cursor:pointer;background:${i === 0 ? 'var(--surface-brand-subtle)' : 'var(--surface-card)'}`,
+    }));
+
+    const quickMenu = [
+      { key: 'point', label: '포인트', route: '포인트' },
+      { key: 'coupon', label: '쿠폰함', route: '쿠폰함' },
+      { key: 'pay', label: '결제내역', route: '결제내역' },
+      { key: 'cs', label: '고객센터', route: '고객센터' },
+    ].map(m => ({ label: m.label, icon: this.qicon(m.key), onClick: () => this.showToast(m.route + '(으)로 이동해요') }));
+
+    const rs = [
+      { label: '예약', done: true }, { label: '방문', done: true },
+      { label: '시공중', done: false, cur: true }, { label: '완료', done: false },
+    ];
+    const resvSteps = [];
+    rs.forEach((s, i) => {
+      if (i > 0) resvSteps.push({ connector: true, lineStyle: `flex:1;height:2px;background:${(rs[i].done || rs[i].cur) ? brand : 'var(--divider)'}` });
+      const on = s.done || s.cur;
+      resvSteps.push({
+        connector: false, step: true, label: s.label, mark: s.done ? '✓' : (i + 1),
+        dotStyle: `width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;${on ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-tertiary)'};${s.cur ? 'box-shadow:0 0 0 3px var(--surface-brand-subtle)' : ''}`,
+        labelStyle: `font-size:11px;font-weight:${on ? 700 : 500};color:${on ? 'var(--text-body)' : muted}`,
+      });
+    });
+
+    const navMeta = [{ k: 'home', label: '홈' }, { k: 'resv', label: '예약시공' }, { k: 'shop', label: '쇼핑몰' }, { k: 'my', label: '내 정보' }];
+    const navItems = navMeta.map((n, i) => {
+      const active = i === 0;
+      return { label: n.label, icon: this.icon(n.k, active), color: active ? brand : muted, weight: active ? 700 : 500,
+        onClick: () => active ? null : this.showToast(n.label + ' 탭으로 이동해요') };
+    });
+
+    return {
+      greetName: '홍길동',
+      stDefault: st.banner === 'default', stBidding: st.banner === 'bidding', stComplete: st.banner === 'complete',
+      quotes, quickMenu, resvSteps, navItems, toast: st.toast,
+      resvStatusLabel: '시공 중',
+      tapCash: () => this.showToast('보유 포인트 5,000P · 적립/사용 내역'),
+      tapBell: () => this.showToast('알림함으로 이동해요'),
+      tapBanner: () => this.showToast('신차패키지 확인 화면으로 이동해요'),
+      tapResv: () => this.showToast('예약시공 상세로 이동해요'),
+      tapResvAll: () => this.showToast('예약시공 전체 목록으로 이동해요'),
+      tapPromo: () => this.showToast('엔진오일 프로모션으로 이동해요'),
+      bidBtn: { variant: 'primary', size: 'lg', fullWidth: true, onClick: () => this.showToast('업체 3곳 견적 비교 화면으로 이동해요') },
+      cmpConfirmBtn: { variant: 'primary', size: 'lg', fullWidth: true, onClick: () => this.showToast('인수 확인 화면(시공 사진 포함)으로 이동해요') },
+    };
+  }
+}
+</script>
+</body>
+</html>

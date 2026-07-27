@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  @keyframes mp-spin{to{transform:rotate(360deg)}}
+  @keyframes mp-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">고객앱</span> · 시작(로그인/회원가입)</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · CU-AUTH-01 ~ CU-AUTH-13</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:760px;line-height:1.6;margin-bottom:32px">메뉴구조도의 고객앱 1depth <b>시작(로그인/회원가입)</b> 13개 화면을 프로그램목록표의 화면 상세 정의대로 구현한 인터랙티브 프로토타입입니다. 오른쪽 <b>화면 목록</b>에서 화면을 눌러 이동하고, 실제로 입력·인증·약관 동의 플로우를 클릭해볼 수 있어요. Cardoc 디자인시스템 기반.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE PROTOTYPE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-card);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <!-- status bar -->
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:{{ statusColor }};pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="display:inline-flex;align-items:center;gap:2px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span></span>
+          </span>
+        </div>
+
+        <!-- SPLASH -->
+        <sc-if value="{{ isSplash }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ goLogin }}" style="position:absolute;inset:0;background:var(--color-brand);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;animation:mp-fade .4s ease">
+            <div style="font-size:46px;font-weight:800;letter-spacing:-.04em;color:#fff">Moto<span style="color:#FFCE3A">Pay</span></div><div style="margin-top:14px;font-size:15px;font-weight:500;color:rgba(255,255,255,.86);letter-spacing:-.01em">신차 케어의 시작</div><div style="margin-top:14px;font-size:15px;font-weight:500;color:rgba(255,255,255,.86);letter-spacing:-.01em">내 차를 위한 모든 서비스를 한 곳에서</div>
+            
+            <div style="position:absolute;bottom:88px;width:28px;height:28px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:mp-spin .8s linear infinite"></div>
+            <div style="position:absolute;bottom:44px;font-size:12px;color:rgba(255,255,255,.6)">잠시만 기다려 주세요 · 탭하여 계속</div>
+          </div>
+        </sc-if>
+
+        <!-- LOGIN -->
+        <sc-if value="{{ isLogin }}">
+          <div class="mp-scroll" style="position:absolute;inset:0;padding:78px 24px 32px;overflow-y:auto;animation:mp-screen .32s ease">
+            <div style="font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--gray-900)">Moto<span style="color:var(--color-brand)">Pay</span></div>
+            <div style="margin-top:8px;font-size:15px;color:var(--text-secondary);margin-bottom:28px">오너님, 반가워요. 로그인하고 시작해요.</div>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ loginIdP }}" hint-size="100%,52px"></x-import>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ loginPwP }}" hint-size="100%,52px"></x-import>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 2px 20px">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Checkbox" dc-props="{{ cbAutoLogin }}" hint-size="120px,22px"></x-import>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary)">
+                <span onClick="{{ openFindId }}" style="cursor:pointer">아이디 찾기</span>
+                <span style="color:var(--border-default)">|</span>
+                <span onClick="{{ openFindPw }}" style="cursor:pointer">비밀번호 찾기</span>
+              </div>
+            </div>
+
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ loginBtn }}" hint-size="100%,56px">로그인</x-import>
+
+            <div style="display:flex;align-items:center;gap:12px;margin:26px 0">
+              <span style="flex:1;height:1px;background:var(--divider)"></span>
+              <span style="font-size:12px;color:var(--text-tertiary)">간편 로그인</span>
+              <span style="flex:1;height:1px;background:var(--divider)"></span>
+            </div>
+
+            <div style="display:flex;justify-content:center;gap:22px">
+              <div onClick="{{ snsKakao }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                <span style="width:54px;height:54px;border-radius:50%;background:#FEE500;display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.9 3 3 6.3 3 10.3c0 2.5 1.7 4.7 4.2 6l-1 3.7c-.1.4.3.7.6.5l4.4-2.9c.3 0 .5.1.8.1 5.1 0 9-3.3 9-7.4S17.1 3 12 3Z"></path></svg></span>
+                <span style="font-size:11px;color:var(--text-tertiary)">카카오</span>
+              </div>
+              <div onClick="{{ snsNaver }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                <span style="width:54px;height:54px;border-radius:50%;background:#03C75A;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px;font-family:Arial">N</span>
+                <span style="font-size:11px;color:var(--text-tertiary)">네이버</span>
+              </div>
+              <div onClick="{{ snsGmail }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                <span style="width:54px;height:54px;border-radius:50%;background:#fff;border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center"><svg width="26" height="20" viewBox="0 0 24 18"><path d="M2 3.5 12 11 22 3.5" fill="none" stroke="#EA4335" stroke-width="2.4" stroke-linejoin="round"></path><rect x="1.2" y="2.2" width="21.6" height="14.6" rx="2" fill="none" stroke="#EA4335" stroke-width="2.2"></rect></svg></span>
+                <span style="font-size:11px;color:var(--text-tertiary)">Gmail</span>
+              </div>
+              <div onClick="{{ snsApple }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer">
+                <span style="width:54px;height:54px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center"><svg width="24" height="26" viewBox="0 0 24 26" fill="#fff"><path d="M17 13.6c0-2.7 2.2-4 2.3-4.1-1.3-1.8-3.2-2.1-3.9-2.1-1.7-.2-3.2 1-4 1-.8 0-2.1-1-3.4-.9-1.8 0-3.4 1-4.3 2.6-1.8 3.2-.5 8 1.3 10.6.9 1.3 1.9 2.7 3.3 2.7 1.3-.1 1.8-.9 3.4-.9 1.6 0 2 .9 3.4.8 1.4 0 2.3-1.3 3.2-2.6.6-.9 1-1.8 1.4-2.8-3.1-1.2-2.4-4.6-2.4-4.6Zm-2.6-8.4c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5Z"></path></svg></span>
+                <span style="font-size:11px;color:var(--text-tertiary)">Apple</span>
+              </div>
+            </div>
+
+            <div style="text-align:center;margin-top:30px;font-size:14px;color:var(--text-secondary)">아직 회원이 아니신가요? <span onClick="{{ gotoSignup }}" style="color:var(--color-brand);font-weight:700;cursor:pointer">회원가입</span></div>
+
+            <div style="margin-top:34px;padding-top:18px;border-top:1px solid var(--divider);text-align:center">
+              <span onClick="{{ toastPartner }}" style="font-size:12.5px;color:var(--text-tertiary);cursor:pointer">시공업체이신가요? <span style="color:var(--text-secondary);font-weight:600;text-decoration:underline;text-underline-offset:2px">파트너센터 로그인 ›</span></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- SIGNUP: 실명인증 (CU-AUTH-05) -->
+        <sc-if value="{{ isVerify }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+          <div style="flex:none;padding:50px 24px 16px;background:var(--surface-card)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+              <span onClick="{{ goLogin }}" style="cursor:pointer;font-size:22px;color:var(--gray-800);line-height:1">‹</span>
+              <span style="font-size:18px;font-weight:700;color:var(--gray-900)">회원가입</span>
+            </div>
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.ProgressSteps" steps="{{ stepLabels }}" current="{{ 0 }}" style="{{ stepStyle }}" hint-size="100%,52px"></x-import>
+          </div>
+          <div class="mp-scroll" style="flex:1;padding:8px 24px 20px;overflow-y:auto">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900);margin:8px 0 6px">본인인증을 진행해 주세요</div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px">안전한 가입을 위해 휴대폰 본인인증이 필요해요.</div>
+
+            <div style="font-size:14px;font-weight:600;color:var(--text-body);margin-bottom:8px">휴대폰 번호</div>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ svPhoneP }}" hint-size="100%,52px"></x-import></div>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ reqSvBtn }}" hint-size="98px,52px">인증요청</x-import>
+            </div>
+
+            <sc-if value="{{ svSent }}">
+              <div style="animation:mp-screen .3s ease">
+                <div style="font-size:14px;font-weight:600;color:var(--text-body);margin-bottom:8px">인증번호</div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1;position:relative">
+                    <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ svOtpP }}" hint-size="100%,52px"></x-import>
+                    <sc-if value="{{ showTimer }}"><span style="position:absolute;right:14px;top:16px;font-size:14px;font-weight:700;color:var(--status-danger);font-variant-numeric:tabular-nums">{{ otpTimer }}</span></sc-if>
+                  </div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verSvBtn }}" hint-size="88px,52px">확인</x-import>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ svVerified }}">
+              <div style="margin-top:18px;background:var(--surface-sunken);border-radius:var(--radius-lg);padding:16px;animation:mp-screen .3s ease">
+                <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--status-success);font-weight:700;margin-bottom:12px"><span style="width:16px;height:16px;border-radius:50%;background:var(--status-success);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px">✓</span> 인증 완료</div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0"><span style="color:var(--text-tertiary)">이름</span><span style="font-weight:600;color:var(--text-strong)">{{ siName }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0"><span style="color:var(--text-tertiary)">생년월일</span><span style="font-weight:600;color:var(--text-strong)">{{ siDob }}</span></div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:none;padding:14px 24px 24px;border-top:1px solid var(--divider);background:var(--surface-card)">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verifyNextBtn }}" hint-size="100%,56px">다음</x-import>
+          </div>
+          </div>
+        </sc-if>
+
+        <!-- SIGNUP: 정보입력 (CU-AUTH-06) -->
+        <sc-if value="{{ isInfo }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+          <div style="flex:none;padding:50px 24px 16px;background:var(--surface-card)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+              <span onClick="{{ backToVerify }}" style="cursor:pointer;font-size:22px;color:var(--gray-800);line-height:1">‹</span>
+              <span style="font-size:18px;font-weight:700;color:var(--gray-900)">회원가입</span>
+            </div>
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.ProgressSteps" steps="{{ stepLabels }}" current="{{ 1 }}" style="{{ stepStyle }}" hint-size="100%,52px"></x-import>
+          </div>
+          <div class="mp-scroll" style="flex:1;padding:8px 24px 20px;overflow-y:auto">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900);margin:8px 0 20px">정보를 입력해 주세요</div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siNameP }}" hint-size="100%,74px"></x-import>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siContactP }}" hint-size="100%,74px"></x-import>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:var(--text-body);margin-bottom:8px">아이디</div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siIdP }}" hint-size="100%,52px"></x-import></div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ dupBtn }}" hint-size="96px,52px">중복확인</x-import>
+                </div>
+                <div style="font-size:12px;color:{{ idHintColor }};margin-top:6px">{{ idHint }}</div>
+              </div>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siEmailP }}" hint-size="100%,74px"></x-import>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siPwP }}" hint-size="100%,74px"></x-import>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ siPw2P }}" hint-size="100%,74px"></x-import>
+            </div>
+          </div>
+          <div style="flex:none;padding:14px 24px 24px;border-top:1px solid var(--divider);background:var(--surface-card)">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ infoNextBtn }}" hint-size="100%,56px">다음</x-import>
+          </div>
+          </div>
+        </sc-if>
+
+        <!-- SIGNUP DONE (CU-AUTH-11) -->
+        <sc-if value="{{ isDone }}">
+          <div style="position:absolute;inset:0;padding:56px 24px 32px;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+              <div style="width:76px;height:76px;border-radius:50%;background:var(--status-success-bg);display:flex;align-items:center;justify-content:center;margin-bottom:22px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--status-success)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+              <div style="font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">환영합니다, {{ siName }}님!</div>
+              <div style="margin-top:10px;font-size:15px;color:var(--text-secondary);line-height:1.6">MotoPay 가입이 완료됐어요.<br>이제 모든 정비 결제를 간편하게.</div>
+              <div style="margin-top:26px;width:100%;background:var(--status-success-bg);border:1px solid var(--green-500);border-radius:var(--radius-lg);padding:16px;text-align:left;display:flex;gap:12px;align-items:center">
+                <span style="font-size:22px">🎁</span>
+                <div><div style="font-size:14px;font-weight:700;color:var(--green-600)">대기 중인 신차패키지가 연결됐어요</div><div style="font-size:12.5px;color:var(--text-secondary);margin-top:2px">이름·휴대폰 정보로 자동 매핑 · 홈에서 확인하세요</div></div>
+              </div>
+            </div>
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ homeBtn }}" hint-size="100%,56px">홈으로 시작하기</x-import>
+          </div>
+        </sc-if>
+
+        <!-- ============ SHEETS / POPUPS ============ -->
+        <sc-if value="{{ hasSheet }}">
+          <div style="position:absolute;inset:0;z-index:70">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+
+            <!-- 아이디 찾기 (12) -->
+            <sc-if value="{{ shFindId }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:78%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">아이디 찾기</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">가입 시 인증한 휴대폰 번호로 아이디를 찾아드려요.</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px">휴대폰 번호</div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fiPhoneP }}" hint-size="100%,52px"></x-import></div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ reqFiBtn }}" hint-size="98px,52px">인증요청</x-import>
+                </div>
+                <sc-if value="{{ fiSent }}">
+                  <div style="animation:mp-screen .3s ease">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px">인증번호</div>
+                    <div style="display:flex;gap:8px;margin-bottom:8px">
+                      <div style="flex:1;position:relative"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fiOtpP }}" hint-size="100%,52px"></x-import><sc-if value="{{ showTimer }}"><span style="position:absolute;right:14px;top:16px;font-size:14px;font-weight:700;color:var(--status-danger);font-variant-numeric:tabular-nums">{{ otpTimer }}</span></sc-if></div>
+                      <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verFiBtn }}" hint-size="88px,52px">확인</x-import>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ fiVerified }}">
+                  <div style="margin:8px 0 18px;background:var(--surface-brand-subtle);border-radius:var(--radius-lg);padding:20px;text-align:center;animation:mp-screen .3s ease">
+                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">회원님의 아이디는</div>
+                    <div style="font-size:22px;font-weight:800;color:var(--color-brand);letter-spacing:-.02em">moto****23</div>
+                  </div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ fiDoneBtn }}" hint-size="100%,56px">로그인하기</x-import>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- 비밀번호 찾기 (03) -->
+            <sc-if value="{{ shFindPw }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:78%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">비밀번호 찾기</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">휴대폰 인증 후 새 비밀번호로 재설정할 수 있어요.</div>
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px">휴대폰 번호</div>
+                <div style="display:flex;gap:8px;margin-bottom:14px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fpPhoneP }}" hint-size="100%,52px"></x-import></div>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ reqFpBtn }}" hint-size="98px,52px">인증요청</x-import>
+                </div>
+                <sc-if value="{{ fpSent }}">
+                  <div style="animation:mp-screen .3s ease">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px">인증번호</div>
+                    <div style="display:flex;gap:8px">
+                      <div style="flex:1;position:relative"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ fpOtpP }}" hint-size="100%,52px"></x-import><sc-if value="{{ showTimer }}"><span style="position:absolute;right:14px;top:16px;font-size:14px;font-weight:700;color:var(--status-danger);font-variant-numeric:tabular-nums">{{ otpTimer }}</span></sc-if></div>
+                      <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ verFpBtn }}" hint-size="88px,52px">확인</x-import>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- 비밀번호 재설정 (04) -->
+            <sc-if value="{{ shResetPw }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;max-height:80%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">비밀번호 재설정</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:20px">새로운 비밀번호를 입력해 주세요.</div>
+                <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:14px">
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ rpPwP }}" hint-size="100%,74px"></x-import>
+                  <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ rpPw2P }}" hint-size="100%,74px"></x-import>
+                </div>
+                <div style="background:var(--surface-sunken);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleLenColor }}"><span>{{ ruleLenMark }}</span> 8자 이상</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleMixColor }}"><span>{{ ruleMixMark }}</span> 영문·숫자·특수문자 조합</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:{{ ruleMatchColor }}"><span>{{ ruleMatchMark }}</span> 비밀번호 일치</div>
+                </div>
+                <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ rpDoneBtn }}" hint-size="100%,56px">완료</x-import>
+              </div>
+            </sc-if>
+
+            <!-- SNS 계정 연결 (13) -->
+            <sc-if value="{{ shSns }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 30px;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">{{ snsProvider }} 계정 연결</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.55;margin-bottom:20px">본인인증 결과, 동일한 번호로 가입된 계정이 있어요. 이 계정에 {{ snsProvider }}를 연결할까요?</div>
+                <div style="background:var(--surface-sunken);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px">
+                  <div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0"><span style="color:var(--text-tertiary)">아이디</span><span style="font-weight:700;color:var(--text-strong)">moto****23</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:14px;padding:5px 0"><span style="color:var(--text-tertiary)">가입일</span><span style="font-weight:600;color:var(--text-strong)">2024.03.11</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;background:var(--surface-brand-subtle);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:22px">
+                  <sc-if value="{{ isKakao }}"><span style="width:30px;height:30px;border-radius:50%;background:#FEE500;display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="#3C1E1E"><path d="M12 3C6.9 3 3 6.3 3 10.3c0 2.5 1.7 4.7 4.2 6l-1 3.7c-.1.4.3.7.6.5l4.4-2.9c.3 0 .5.1.8.1 5.1 0 9-3.3 9-7.4S17.1 3 12 3Z"></path></svg></span></sc-if>
+                  <sc-if value="{{ isNaver }}"><span style="width:30px;height:30px;border-radius:50%;background:#03C75A;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;font-family:Arial">N</span></sc-if>
+                  <sc-if value="{{ isGmail }}"><span style="width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center"><svg width="17" height="13" viewBox="0 0 24 18"><path d="M2 3.5 12 11 22 3.5" fill="none" stroke="#EA4335" stroke-width="2.4" stroke-linejoin="round"></path><rect x="1.2" y="2.2" width="21.6" height="14.6" rx="2" fill="none" stroke="#EA4335" stroke-width="2.2"></rect></svg></span></sc-if>
+                  <sc-if value="{{ isApple }}"><span style="width:30px;height:30px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center"><svg width="15" height="17" viewBox="0 0 24 26" fill="#fff"><path d="M17 13.6c0-2.7 2.2-4 2.3-4.1-1.3-1.8-3.2-2.1-3.9-2.1-1.7-.2-3.2 1-4 1-.8 0-2.1-1-3.4-.9-1.8 0-3.4 1-4.3 2.6-1.8 3.2-.5 8 1.3 10.6.9 1.3 1.9 2.7 3.3 2.7 1.3-.1 1.8-.9 3.4-.9 1.6 0 2 .9 3.4.8 1.4 0 2.3-1.3 3.2-2.6.6-.9 1-1.8 1.4-2.8-3.1-1.2-2.4-4.6-2.4-4.6Zm-2.6-8.4c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5Z"></path></svg></span></sc-if>
+                  <span style="font-size:13.5px;color:var(--text-body)">연결 대상 · <b>{{ snsProvider }}</b></span>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ snsCancelBtn }}" hint-size="100%,56px">취소</x-import></div>
+                  <div style="flex:2"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ snsLinkBtn }}" hint-size="100%,56px">연결하기</x-import></div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 약관동의 (07) -->
+            <sc-if value="{{ shTerms }}">
+              <div class="mp-scroll" style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 28px;max-height:82%;overflow-y:auto;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">약관에 동의해 주세요</div>
+                <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:18px">회원가입 마지막 단계예요.</div>
+
+                <div onClick="{{ toggleAll }}" style="display:flex;align-items:center;gap:12px;padding:16px;border:1px solid {{ allBorder }};background:{{ allBg }};border-radius:var(--radius-lg);cursor:pointer;margin-bottom:14px">
+                  <span style="width:24px;height:24px;border-radius:50%;background:{{ allMarkBg }};border:1.5px solid {{ allMarkBorder }};display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                  <span style="font-size:15px;font-weight:700;color:var(--gray-900)">전체 동의하기</span>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 6px">
+                    <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Checkbox" dc-props="{{ cbService }}" hint-size="220px,22px"></x-import>
+                    <span onClick="{{ openViewService }}" style="cursor:pointer;color:var(--text-tertiary);font-size:18px">›</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 6px">
+                    <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Checkbox" dc-props="{{ cbPrivacy }}" hint-size="240px,22px"></x-import>
+                    <span onClick="{{ openViewPrivacy }}" style="cursor:pointer;color:var(--text-tertiary);font-size:18px">›</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 6px">
+                    <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Checkbox" dc-props="{{ cbMarketing }}" hint-size="240px,22px"></x-import>
+                    <span onClick="{{ openViewMarketing }}" style="cursor:pointer;color:var(--text-tertiary);font-size:18px">›</span>
+                  </div>
+                </div>
+
+                <div style="margin-top:20px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ termsCompleteBtn }}" hint-size="100%,56px">가입완료</x-import></div>
+              </div>
+            </sc-if>
+
+            <!-- 이용약관 / 개인정보 보기 (08 / 09) -->
+            <sc-if value="{{ shViewDoc }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;top:34px;background:var(--surface-card);border-radius:20px 20px 0 0;display:flex;flex-direction:column;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--divider)">
+                  <span style="font-size:17px;font-weight:700;color:var(--gray-900)">{{ docTitle }}</span>
+                  <span onClick="{{ closeViewDoc }}" style="cursor:pointer;font-size:20px;color:var(--text-secondary)">✕</span>
+                </div>
+                <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:20px;font-size:13px;line-height:1.7;color:var(--text-secondary);white-space:pre-line">{{ docBody }}</div>
+                <div style="padding:16px 20px;border-top:1px solid var(--divider)"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ docAgreeBtn }}" hint-size="100%,56px">동의하고 닫기</x-import></div>
+              </div>
+            </sc-if>
+
+            <!-- 마케팅 수신 동의 보기 (10) -->
+            <sc-if value="{{ shViewMkt }}">
+              <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 28px;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+                <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+                <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">마케팅 수신 동의 <span style="font-size:13px;font-weight:600;color:var(--text-tertiary)">(선택)</span></div>
+                <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.55;margin-bottom:18px">이벤트·혜택 소식을 받을 채널을 선택하세요. 미동의해도 서비스 이용에는 문제없어요.</div>
+                <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:22px">
+                  <div style="padding:10px 4px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Switch" dc-props="{{ swSms }}" hint-size="100%,28px"></x-import></div>
+                  <div style="padding:10px 4px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Switch" dc-props="{{ swEmail }}" hint-size="100%,28px"></x-import></div>
+                  <div style="padding:10px 4px"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Switch" dc-props="{{ swPush }}" hint-size="100%,28px"></x-import></div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ mktDenyBtn }}" hint-size="100%,56px">미동의</x-import></div>
+                  <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ mktAgreeBtn }}" hint-size="100%,56px">동의</x-import></div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:24px;right:24px;bottom:40px;z-index:90;background:rgba(22,25,28,.92);color:#fff;border-radius:var(--radius-md);padding:14px 18px;font-size:13.5px;text-align:center;animation:mp-screen .3s ease">{{ toast }}</div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 스플래시는 시공업체앱과 공유</div>
+    </div>
+
+    <!-- ============ SCREEN MAP / OVERVIEW ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 13</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="13">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'splash', sheet: null, toast: '',
+    loginId: '', loginPw: '', showPw: false, autoLogin: true,
+    fiPhone: '', fiOtp: '', fiSent: false, fiVerified: false,
+    fpPhone: '', fpOtp: '', fpSent: false, fpVerified: false,
+    rpPw: '', rpPw2: '',
+    svPhone: '', svOtp: '', svSent: false, svVerified: false,
+    siId: '', siIdChecked: false, siEmail: '', siPw: '', siPw2: '',
+    siName: '', siDob: '', siContact: '',
+    agreeService: false, agreePrivacy: false, agreeMarketing: false,
+    mkSms: false, mkEmail: false, mkPush: false,
+    snsProvider: '카카오', countdown: 0,
+  };
+
+  componentDidMount() {
+    this._splashT = setTimeout(() => {
+      if (this.state.screen === 'splash') this.setState({ screen: 'login' });
+    }, 1800);
+  }
+  componentWillUnmount() { clearTimeout(this._splashT); clearInterval(this._t); clearTimeout(this._toastT); }
+
+  set(patch) { this.setState(patch); }
+  showToast(msg) { clearTimeout(this._toastT); this.setState({ toast: msg }); this._toastT = setTimeout(() => this.setState({ toast: '' }), 2200); }
+  startTimer() {
+    clearInterval(this._t);
+    this._t = setInterval(() => {
+      this.setState(s => { if (s.countdown <= 1) { clearInterval(this._t); return { countdown: 0 }; } return { countdown: s.countdown - 1 }; });
+    }, 1000);
+  }
+  fmt(sec) { const m = String(Math.floor(sec / 60)).padStart(2, '0'); const s = String(sec % 60).padStart(2, '0'); return m + ':' + s; }
+  f(key, extra) { return Object.assign({ value: this.state[key], onChange: e => this.setState({ [key]: e.target.value }) }, extra || {}); }
+
+  // spec text from 프로그램목록표
+  spec() {
+    return {
+      '01': { id:'CU-AUTH-01', name:'시작 (로그인/회원가입)', type:'주화면', url:'/auth', device:'앱전용',
+        func:'고객앱 최초 진입 플로우(스플래시). 시공업체앱에서도 같은 화면 사용.',
+        detail:'[UI요소] MotoPay 로고, 브랜드 슬로건. 별도 버튼 없음(자동 전환).\n[상태] 로딩 중 단일 상태.\n[인터랙션] 일정 시간 후 로그인 여부를 판별해 로그인 화면 또는 홈으로 자동 전환.\n[디자인] 시공업체앱과 공유하므로 브랜드 요소만 노출, 서비스 특정 문구는 배제.' },
+      '02': { id:'CU-AUTH-02', name:'로그인', type:'주화면', url:'/auth/login', device:'공용(반응형)',
+        func:'아이디/비밀번호 로그인, SNS 간편로그인(카카오톡·네이버·Gmail·Apple), 자동로그인. 하단 아이디·비밀번호 찾기, 파트너센터 진입 링크.',
+        detail:'[UI요소] 아이디/비밀번호 입력, 자동로그인 체크박스, 로그인 버튼, 간편로그인 4종, 아이디·비밀번호 찾기·회원가입 링크, 파트너센터 링크.\n[상태] 기본/입력중/에러/로딩.\n[인터랙션] 간편로그인 시 OAuth. 미연동 최초 로그인은 본인인증 후 동일 번호 계정이 있으면 SNS 연결 확인, 없으면 회원가입으로 분기(1인 1계정).\n[디자인] 파트너센터 링크는 보조 액션으로 하단에 작게 배치.' },
+      '13': { id:'CU-AUTH-13', name:'SNS 계정 연결', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'SNS 최초 로그인 시 본인인증 결과가 동일 번호의 기존 계정과 일치하면 SNS 연결 여부 확인. [연결하기]/[취소] 분기.',
+        detail:'[UI요소] 기존 계정 요약(마스킹 아이디·가입일), 연결 대상 SNS, 연결하기/취소(바텀시트).\n[상태] 확인 대기/처리중/완료/실패.\n[인터랙션] 연결하기 시 기존 계정에 SNS 연결 후 로그인 완료, 취소 시 로그인 화면 복귀.\n[디자인] 동일인임을 명확히 안내, 아이디·비밀번호는 마스킹.' },
+      '12': { id:'CU-AUTH-12', name:'아이디 찾기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'휴대폰 본인인증(SMS) 후 마스킹된 아이디 조회(바텀시트).',
+        detail:'[UI요소] 휴대폰 번호, 인증요청, OTP 입력, 확인(바텀시트).\n[상태] 발송 전/카운트다운/성공/실패.\n[인터랙션] 인증 완료 시 마스킹된 아이디 노출, 로그인 화면 복귀 유도.\n[디자인] 비밀번호 찾기와 UI 패턴 통일.' },
+      '03': { id:'CU-AUTH-03', name:'비밀번호 찾기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'SMS 인증 후 비밀번호 재설정(바텀시트).',
+        detail:'[UI요소] 휴대폰 번호, 인증요청, OTP 입력(바텀시트).\n[상태] 발송 전/카운트다운(03:00)/성공/실패(재발송 유도).\n[인터랙션] 인증 완료 시 비밀번호 재설정 화면으로 자동 전환.\n[디자인] 바텀시트로 로그인 컨텍스트 유지.' },
+      '04': { id:'CU-AUTH-04', name:'비밀번호 재설정', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'새 비밀번호·확인 입력 후 재설정 완료. 완료 후 로그인 화면 이동.',
+        detail:'[UI요소] 새 비밀번호·확인, 규칙 안내(영문·숫자·특수문자 8자↑), 완료 버튼.\n[상태] 입력중/규칙 미충족/불일치/완료.\n[인터랙션] 완료 시 로그인 이동, 성공 토스트.\n[디자인] 규칙 항목은 실시간 체크 아이콘 색상 변화 피드백.' },
+      '05': { id:'CU-AUTH-05', name:'회원가입 - 실명인증', type:'외부연동', url:'-', device:'공용(반응형)',
+        func:'휴대폰 번호 입력 → OTP 검증 → 이름·생년월일 확인(외부 API).',
+        detail:'[UI요소] 휴대폰 번호, 인증요청, OTP, 인증 후 이름·생년월일 읽기전용 자동 표시.\n[상태] 인증 전/카운트다운/완료(자동입력)/실패.\n[인터랙션] 완료 시 정보입력으로 진행. SNS 최초 로그인은 완료 후 기존 계정 조회로 분기.\n[디자인] 회원가입 3단계 중 1단계, 상단 스텝 인디케이터.' },
+      '06': { id:'CU-AUTH-06', name:'회원가입 - 정보입력', type:'등록/수정', url:'/auth/signup-info', device:'공용(반응형)',
+        func:'이름·연락처(자동)·아이디(중복확인)·이메일·비밀번호·확인 입력.',
+        detail:'[UI요소] 이름·연락처(읽기전용)·아이디(중복확인)·이메일·비밀번호·확인, 필드별 실시간 유효성 아이콘, 다음 버튼.\n[상태] 입력중/유효성 에러/중복 에러/전체 유효 시 활성화.\n[인터랙션] 중복확인 후 다음 시 약관동의로 이동.\n[디자인] 2단계, 연락처는 실명인증 결과 재사용. 아이디는 로그인 식별자, 이메일은 알림·영수증용.' },
+      '07': { id:'CU-AUTH-07', name:'회원가입 - 약관동의', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'이용약관·개인정보(필수)·마케팅(선택) 체크. 우측 > 로 약관 내용 보기.',
+        detail:'[UI요소] 전체동의, 필수 2·선택 1 개별 체크박스, 항목별 상세보기(>), 가입완료(바텀시트).\n[상태] 미동의(비활성)/필수만/전체.\n[인터랙션] 상세보기 시 약관 전문, 필수 모두 동의해야 가입완료 활성화 → 가입완료로 이동.\n[디자인] 전체동의 마스터-디테일 패턴.' },
+      '08': { id:'CU-AUTH-08', name:'서비스 이용약관 보기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'약관 전문 스크롤 뷰. 상단 X, 하단 [동의] 시 체크 후 복귀.',
+        detail:'[UI요소] 약관 전문 스크롤 뷰, 닫기 버튼.\n[상태] 스크롤 위치에 따른 상단 그림자.\n[인터랙션] 닫기 시 약관동의 복귀(체크 유지).\n[디자인] 법적 문서이므로 원문 그대로 노출.' },
+      '09': { id:'CU-AUTH-09', name:'개인정보 처리방침 보기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'수집 항목·이용 목적·보유 기간 명시. 스크롤 뷰 + 하단 [동의].',
+        detail:'[UI요소] 개인정보 처리방침 전문 스크롤 뷰, 닫기.\n[상태] 스크롤 위치에 따른 상단 그림자.\n[인터랙션] 닫기 시 약관동의 복귀.\n[디자인] CU-AUTH-08과 동일 컴포넌트 재사용, 콘텐츠만 교체.' },
+      '10': { id:'CU-AUTH-10', name:'마케팅 수신 동의 보기', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'선택 항목. 수신 채널(푸시/SMS/이메일) 개별 선택, [미동의]/[동의] 분기.',
+        detail:'[UI요소] 안내 문구, 채널별(SMS·이메일·앱푸시) 토글, 닫기.\n[상태] 채널별 개별 on/off.\n[인터랙션] 선택 완료 후 약관동의 복귀.\n[디자인] 선택 약관이므로 미동의가 기본값.' },
+      '11': { id:'CU-AUTH-11', name:'회원가입 완료', type:'주화면', url:'/auth/signup-done', device:'공용(반응형)',
+        func:'가입 완료 시 이름+휴대폰으로 대기 신차패키지 자동 매핑, 매핑완료 푸시 발송.',
+        detail:'[UI요소] 가입완료 체크 아이콘, 환영 메시지(이름), 신차패키지 자동 매핑 배너(있는 경우), 홈으로 시작하기 버튼.\n[상태] 매핑된 신차패키지 유/무에 따른 배너 분기.\n[인터랙션] 버튼 탭 시 홈 이동.\n[디자인] 신차패키지 매핑 안내는 초록색 강조 배너로 후속 전환 유도.' },
+    };
+  }
+  activeId() {
+    const sh = this.state.sheet;
+    if (sh) return { 'find-id':'12','find-pw':'03','reset-pw':'04','sns-link':'13','terms':'07','view-service':'08','view-privacy':'09','view-marketing':'10' }[sh];
+    return { splash:'01', login:'02', 'signup-verify':'05', 'signup-info':'06', 'signup-done':'11' }[this.state.screen];
+  }
+
+  goTo(id) {
+    const map = {
+      '01':{screen:'splash',sheet:null},'02':{screen:'login',sheet:null},'13':{screen:'login',sheet:'sns-link'},
+      '12':{screen:'login',sheet:'find-id'},'03':{screen:'login',sheet:'find-pw'},'04':{screen:'login',sheet:'reset-pw'},
+      '05':{screen:'signup-verify',sheet:null},'06':{screen:'signup-info',sheet:null},'07':{screen:'signup-info',sheet:'terms'},
+      '08':{screen:'signup-info',sheet:'view-service'},'09':{screen:'signup-info',sheet:'view-privacy'},
+      '10':{screen:'signup-info',sheet:'view-marketing'},'11':{screen:'signup-done',sheet:null},
+    }[id];
+    clearTimeout(this._splashT);
+    this.setState(map);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const SPEC = this.spec();
+    const aId = this.activeId();
+    const brand = 'var(--color-brand)', ok = 'var(--status-success)', muted = 'var(--text-tertiary)';
+
+    // ---- validity
+    const idValid = st.siId.length >= 4 && st.siIdChecked;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(st.siEmail);
+    const pwRuleLen = st.siPw.length >= 8;
+    const pwRuleMix = /[a-zA-Z]/.test(st.siPw) && /[0-9]/.test(st.siPw) && /[^a-zA-Z0-9]/.test(st.siPw);
+    const pwValid = pwRuleLen && pwRuleMix;
+    const pw2Valid = st.siPw.length > 0 && st.siPw === st.siPw2;
+    const infoValid = idValid && emailValid && pwValid && pw2Valid;
+    // reset pw rules
+    const rpLen = st.rpPw.length >= 8;
+    const rpMix = /[a-zA-Z]/.test(st.rpPw) && /[0-9]/.test(st.rpPw) && /[^a-zA-Z0-9]/.test(st.rpPw);
+    const rpMatch = st.rpPw.length > 0 && st.rpPw === st.rpPw2;
+
+    // ---- map rows
+    const order = ['01','02','13','12','03','04','05','06','07','08','09','10','11'];
+    const typeColors = { '주화면':'var(--color-brand)','팝업':'var(--color-accent)','등록/수정':'var(--status-success)','외부연동':'#7C5CFF' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id]; const active = id === aId; const tc = typeColors[sp.type] || muted;
+      return {
+        id: sp.id.replace('CU-AUTH-',''), name: sp.name, type: sp.type,
+        onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1.5px var(--color-brand)' : 'background:transparent'}`,
+        badgeStyle: `flex:none;width:26px;text-align:center;font-size:11px;font-weight:800;font-family:var(--font-numeric);color:${active ? '#fff' : muted};background:${active ? brand : 'var(--surface-sunken)'};padding:3px 0;border-radius:6px`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}14;padding:3px 8px;border-radius:5px`,
+      };
+    });
+
+    const inputBase = { style: {} };
+    const V = {
+      // screen flags
+      isSplash: st.screen === 'splash', isLogin: st.screen === 'login',
+      isVerify: st.screen === 'signup-verify', isInfo: st.screen === 'signup-info', isDone: st.screen === 'signup-done',
+      statusColor: st.screen === 'splash' ? '#fff' : 'var(--gray-900)',
+      // sheet flags
+      hasSheet: !!st.sheet,
+      shFindId: st.sheet === 'find-id', shFindPw: st.sheet === 'find-pw', shResetPw: st.sheet === 'reset-pw',
+      shSns: st.sheet === 'sns-link', shTerms: st.sheet === 'terms',
+      shViewDoc: st.sheet === 'view-service' || st.sheet === 'view-privacy', shViewMkt: st.sheet === 'view-marketing',
+      toast: st.toast,
+      stepLabels: ['실명인증','정보입력','약관동의'],
+      stepStyle: { justifyContent:'space-between' },
+      // spec panel
+      mapItems, curSpec: SPEC[aId],
+      // shared otp
+      svSent: st.svSent, svVerified: st.svVerified, fiSent: st.fiSent, fiVerified: st.fiVerified, fpSent: st.fpSent,
+      showTimer: st.countdown > 0, otpTimer: this.fmt(st.countdown),
+      siName: st.siName || '홍길동', siDob: st.siDob || '1990.05.21',
+      snsProvider: st.snsProvider,
+      isKakao: st.snsProvider === '카카오', isNaver: st.snsProvider === '네이버',
+      isGmail: st.snsProvider === 'Gmail', isApple: st.snsProvider === 'Apple',
+
+      // ---- nav handlers
+      goLogin: () => { clearTimeout(this._splashT); this.setState({ screen:'login', sheet:null }); },
+      gotoSignup: () => this.setState({ screen:'signup-verify', sheet:null }),
+      backToVerify: () => this.setState({ screen:'signup-verify' }),
+      openFindId: () => this.setState({ sheet:'find-id' }),
+      openFindPw: () => this.setState({ sheet:'find-pw' }),
+      closeSheet: () => this.setState({ sheet:null }),
+      toastPartner: () => this.showToast('시공업체 파트너센터로 이동해요'),
+
+      // ---- login
+      loginIdP: this.f('loginId', { label:'아이디', placeholder:'아이디를 입력하세요' }),
+      loginPwP: this.f('loginPw', { label:'비밀번호', type: st.showPw ? 'text':'password', placeholder:'비밀번호를 입력하세요' }),
+      cbAutoLogin: { label:'자동로그인', checked: st.autoLogin, onChange: () => this.setState(s => ({ autoLogin: !s.autoLogin })) },
+      loginBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !(st.loginId && st.loginPw), onClick: () => { this.showToast('로그인되었어요. 홈으로 이동합니다'); setTimeout(()=>this.setState({screen:'splash'}),700); this._splashT=setTimeout(()=>this.setState({screen:'login'}),2400); } },
+      snsKakao: () => this.snsFlow('카카오'), snsNaver: () => this.snsFlow('네이버'),
+      snsGmail: () => this.snsFlow('Gmail'), snsApple: () => this.snsFlow('Apple'),
+
+      // ---- 아이디 찾기
+      fiPhoneP: this.f('fiPhone', { placeholder:'01012345678', inputMode:'numeric' }),
+      fiOtpP: this.f('fiOtp', { placeholder:'인증번호 6자리', inputMode:'numeric', maxLength:6 }),
+      reqFiBtn: { variant:'secondary', size:'lg', disabled: st.fiPhone.length < 10, onClick: () => { this.setState({ fiSent:true, countdown:180 }); this.startTimer(); } },
+      verFiBtn: { variant:'primary', size:'lg', disabled: st.fiOtp.length < 4, onClick: () => { clearInterval(this._t); this.setState({ fiVerified:true, countdown:0 }); } },
+      fiDoneBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => this.setState({ sheet:null, fiPhone:'', fiOtp:'', fiSent:false, fiVerified:false }) },
+
+      // ---- 비밀번호 찾기
+      fpPhoneP: this.f('fpPhone', { placeholder:'01012345678', inputMode:'numeric' }),
+      fpOtpP: this.f('fpOtp', { placeholder:'인증번호 6자리', inputMode:'numeric', maxLength:6 }),
+      reqFpBtn: { variant:'secondary', size:'lg', disabled: st.fpPhone.length < 10, onClick: () => { this.setState({ fpSent:true, countdown:180 }); this.startTimer(); } },
+      verFpBtn: { variant:'primary', size:'lg', disabled: st.fpOtp.length < 4, onClick: () => { clearInterval(this._t); this.setState({ sheet:'reset-pw', countdown:0, fpSent:false, fpOtp:'' }); } },
+
+      // ---- 비밀번호 재설정
+      rpPwP: this.f('rpPw', { label:'새 비밀번호', type:'password', placeholder:'새 비밀번호' }),
+      rpPw2P: this.f('rpPw2', { label:'새 비밀번호 확인', type:'password', placeholder:'새 비밀번호 확인' }),
+      ruleLenColor: rpLen ? ok : muted, ruleLenMark: rpLen ? '✓' : '○',
+      ruleMixColor: rpMix ? ok : muted, ruleMixMark: rpMix ? '✓' : '○',
+      ruleMatchColor: rpMatch ? ok : muted, ruleMatchMark: rpMatch ? '✓' : '○',
+      rpDoneBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !(rpLen && rpMix && rpMatch), onClick: () => { this.setState({ sheet:null, rpPw:'', rpPw2:'' }); this.showToast('비밀번호가 변경되었어요'); } },
+
+      // ---- SNS 연결
+      snsCancelBtn: { variant:'outline', size:'xl', fullWidth:true, onClick: () => this.setState({ sheet:null }) },
+      snsLinkBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => { this.setState({ sheet:null }); this.showToast(st.snsProvider + ' 계정이 연결되어 로그인되었어요'); } },
+
+      // ---- 실명인증
+      svPhoneP: this.f('svPhone', { placeholder:'01012345678', inputMode:'numeric' }),
+      svOtpP: this.f('svOtp', { placeholder:'인증번호 6자리', inputMode:'numeric', maxLength:6 }),
+      reqSvBtn: { variant:'secondary', size:'lg', disabled: st.svPhone.length < 10, onClick: () => { this.setState({ svSent:true, countdown:180 }); this.startTimer(); } },
+      verSvBtn: { variant:'primary', size:'lg', disabled: st.svOtp.length < 4, onClick: () => { clearInterval(this._t); this.setState({ svVerified:true, countdown:0, siName:'홍길동', siDob:'1990.05.21', siContact:'010-1234-5678' }); } },
+      verifyNextBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !st.svVerified, onClick: () => this.setState({ screen:'signup-info' }) },
+
+      // ---- 정보입력
+      siNameP: { label:'이름', value: st.siName || '홍길동', disabled:true },
+      siContactP: { label:'연락처', value: st.siContact || '010-1234-5678', disabled:true },
+      siIdP: this.f('siId', { placeholder:'영문·숫자 4~20자', onChange: e => this.setState({ siId: e.target.value, siIdChecked:false }) }),
+      idHint: st.siIdChecked ? '사용 가능한 아이디예요.' : (st.siId ? '중복확인을 해주세요.' : '로그인에 사용할 아이디를 입력하세요.'),
+      idHintColor: st.siIdChecked ? ok : muted,
+      dupBtn: { variant:'secondary', size:'lg', disabled: st.siId.length < 4, onClick: () => { this.setState({ siIdChecked:true }); this.showToast('사용 가능한 아이디예요'); } },
+      siEmailP: this.f('siEmail', { label:'이메일', type:'email', placeholder:'알림·영수증 수신용 이메일', error: st.siEmail && !emailValid ? '올바른 이메일 형식이 아니에요' : undefined }),
+      siPwP: this.f('siPw', { label:'비밀번호', type:'password', placeholder:'영문·숫자·특수문자 8자 이상', helperText:'영문·숫자·특수문자 조합 8자 이상', error: st.siPw && !pwValid ? '비밀번호 규칙을 확인하세요' : undefined }),
+      siPw2P: this.f('siPw2', { label:'비밀번호 확인', type:'password', placeholder:'비밀번호를 다시 입력', error: st.siPw2 && !pw2Valid ? '비밀번호가 일치하지 않아요' : undefined }),
+      infoNextBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !infoValid, onClick: () => this.setState({ sheet:'terms' }) },
+
+      // ---- 약관동의
+      allChecked: st.agreeService && st.agreePrivacy && st.agreeMarketing,
+      allBg: (st.agreeService && st.agreePrivacy && st.agreeMarketing) ? 'var(--surface-brand-subtle)' : 'var(--surface-card)',
+      allBorder: (st.agreeService && st.agreePrivacy && st.agreeMarketing) ? 'var(--color-brand)' : 'var(--border-subtle)',
+      allMarkBg: (st.agreeService && st.agreePrivacy && st.agreeMarketing) ? brand : 'var(--surface-card)',
+      allMarkBorder: (st.agreeService && st.agreePrivacy && st.agreeMarketing) ? brand : 'var(--border-strong)',
+      toggleAll: () => { const nv = !(st.agreeService && st.agreePrivacy && st.agreeMarketing); this.setState({ agreeService:nv, agreePrivacy:nv, agreeMarketing:nv }); },
+      cbService: { label:'[필수] 서비스 이용약관 동의', checked: st.agreeService, onChange: () => this.setState(s => ({ agreeService: !s.agreeService })) },
+      cbPrivacy: { label:'[필수] 개인정보 처리방침 동의', checked: st.agreePrivacy, onChange: () => this.setState(s => ({ agreePrivacy: !s.agreePrivacy })) },
+      cbMarketing: { label:'[선택] 마케팅 수신 동의', checked: st.agreeMarketing, onChange: () => this.setState(s => ({ agreeMarketing: !s.agreeMarketing })) },
+      openViewService: () => this.setState({ sheet:'view-service' }),
+      openViewPrivacy: () => this.setState({ sheet:'view-privacy' }),
+      openViewMarketing: () => this.setState({ sheet:'view-marketing' }),
+      termsCompleteBtn: { variant:'primary', size:'xl', fullWidth:true, disabled: !(st.agreeService && st.agreePrivacy), onClick: () => this.setState({ screen:'signup-done', sheet:null }) },
+
+      // ---- 약관 뷰어
+      docTitle: st.sheet === 'view-privacy' ? '개인정보 처리방침' : '서비스 이용약관',
+      docBody: st.sheet === 'view-privacy'
+        ? '제1조 (수집하는 개인정보 항목)\nMotoPay는 회원가입·서비스 제공을 위해 다음의 개인정보를 수집합니다.\n· 필수: 이름, 휴대폰 번호, 아이디, 비밀번호, 이메일\n· 자동수집: 기기정보, 접속기록, 결제기록\n\n제2조 (이용 목적)\n· 본인확인 및 회원 관리\n· 견적·예약·상품 주문 및 결제\n· 신차패키지 매핑 및 혜택 안내\n\n제3조 (보유 및 이용 기간)\n회원 탈퇴 시까지 보유하며, 관계 법령에 따라 일정 기간 보관 후 파기합니다.\n· 계약·결제 기록: 5년\n· 소비자 불만·분쟁 처리 기록: 3년\n\n제4조 (동의 거부 권리)\n필수 항목 동의를 거부할 권리가 있으나, 거부 시 회원가입이 제한됩니다.'
+        : '제1조 (목적)\n본 약관은 MotoPay(이하 "회사")가 제공하는 자동차 정비 견적·예약·결제 서비스의 이용조건 및 절차를 규정합니다.\n\n제2조 (정의)\n· "회원"이란 본 약관에 동의하고 서비스를 이용하는 자를 말합니다.\n· "시공업체"란 견적·시공을 제공하는 파트너를 말합니다.\n\n제3조 (서비스의 제공)\n회사는 견적 비교, 예약, 상품 구매, 포인트·쿠폰, 결제 대행 서비스를 제공합니다.\n\n제4조 (회원의 의무)\n회원은 정확한 정보를 제공해야 하며, 타인의 정보를 도용해서는 안 됩니다.\n\n제5조 (결제 및 환불)\n결제는 회사가 제공하는 수단으로 이루어지며, 환불은 관계 법령 및 취소·환불 정책에 따릅니다.\n\n제6조 (책임의 한계)\n회사는 시공 품질에 대해 카닥수리보증 정책 범위 내에서 책임을 부담합니다.',
+      docAgreeBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => { const key = st.sheet === 'view-privacy' ? 'agreePrivacy' : 'agreeService'; this.setState({ [key]:true, sheet:'terms' }); } },
+
+      // ---- 마케팅
+      swSms: { label:'SMS 수신', checked: st.mkSms, onChange: v => this.setState({ mkSms: v }) },
+      swEmail: { label:'이메일 수신', checked: st.mkEmail, onChange: v => this.setState({ mkEmail: v }) },
+      swPush: { label:'앱푸시 수신', checked: st.mkPush, onChange: v => this.setState({ mkPush: v }) },
+      mktDenyBtn: { variant:'outline', size:'xl', fullWidth:true, onClick: () => this.setState({ mkSms:false, mkEmail:false, mkPush:false, agreeMarketing:false, sheet:'terms' }) },
+      mktAgreeBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => this.setState({ agreeMarketing:true, sheet:'terms' }) },
+      closeViewDoc: () => this.setState({ sheet:'terms' }),
+
+      // ---- 완료
+      homeBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => this.resetAll() },
+    };
+    return V;
+  }
+
+  snsFlow(provider) {
+    this.showToast(provider + ' 본인인증을 진행합니다…');
+    this.setState({ snsProvider: provider });
+    setTimeout(() => this.setState({ sheet:'sns-link' }), 900);
+  }
+  resetAll() {
+    clearInterval(this._t); clearTimeout(this._splashT);
+    this.setState({
+      screen:'splash', sheet:null, toast:'',
+      loginId:'', loginPw:'', autoLogin:true,
+      fiPhone:'', fiOtp:'', fiSent:false, fiVerified:false,
+      fpPhone:'', fpOtp:'', fpSent:false,
+      rpPw:'', rpPw2:'', svPhone:'', svOtp:'', svSent:false, svVerified:false,
+      siId:'', siIdChecked:false, siEmail:'', siPw:'', siPw2:'', siName:'', siDob:'', siContact:'',
+      agreeService:false, agreePrivacy:false, agreeMarketing:false, mkSms:false, mkEmail:false, mkPush:false, countdown:0,
+    });
+    this._splashT = setTimeout(() => { if (this.state.screen === 'splash') this.setState({ screen:'login' }); }, 1600);
+  }
+}
+</script>
+</body>
+</html>

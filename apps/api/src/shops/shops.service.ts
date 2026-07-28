@@ -1,9 +1,13 @@
 // 시공업체 조회 — 목록(시공가능 카테고리 필터·거리순 정렬)/상세(사진·시공가능 카테고리 포함)/내 업체 수정(파트너 전용)
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Shop, ShopPhoto } from '@prisma/client';
+import { deleteShopPhoto, saveShopPhoto } from '../common/storage/shop-photo-storage';
 import { PrismaService } from '../prisma/prisma.service';
 import type { UpdateShopDto } from './dto/update-shop.dto';
+import type { UploadShopPhotoDto } from './dto/upload-shop-photo.dto';
+
+const MAX_CASE_PHOTOS = 10;
 
 export interface ShopListItem extends Shop {
   mainPhoto: ShopPhoto | null;
@@ -238,6 +242,65 @@ export class ShopsService {
         });
       }
     }
+
+    return this.getDetail(shopCode);
+  }
+
+  /** 내 업체 사진 업로드 — MAIN은 항상 1장(있으면 파일 교체), CASE는 추가(최대 10장) */
+  async uploadPhoto(
+    shopCode: string,
+    dto: UploadShopPhotoDto,
+  ): Promise<ShopDetail> {
+    const shop = await this.prisma.shop.findUnique({ where: { shopCode } });
+    if (!shop) {
+      throw new NotFoundException('시공업체를 찾을 수 없습니다.');
+    }
+
+    if (dto.photoType === 'MAIN') {
+      const existing = await this.prisma.shopPhoto.findFirst({
+        where: { shopCode, photoType: 'MAIN' },
+      });
+      const photoPath = await saveShopPhoto(dto.imageBase64);
+      if (existing) {
+        await this.prisma.shopPhoto.update({
+          where: { id: existing.id },
+          data: { photoPath },
+        });
+        await deleteShopPhoto(existing.photoPath);
+      } else {
+        await this.prisma.shopPhoto.create({
+          data: { shopCode, photoPath, photoType: 'MAIN', sortOrder: 0 },
+        });
+      }
+    } else {
+      const caseCount = await this.prisma.shopPhoto.count({
+        where: { shopCode, photoType: 'CASE' },
+      });
+      if (caseCount >= MAX_CASE_PHOTOS) {
+        throw new BadRequestException(
+          `소개 사진은 최대 ${MAX_CASE_PHOTOS}장까지 등록할 수 있습니다.`,
+        );
+      }
+      const photoPath = await saveShopPhoto(dto.imageBase64);
+      await this.prisma.shopPhoto.create({
+        data: { shopCode, photoPath, photoType: 'CASE', sortOrder: caseCount },
+      });
+    }
+
+    return this.getDetail(shopCode);
+  }
+
+  /** 내 업체 사진 삭제 — 다른 업체 소속 photoId를 지정하는 걸 막기 위해 shopCode 일치까지 확인 */
+  async deletePhoto(shopCode: string, photoId: number): Promise<ShopDetail> {
+    const photo = await this.prisma.shopPhoto.findUnique({
+      where: { id: photoId },
+    });
+    if (!photo || photo.shopCode !== shopCode) {
+      throw new NotFoundException('사진을 찾을 수 없습니다.');
+    }
+
+    await this.prisma.shopPhoto.delete({ where: { id: photoId } });
+    await deleteShopPhoto(photo.photoPath);
 
     return this.getDetail(shopCode);
   }

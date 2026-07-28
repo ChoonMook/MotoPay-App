@@ -2,11 +2,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { UPLOADS_ROOT } from './common/storage/profile-image-storage';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // 프로필/업체 사진을 base64 data URI(JSON)로 받다 보니 Express 기본 body 제한(100kb)을 바로 넘어
+  // "request entity too large"가 남 — 이미지 자체는 클라이언트에서 리사이즈해 보내지만 여유 있게 8mb로 상향
+  app.use(json({ limit: '8mb' }));
+  app.use(urlencoded({ extended: true, limit: '8mb' }));
 
   // apps/customer-app/apps/partner-app(별도 origin)에서 fetch로 호출할 수 있도록 허용.
   // CORS_ORIGINS(쉼표구분)를 지정하면 그 목록으로 제한하고, 미지정 시(로컬 개발 기본값) 전체 허용.

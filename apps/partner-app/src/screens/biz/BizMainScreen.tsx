@@ -1,4 +1,5 @@
 // PT-PROF-01: 내 업체 관리 메인 - 업체 프로필 요약 + 4개 메뉴 진입점(기본정보/휴무일/예약가능시간/예약현황) + 부가메뉴(알림함/비밀번호변경/로그아웃)
+import { API_BASE_URL } from "../../api/config";
 import type { MyShop } from "../../api/shops";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon } from "../home/homeIcons";
 import { BasicInfoIcon, HolidayIcon, AvailTimeIcon, StatIcon, PwdIcon, LogoutIcon } from "./bizIcons";
@@ -39,6 +40,8 @@ export default function BizMainScreen({
   onOpenLogoutConfirm,
   onPlaceholder,
 }: BizMainScreenProps) {
+  const mainPhoto = shop?.photos.find((p) => p.photoType === "MAIN") ?? null;
+
   return (
     <div className="absolute inset-0 bg-gray-50">
       {/* top app bar */}
@@ -57,8 +60,16 @@ export default function BizMainScreen({
             {/* 업체 프로필 요약 */}
             <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-[18px] shadow-sm">
               <div className="flex gap-3">
-                <span className="flex h-14 w-14 flex-none items-center justify-center rounded-xl bg-gray-100 text-xl text-gray-400">
-                  🏪
+                <span className="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-xl text-gray-400">
+                  {mainPhoto ? (
+                    <img
+                      src={`${API_BASE_URL}/uploads/${mainPhoto.photoPath}`}
+                      alt={shop.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    "🏪"
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[17px] font-extrabold tracking-tight text-gray-900">{shop.name}</div>

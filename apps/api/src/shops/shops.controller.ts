@@ -1,11 +1,14 @@
 // GET /shops(목록)/GET /shops/:shopCode(상세) — 로그인 불필요, 시공업체 조회용
-// GET·PATCH /shops/me — 파트너 로그인 계정 전용, 내 업체 조회·기본정보 수정(반드시 :shopCode 라우트보다 먼저 선언)
+// GET·PATCH /shops/me, POST·DELETE /shops/me/photos — 파트너 로그인 계정 전용(반드시 :shopCode 라우트보다 먼저 선언)
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +17,7 @@ import { CurrentPartnerUser } from '../partner-auth/decorators/current-partner-u
 import { JwtPartnerAuthGuard } from '../partner-auth/guards/jwt-partner-auth.guard';
 import type { SafePartnerUser } from '../partner-auth/partner-auth.types';
 import { UpdateShopDto } from './dto/update-shop.dto';
+import { UploadShopPhotoDto } from './dto/upload-shop-photo.dto';
 import { ShopsService } from './shops.service';
 
 @ApiTags('shops')
@@ -62,6 +66,31 @@ export class ShopsController {
     @Body() dto: UpdateShopDto,
   ) {
     return this.shopsService.updateMyShop(partnerUser.shopCode, dto);
+  }
+
+  @Post('me/photos')
+  @UseGuards(JwtPartnerAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      '내 업체 사진 업로드(파트너 로그인 전용) — MAIN은 교체(항상 1장), CASE는 추가(최대 10장)',
+  })
+  uploadMyShopPhoto(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Body() dto: UploadShopPhotoDto,
+  ) {
+    return this.shopsService.uploadPhoto(partnerUser.shopCode, dto);
+  }
+
+  @Delete('me/photos/:photoId')
+  @UseGuards(JwtPartnerAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '내 업체 사진 삭제(파트너 로그인 전용)' })
+  deleteMyShopPhoto(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('photoId', ParseIntPipe) photoId: number,
+  ) {
+    return this.shopsService.deletePhoto(partnerUser.shopCode, photoId);
   }
 
   @Get(':shopCode')

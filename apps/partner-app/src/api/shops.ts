@@ -50,3 +50,14 @@ export function updateMyShop(input: UpdateShopInput): Promise<MyShop> {
     body: JSON.stringify(input),
   });
 }
+
+export function uploadShopPhoto(imageBase64: string, photoType: "MAIN" | "CASE"): Promise<MyShop> {
+  return authedRequest<MyShop>("/shops/me/photos", {
+    method: "POST",
+    body: JSON.stringify({ imageBase64, photoType }),
+  });
+}
+
+export function deleteShopPhoto(photoId: number): Promise<MyShop> {
+  return authedRequest<MyShop>(`/shops/me/photos/${photoId}`, { method: "DELETE" });
+}

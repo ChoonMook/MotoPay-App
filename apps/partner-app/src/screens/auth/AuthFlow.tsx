@@ -1,10 +1,10 @@
 // 파트너(시공업체)앱 1 Depth "로그인" PT-AUTH-02~04를 엮는 상태 컨테이너
-// 로그인·최초 비밀번호 변경은 apps/api(/partner-auth/*) 실 연동, 아이디·비밀번호 찾기는 아직 UI 프로토타입(Mock)
+// 로그인·최초 비밀번호 변경·아이디 찾기·비밀번호 찾기 모두 apps/api(/partner-auth/*) 실 연동
 import { useState } from "react";
 import AppShell from "../../components/AppShell";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
-import { login, changePassword } from "../../api/partnerAuth";
+import { login, changePassword, findUsername, requestPasswordReset, resetPassword } from "../../api/partnerAuth";
 import { setTokens } from "../../api/tokenStorage";
 import LoginScreen from "./LoginScreen";
 import AcctFindScreen from "./AcctFindScreen";
@@ -26,9 +26,18 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [pwdChangeLoading, setPwdChangeLoading] = useState(false);
+  const [findIdLoading, setFindIdLoading] = useState(false);
+  const [foundUsername, setFoundUsername] = useState<string | null>(null);
+  const [pwFindLoading, setPwFindLoading] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [pwResetLoading, setPwResetLoading] = useState(false);
   const { toast, showToast } = useToast();
 
-  const closeSheet = () => setSheet(null);
+  const closeSheet = () => {
+    setSheet(null);
+    setFoundUsername(null);
+    setResetToken(null);
+  };
 
   return (
     <AppShell>
@@ -78,6 +87,18 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
       {sheet === "findId" && (
         <AcctFindScreen
           onClose={closeSheet}
+          loading={findIdLoading}
+          foundUsername={foundUsername}
+          onVerify={async (phone) => {
+            setFindIdLoading(true);
+            try {
+              setFoundUsername(await findUsername(phone));
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "아이디 찾기에 실패했습니다", "danger");
+            } finally {
+              setFindIdLoading(false);
+            }
+          }}
           onGoLogin={() => {
             closeSheet();
             showToast("로그인 화면으로 이동했어요");
@@ -86,15 +107,39 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
       )}
 
       {sheet === "findPw" && (
-        <PwdFindScreen onClose={closeSheet} onVerified={() => setSheet("resetPw")} />
+        <PwdFindScreen
+          onClose={closeSheet}
+          loading={pwFindLoading}
+          onVerified={async (username, phone) => {
+            setPwFindLoading(true);
+            try {
+              setResetToken(await requestPasswordReset(username, phone));
+              setSheet("resetPw");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "비밀번호 찾기에 실패했습니다", "danger");
+            } finally {
+              setPwFindLoading(false);
+            }
+          }}
+        />
       )}
 
       {sheet === "resetPw" && (
         <PwdResetScreen
           onClose={closeSheet}
-          onDone={() => {
-            closeSheet();
-            showToast("비밀번호가 변경되었어요", "success");
+          loading={pwResetLoading}
+          onDone={async (newPassword) => {
+            if (!resetToken) return;
+            setPwResetLoading(true);
+            try {
+              await resetPassword(resetToken, newPassword);
+              closeSheet();
+              showToast("비밀번호가 변경되었어요", "success");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "비밀번호 변경에 실패했습니다", "danger");
+            } finally {
+              setPwResetLoading(false);
+            }
           }}
         />
       )}

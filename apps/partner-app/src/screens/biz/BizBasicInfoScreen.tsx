@@ -22,6 +22,8 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
   const [zipCode, setZipCode] = useState(shop.zipCode ?? "");
   const [address, setAddress] = useState(shop.address ?? "");
   const [addressDetail, setAddressDetail] = useState(shop.addressDetail ?? "");
+  const [latitude, setLatitude] = useState<number | null>(shop.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(shop.longitude ?? null);
   const [phone, setPhone] = useState(shop.phone ?? "");
   const [businessHours, setBusinessHours] = useState(shop.businessHours ?? "");
   const [selectedCategories, setSelectedCategories] = useState<string[]>(shop.categories);
@@ -42,6 +44,8 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
       (result) => {
         setZipCode(result.zonecode);
         setAddress(result.address);
+        setLatitude(null);
+        setLongitude(null);
       },
       (message) => onError(message),
     );
@@ -62,6 +66,8 @@ export default function BizBasicInfoScreen({ shop, onBack, onSaved, onError }: B
         zipCode,
         address,
         addressDetail,
+        latitude,
+        longitude,
         phone,
         businessHours,
         categories: selectedCategories,

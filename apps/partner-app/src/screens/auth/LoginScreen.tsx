@@ -23,7 +23,7 @@ export default function LoginScreen({
 }: LoginScreenProps) {
   const [id, setId] = useState("");
   const [pw, setPw] = useState("");
-  const [autoLogin, setAutoLogin] = useState(true);
+  const [autoLogin, setAutoLogin] = useState(false);
 
   return (
     <div

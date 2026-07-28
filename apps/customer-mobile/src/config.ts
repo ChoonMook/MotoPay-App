@@ -3,3 +3,7 @@
 // 10.0.2.2 방식은 에뮬레이터 전용인 데다 Vite가 IPv6(::1)로만 바인딩되면 연결이 안 되는 문제가 있어 이 방식을 채택함)
 // 운영 서버는 http(비TLS)라 app.json의 usesCleartextTraffic: true가 dev용이 아니라 운영에도 그대로 필요함
 export const WEB_URL = __DEV__ ? "http://localhost:5173" : "http://221.141.3.91:8090";
+
+// 파트너(시공업체)앱 주소 - "마지막으로 사용한 앱 기억" 기능에서 웹뷰 초기 진입 URL을 고르는 데 사용
+// (customer-app의 config.ts에 있는 PARTNER_APP_URL과 동일한 값)
+export const PARTNER_APP_URL = __DEV__ ? "http://localhost:5174" : "http://221.141.3.91:8091";

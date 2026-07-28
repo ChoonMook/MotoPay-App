@@ -7,10 +7,11 @@ import { useOtpTimer } from "./useOtpTimer";
 
 interface PwdFindScreenProps {
   onClose: () => void;
-  onVerified: () => void;
+  onVerified: (username: string, phone: string) => void;
+  loading?: boolean;
 }
 
-export default function PwdFindScreen({ onClose, onVerified }: PwdFindScreenProps) {
+export default function PwdFindScreen({ onClose, onVerified, loading }: PwdFindScreenProps) {
   const [id, setId] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -72,10 +73,10 @@ export default function PwdFindScreen({ onClose, onVerified }: PwdFindScreenProp
             <Button
               size="lg"
               fullWidth={false}
-              disabled={otp.length < 4}
+              disabled={otp.length < 4 || loading}
               onClick={() => {
                 timer.stop();
-                onVerified();
+                onVerified(id, phone);
               }}
             >
               확인

@@ -1,6 +1,6 @@
 // PATCH /shops/me 요청 바디 검증 — 내 업체 기본정보 수정(부분 수정, 보낸 필드만 반영)
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateShopDto {
   @ApiPropertyOptional({ description: '소개글' })
@@ -27,6 +27,16 @@ export class UpdateShopDto {
   @IsOptional()
   @IsString()
   addressDetail?: string;
+
+  @ApiPropertyOptional({ description: '위도' })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: '경도' })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @ApiPropertyOptional({ description: '대표 전화번호' })
   @IsOptional()

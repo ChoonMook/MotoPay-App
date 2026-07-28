@@ -6,19 +6,20 @@ import Button from "../../components/ui/Button";
 
 interface PwdResetScreenProps {
   onClose: () => void;
-  onDone: () => void;
+  onDone: (newPassword: string) => void;
+  loading?: boolean;
 }
 
 const MIX_RE = /(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/;
 
-export default function PwdResetScreen({ onClose, onDone }: PwdResetScreenProps) {
+export default function PwdResetScreen({ onClose, onDone, loading }: PwdResetScreenProps) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
 
   const ruleLen = pw.length >= 8;
   const ruleMix = MIX_RE.test(pw);
   const ruleMatch = pw.length > 0 && pw === pw2;
-  const canSubmit = ruleLen && ruleMix && ruleMatch;
+  const canSubmit = ruleLen && ruleMix && ruleMatch && !loading;
 
   const ruleRow = (ok: boolean, label: string) => (
     <div className={`flex items-center gap-2 text-[12.5px] ${ok ? "text-status-success" : "text-gray-400"}`}>
@@ -54,7 +55,7 @@ export default function PwdResetScreen({ onClose, onDone }: PwdResetScreenProps)
         {ruleRow(ruleMatch, "비밀번호 일치")}
       </div>
 
-      <Button disabled={!canSubmit} onClick={onDone}>
+      <Button disabled={!canSubmit} onClick={() => onDone(pw)}>
         완료
       </Button>
     </BottomSheet>

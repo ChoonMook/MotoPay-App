@@ -9,13 +9,21 @@ import { useOtpTimer } from "./useOtpTimer";
 interface AcctFindScreenProps {
   onClose: () => void;
   onGoLogin: () => void;
+  onVerify: (phone: string) => void;
+  foundUsername: string | null;
+  loading?: boolean;
 }
 
-export default function AcctFindScreen({ onClose, onGoLogin }: AcctFindScreenProps) {
+export default function AcctFindScreen({
+  onClose,
+  onGoLogin,
+  onVerify,
+  foundUsername,
+  loading,
+}: AcctFindScreenProps) {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
-  const [verified, setVerified] = useState(false);
   const timer = useOtpTimer();
 
   return (
@@ -69,10 +77,10 @@ export default function AcctFindScreen({ onClose, onGoLogin }: AcctFindScreenPro
             <Button
               size="lg"
               fullWidth={false}
-              disabled={otp.length < 4}
+              disabled={otp.length < 4 || loading}
               onClick={() => {
                 timer.stop();
-                setVerified(true);
+                onVerify(phone);
               }}
             >
               확인
@@ -81,14 +89,14 @@ export default function AcctFindScreen({ onClose, onGoLogin }: AcctFindScreenPro
         </div>
       )}
 
-      {verified && (
+      {foundUsername && (
         <>
           <div
             className="mt-2 mb-[18px] rounded-xl bg-brand-subtle p-5 text-center"
             style={{ animation: "mp-screen .3s ease" }}
           >
             <div className="mb-1.5 text-[13px] text-gray-600">시공업체 회원님의 아이디는</div>
-            <div className="text-[22px] font-extrabold tracking-tight text-brand">shop****45</div>
+            <div className="text-[22px] font-extrabold tracking-tight text-brand">{foundUsername}</div>
           </div>
           <Button onClick={onGoLogin}>로그인하기</Button>
         </>

@@ -1,5 +1,6 @@
 // 시공업체 조회 — 목록(시공가능 카테고리 필터·거리순 정렬)/상세(사진·시공가능 카테고리 포함)/내 업체 수정(파트너 전용)
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Shop, ShopPhoto } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { UpdateShopDto } from './dto/update-shop.dto';
@@ -42,7 +43,10 @@ function toRad(deg: number): number {
 
 @Injectable()
 export class ShopsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async list(params: ListShopsParams): Promise<ShopListItem[]> {
     const { instCodes, lat, lng } = params;
@@ -107,6 +111,92 @@ export class ShopsService {
     return { ...rest, categories: categories.map((c) => c.instCode) };
   }
 
+  private async resolveCoordinates(address: string): Promise<{ latitude: number | null; longitude: number | null }> {
+    const query = address.trim();
+    if (!query) {
+      return { latitude: null, longitude: null };
+    }
+
+    const kakaoRestApiKey = this.configService.get<string>('KAKAO_REST_API_KEY');
+    if (kakaoRestApiKey) {
+      const kakaoResult = await this.resolveWithKakao(query, kakaoRestApiKey);
+      if (kakaoResult) {
+        return kakaoResult;
+      }
+    }
+
+    return this.resolveWithNominatim(query);
+  }
+
+  private async resolveWithKakao(
+    query: string,
+    kakaoRestApiKey: string,
+  ): Promise<{ latitude: number | null; longitude: number | null } | null> {
+    try {
+      const params = new URLSearchParams({ query });
+      const response = await fetch(`https://dapi.kakao.com/v2/local/search/address.json?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `KakaoAK ${kakaoRestApiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = (await response.json()) as { documents?: Array<{ x?: string; y?: string }> };
+      const match = data.documents?.[0];
+      if (!match?.x || !match?.y) {
+        return null;
+      }
+
+      return {
+        latitude: Number(match.y),
+        longitude: Number(match.x),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async resolveWithNominatim(
+    query: string,
+  ): Promise<{ latitude: number | null; longitude: number | null }> {
+    try {
+      const params = new URLSearchParams({
+        format: 'jsonv2',
+        limit: '1',
+        addressdetails: '1',
+        q: query,
+      });
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept-Language': 'ko',
+          'User-Agent': 'MotoPay/1.0',
+        },
+      });
+
+      if (!response.ok) {
+        return { latitude: null, longitude: null };
+      }
+
+      const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
+      const match = data[0];
+      if (!match?.lat || !match?.lon) {
+        return { latitude: null, longitude: null };
+      }
+
+      return {
+        latitude: Number(match.lat),
+        longitude: Number(match.lon),
+      };
+    } catch {
+      return { latitude: null, longitude: null };
+    }
+  }
+
   /** 파트너 로그인 계정의 소속 업체(기본정보 관리 화면) 수정 — 보낸 필드만 반영, categories는 보내면 전체 교체 */
   async updateMyShop(
     shopCode: string,
@@ -117,16 +207,26 @@ export class ShopsService {
       throw new NotFoundException('시공업체를 찾을 수 없습니다.');
     }
 
+    const addressToGeocode = dto.address ?? shop.address;
+    const resolvedCoordinates = addressToGeocode
+      ? await this.resolveCoordinates(addressToGeocode)
+      : { latitude: null, longitude: null };
+
+    const latitude = dto.latitude ?? resolvedCoordinates.latitude ?? shop.latitude ?? null;
+    const longitude = dto.longitude ?? resolvedCoordinates.longitude ?? shop.longitude ?? null;
+
     await this.prisma.shop.update({
       where: { shopCode },
       data: {
-        intro: dto.intro,
-        greeting: dto.greeting,
-        zipCode: dto.zipCode,
-        address: dto.address,
-        addressDetail: dto.addressDetail,
-        phone: dto.phone,
-        businessHours: dto.businessHours,
+        ...(dto.intro !== undefined ? { intro: dto.intro } : {}),
+        ...(dto.greeting !== undefined ? { greeting: dto.greeting } : {}),
+        ...(dto.zipCode !== undefined ? { zipCode: dto.zipCode } : {}),
+        ...(dto.address !== undefined ? { address: dto.address } : {}),
+        ...(dto.addressDetail !== undefined ? { addressDetail: dto.addressDetail } : {}),
+        latitude,
+        longitude,
+        ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+        ...(dto.businessHours !== undefined ? { businessHours: dto.businessHours } : {}),
       },
     });
 

@@ -30,6 +30,10 @@ import PwdFindScreen from "./PwdFindScreen";
 import PwdResetScreen from "./PwdResetScreen";
 
 type Screen = "splash" | "login" | "verify" | "info" | "done";
+
+// 최초 1회만 스플래시를 보여주기 위한 로컬 플래그 — 파트너앱은 스플래시가 없으므로 고객앱 쪽에만 기록하면
+// "고객앱/파트너앱 구분 없이 최초 1회만" 요건이 그대로 충족됨(같은 origin이라 앱을 재실행해도 값이 유지됨)
+const SPLASH_SEEN_KEY = "mp_splash_seen";
 type Sheet =
   | null
   | "findId"
@@ -46,7 +50,9 @@ interface AuthFlowProps {
 }
 
 export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
-  const [screen, setScreen] = useState<Screen>("splash");
+  const [screen, setScreen] = useState<Screen>(() =>
+    localStorage.getItem(SPLASH_SEEN_KEY) ? "login" : "splash",
+  );
   const [sheet, setSheet] = useState<Sheet>(null);
   const [snsProvider, setSnsProvider] = useState<SnsProvider>("카카오");
   const [signupName, setSignupName] = useState("");
@@ -104,7 +110,12 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
   return (
     <AppShell>
       {screen === "splash" && (
-          <StartLoginSignupScreen onContinue={() => setScreen("login")} />
+          <StartLoginSignupScreen
+            onContinue={() => {
+              localStorage.setItem(SPLASH_SEEN_KEY, "1");
+              setScreen("login");
+            }}
+          />
         )}
 
         {screen === "login" && (

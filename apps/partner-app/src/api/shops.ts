@@ -33,6 +33,8 @@ export interface UpdateShopInput {
   zipCode?: string;
   address?: string;
   addressDetail?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   phone?: string;
   businessHours?: string;
   categories?: string[];

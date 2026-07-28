@@ -10,6 +10,12 @@ export interface PartnerAuthTokens {
   refreshToken: string;
 }
 
+/** 비밀번호 재설정용 임시 토큰(access/refresh와 별도 시크릿·짧은 만료) payload */
+export interface PartnerResetTokenPayload {
+  sub: string; // partner user id
+  purpose: 'password-reset';
+}
+
 export interface SafePartnerUser {
   id: string;
   username: string;

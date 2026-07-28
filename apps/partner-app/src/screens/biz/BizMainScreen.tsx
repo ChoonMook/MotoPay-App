@@ -28,6 +28,7 @@ const NAV_ITEMS = [
 interface BizMainScreenProps {
   shop: MyShop | null;
   onOpenBasicInfo: () => void;
+  onOpenHoliday: () => void;
   onOpenHome: () => void;
   onOpenLogoutConfirm: () => void;
   onPlaceholder: (label: string) => void;
@@ -36,6 +37,7 @@ interface BizMainScreenProps {
 export default function BizMainScreen({
   shop,
   onOpenBasicInfo,
+  onOpenHoliday,
   onOpenHome,
   onOpenLogoutConfirm,
   onPlaceholder,
@@ -86,7 +88,11 @@ export default function BizMainScreen({
               {MAIN_MENUS.map((m) => (
                 <div
                   key={m.key}
-                  onClick={() => (m.key === "basic" ? onOpenBasicInfo() : onPlaceholder(m.label))}
+                  onClick={() => {
+                    if (m.key === "basic") onOpenBasicInfo();
+                    else if (m.key === "holiday") onOpenHoliday();
+                    else onPlaceholder(m.label);
+                  }}
                   className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm"
                 >
                   <span className="mb-2.5 inline-flex text-brand">{m.icon}</span>

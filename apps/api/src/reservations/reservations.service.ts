@@ -5,7 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { Reservation } from '@prisma/client';
+import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { maskPhone } from '../common/mask/mask-phone';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductsService } from '../products/products.service';
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -50,9 +53,71 @@ function toView(reservation: Reservation): ReservationView {
   return { ...rest, date: formatDateOnly(date), time: formatTimeOnly(time) };
 }
 
+// PT-HOME-01 "오늘의 시공 일정" 카드 응답 — 예약에 서비스(시공항목)·차종 연결 컬럼이 없어
+// reservationType(신차패키지/일반입찰)을 서비스명 대용으로, 회원의 대표차량(없으면 최근 등록차량)을 차량정보로 사용(근사치)
+export interface TodayReservationView {
+  reservationNo: string;
+  time: string; // "HH:mm"
+  customerName: string;
+  reservationType: string; // -> CommonCodeDetail(code='RESERVATION_TYPE')
+  progressStatus: string; // -> CommonCodeDetail(code='RESERVATION_PROGRESS')
+  car: string | null;
+  plate: string | null;
+}
+
+export interface PackageProgressStats {
+  applied: number; // 착수대기
+  inProgress: number; // 시공중
+  done: number; // 완료
+}
+
+// PT-NCPK-01~03 신차패키지 시공관리 — Reservation에는 차량·패키지 연결 컬럼이 없어
+// 회원의 신차매핑 차량(MyCar.regType='MAP')을 통해 구매 패키지(NewCarPurchaseCustomer.packageCode)를
+// 역추적해 구성상품(ProductBundleItem)을 시공 항목으로 사용(근사치 — 회원이 매핑 차량을 여러 대 갖는 경우는 최근 등록건 기준)
+export interface PackageJobItem {
+  name: string;
+  spec: string | null;
+  tag: 'BASIC' | 'OPTION';
+}
+
+export interface PackageJobView {
+  reservationNo: string;
+  date: string;
+  time: string;
+  customerName: string;
+  car: string | null;
+  vin: string | null;
+  progressStatus: string;
+  itemSummary: string;
+}
+
+export interface PackageJobDetailView {
+  reservationNo: string;
+  date: string;
+  time: string;
+  customerName: string;
+  phoneMasked: string;
+  car: string | null;
+  vin: string | null;
+  progressStatus: string;
+  packageName: string | null;
+  items: PackageJobItem[];
+}
+
+function summarizeItems(items: PackageJobItem[]): string {
+  if (items.length === 0) return '-';
+  const names = items.map((i) => i.name);
+  if (names.length <= 4) return names.join(' · ');
+  return `${names.slice(0, 3).join(' · ')} 외 ${names.length - 3}건`;
+}
+
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly productsService: ProductsService,
+    private readonly phoneCrypto: PhoneCryptoService,
+  ) {}
 
   async create(params: CreateReservationParams): Promise<ReservationView> {
     const { shopCode, date, time, reservationType, memberId } = params;
@@ -232,6 +297,174 @@ export class ReservationsService {
       data: { date: targetDate, time: targetTime, seq: reservedCount + 1 },
     });
     return toView(updated);
+  }
+
+  // ── 파트너 홈(PT-HOME-01) ────────────────────────────────────
+
+  async listTodayForShop(shopCode: string): Promise<TodayReservationView[]> {
+    const today = todayUtcMidnight();
+    const reservations = await this.prisma.reservation.findMany({
+      where: { shopCode, date: today, status: 'CONFIRMED' },
+      include: {
+        member: {
+          include: { cars: { orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }], take: 1 } },
+        },
+      },
+      orderBy: { time: 'asc' },
+    });
+
+    return reservations.map((r) => {
+      const car = r.member.cars[0] ?? null;
+      return {
+        reservationNo: r.reservationNo,
+        time: formatTimeOnly(r.time),
+        customerName: r.member.name,
+        reservationType: r.reservationType,
+        progressStatus: r.progressStatus,
+        car: car?.trimName ?? car?.carModelCode ?? null,
+        plate: car?.plateNumber ?? null,
+      };
+    });
+  }
+
+  async updateProgress(
+    shopCode: string,
+    reservationNo: string,
+    progressStatus: string,
+  ): Promise<void> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (!reservation || reservation.shopCode !== shopCode) {
+      throw new NotFoundException('예약을 찾을 수 없습니다.');
+    }
+    if (reservation.status !== 'CONFIRMED') {
+      throw new BadRequestException('취소된 예약은 진행상태를 변경할 수 없습니다.');
+    }
+    await this.prisma.reservation.update({
+      where: { reservationNo },
+      data: { progressStatus },
+    });
+  }
+
+  async getPackageStats(shopCode: string): Promise<PackageProgressStats> {
+    const grouped = await this.prisma.reservation.groupBy({
+      by: ['progressStatus'],
+      where: { shopCode, reservationType: 'PKG', status: 'CONFIRMED' },
+      _count: { _all: true },
+    });
+    const countOf = (status: string) =>
+      grouped.find((g) => g.progressStatus === status)?._count._all ?? 0;
+    return {
+      applied: countOf('APPLIED'),
+      inProgress: countOf('IN_PROGRESS'),
+      done: countOf('DONE'),
+    };
+  }
+
+  // ── 파트너 신차패키지 시공관리(PT-NCPK-01~03) ──────────────────
+
+  async listPackagesForShop(shopCode: string): Promise<PackageJobView[]> {
+    const reservations = await this.prisma.reservation.findMany({
+      where: { shopCode, reservationType: 'PKG', status: 'CONFIRMED' },
+      include: { member: true },
+      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+    });
+
+    return Promise.all(
+      reservations.map(async (r) => {
+        const { car, items } = await this.resolveMemberPackage(r.memberId);
+        return {
+          reservationNo: r.reservationNo,
+          date: formatDateOnly(r.date),
+          time: formatTimeOnly(r.time),
+          customerName: r.member.name,
+          car: car?.name ?? null,
+          vin: car?.vin ?? null,
+          progressStatus: r.progressStatus,
+          itemSummary: summarizeItems(items),
+        };
+      }),
+    );
+  }
+
+  async getPackageJobDetail(
+    shopCode: string,
+    reservationNo: string,
+  ): Promise<PackageJobDetailView> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+      include: { member: true },
+    });
+    if (
+      !reservation ||
+      reservation.shopCode !== shopCode ||
+      reservation.reservationType !== 'PKG'
+    ) {
+      throw new NotFoundException('신차패키지 예약을 찾을 수 없습니다.');
+    }
+
+    const { car, packageName, items } = await this.resolveMemberPackage(
+      reservation.memberId,
+    );
+    const phoneMasked = reservation.member.phoneEncrypted
+      ? maskPhone(this.phoneCrypto.decrypt(reservation.member.phoneEncrypted))
+      : '-';
+
+    return {
+      reservationNo: reservation.reservationNo,
+      date: formatDateOnly(reservation.date),
+      time: formatTimeOnly(reservation.time),
+      customerName: reservation.member.name,
+      phoneMasked,
+      car: car?.name ?? null,
+      vin: car?.vin ?? null,
+      progressStatus: reservation.progressStatus,
+      packageName,
+      items,
+    };
+  }
+
+  private async resolveMemberPackage(memberId: string): Promise<{
+    car: { name: string; vin: string | null } | null;
+    packageName: string | null;
+    items: PackageJobItem[];
+  }> {
+    const car = await this.prisma.myCar.findFirst({
+      where: { memberId, regType: 'MAP', purchaseVin: { not: null } },
+      include: { purchase: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!car) {
+      return { car: null, packageName: null, items: [] };
+    }
+
+    const carView = { name: car.trimName ?? car.carModelCode, vin: car.vin };
+    const packageCode = car.purchase?.packageCode;
+    if (!packageCode) {
+      return { car: carView, packageName: null, items: [] };
+    }
+
+    try {
+      const detail = await this.productsService.getPackageDetail(packageCode);
+      const toItem = (
+        bundleItem: (typeof detail.basicItems)[number],
+        tag: PackageJobItem['tag'],
+      ): PackageJobItem => ({
+        name: bundleItem.product?.name ?? bundleItem.componentCode,
+        spec: bundleItem.product?.description ?? null,
+        tag,
+      });
+      const items: PackageJobItem[] = [
+        ...detail.basicItems.map((i) => toItem(i, 'BASIC')),
+        ...detail.optionItems.map((i) => toItem(i, 'OPTION')),
+        ...detail.addItems.map((i) => toItem(i, 'OPTION')),
+      ];
+      return { car: carView, packageName: detail.package.name, items };
+    } catch {
+      // 매핑된 패키지 상품이 삭제·비활성화된 경우 등 — 차량 정보만 있고 시공 항목은 빈 목록으로 응답
+      return { car: carView, packageName: null, items: [] };
+    }
   }
 
   private async findOwnedOrThrow(

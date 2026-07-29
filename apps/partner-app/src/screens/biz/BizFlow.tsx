@@ -1,4 +1,4 @@
-// 내 업체 관리 PT-PROF-01(메인)~03(휴무일 설정)를 엮는 상태 컨테이너
+// 내 업체 관리 PT-PROF-01(메인)~07(비밀번호 변경)를 엮는 상태 컨테이너
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
@@ -7,9 +7,12 @@ import { getMyShop, type MyShop } from "../../api/shops";
 import BizMainScreen from "./BizMainScreen";
 import BizBasicInfoScreen from "./BizBasicInfoScreen";
 import BizHolidayScreen from "./BizHolidayScreen";
+import BizAvailTimeScreen from "./BizAvailTimeScreen";
+import BizRsvStatScreen from "./BizRsvStatScreen";
+import BizPwdChangeScreen from "./BizPwdChangeScreen";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 
-type Screen = "main" | "basicInfo" | "holiday";
+type Screen = "main" | "basicInfo" | "holiday" | "availtime" | "rsvstat" | "pwdChange";
 
 interface BizFlowProps {
   onExit: () => void;
@@ -36,6 +39,9 @@ export default function BizFlow({ onExit, onLogout }: BizFlowProps) {
           shop={shop}
           onOpenBasicInfo={() => setScreen("basicInfo")}
           onOpenHoliday={() => setScreen("holiday")}
+          onOpenAvailTime={() => setScreen("availtime")}
+          onOpenRsvStat={() => setScreen("rsvstat")}
+          onOpenPwdChange={() => setScreen("pwdChange")}
           onOpenHome={onExit}
           onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
           onPlaceholder={(label) => showToast(`${label}(으)로 이동해요`)}
@@ -59,6 +65,34 @@ export default function BizFlow({ onExit, onLogout }: BizFlowProps) {
           shop={shop}
           onBack={() => setScreen("main")}
           onSaved={() => showToast("휴무일이 저장되었어요.", "success")}
+          onError={(message) => showToast(message, "danger")}
+        />
+      )}
+
+      {screen === "availtime" && shop && (
+        <BizAvailTimeScreen
+          shop={shop}
+          onBack={() => setScreen("main")}
+          onSaved={() => showToast("예약 가능 시간이 저장되었어요.", "success")}
+          onError={(message) => showToast(message, "danger")}
+        />
+      )}
+
+      {screen === "rsvstat" && shop && (
+        <BizRsvStatScreen
+          shop={shop}
+          onBack={() => setScreen("main")}
+          onError={(message) => showToast(message, "danger")}
+        />
+      )}
+
+      {screen === "pwdChange" && (
+        <BizPwdChangeScreen
+          onBack={() => setScreen("main")}
+          onSaved={() => {
+            setScreen("main");
+            showToast("비밀번호가 변경되었어요.", "success");
+          }}
           onError={(message) => showToast(message, "danger")}
         />
       )}

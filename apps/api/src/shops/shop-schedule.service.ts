@@ -37,6 +37,13 @@ export interface DailyScheduleView {
   slots: DailySlotView[];
 }
 
+export interface MonthlyScheduleDay {
+  date: string; // "YYYY-MM-DD"
+  reservedCount: number; // 그 날짜의 확정(CONFIRMED) 예약 건수
+  isHoliday: boolean;
+  isLocked: boolean; // 그 날짜에 잠금 처리된 시간대가 하나라도 있으면 true
+}
+
 @Injectable()
 export class ShopScheduleService {
   constructor(private readonly prisma: PrismaService) {}
@@ -232,5 +239,49 @@ export class ShopScheduleService {
         isLocked: isLocked ?? false,
       },
     });
+  }
+
+  // ── 월간 요약(화면1 캘린더의 일자별 배지) ──────────────────────
+
+  async getMonthlySummary(
+    shopCode: string,
+    year: number,
+    month: number,
+  ): Promise<MonthlyScheduleDay[]> {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    const [reservationCounts, holidays, lockedSlots] = await Promise.all([
+      this.prisma.reservation.groupBy({
+        by: ['date'],
+        where: { shopCode, status: 'CONFIRMED', date: { gte: start, lt: end } },
+        _count: { _all: true },
+      }),
+      this.prisma.shopHoliday.findMany({
+        where: { shopCode, holidayDate: { gte: start, lt: end } },
+      }),
+      this.prisma.shopDailySlot.findMany({
+        where: { shopCode, isLocked: true, date: { gte: start, lt: end } },
+      }),
+    ]);
+
+    const countByDate = new Map(
+      reservationCounts.map((r) => [formatDateOnly(r.date), r._count._all]),
+    );
+    const holidaySet = new Set(holidays.map((h) => formatDateOnly(h.holidayDate)));
+    const lockedSet = new Set(lockedSlots.map((s) => formatDateOnly(s.date)));
+
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const days: MonthlyScheduleDay[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = formatDateOnly(new Date(Date.UTC(year, month - 1, d)));
+      days.push({
+        date,
+        reservedCount: countByDate.get(date) ?? 0,
+        isHoliday: holidaySet.has(date),
+        isLocked: lockedSet.has(date),
+      });
+    }
+    return days;
   }
 }

@@ -1,7 +1,5 @@
 // 시공업체 스케줄 관리 API — 조회는 공개.
-// 휴무일 등록/삭제는 파트너 로그인 + 본인 소속 업체인지 검증(assertOwnShop).
-// 예약가능 시간대(time-slots)/일자별 정원(daily-slots) 등록·수정은 아직 JwtAuthGuard(고객 인증)만 걸려 있고
-// 업체 소유권 검증이 없음 — 이번 작업 범위가 아니라 남겨둠(CLAUDE.md 참고)
+// 휴무일/예약가능 시간대/일자별 정원 등록·수정은 모두 파트너 로그인 + 본인 소속 업체인지 검증(assertOwnShop).
 import {
   Body,
   Controller,
@@ -16,7 +14,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentPartnerUser } from '../partner-auth/decorators/current-partner-user.decorator';
 import { JwtPartnerAuthGuard } from '../partner-auth/guards/jwt-partner-auth.guard';
 import type { SafePartnerUser } from '../partner-auth/partner-auth.types';
@@ -89,17 +86,36 @@ export class ShopScheduleController {
   }
 
   @Put('time-slots/:dayType')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '요일구분별 예약가능 시간대 템플릿 저장(전체 교체)',
+    summary: '요일구분별 예약가능 시간대 템플릿 저장(전체 교체, 파트너 로그인 전용·본인 소속 업체만)',
   })
-  replaceTimeSlots(
+  async replaceTimeSlots(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
     @Param('shopCode') shopCode: string,
     @Param('dayType') dayType: string,
     @Body('slots') slots: TimeSlotInput[],
   ) {
-    return this.scheduleService.replaceTimeSlots(shopCode, dayType, slots);
+    this.assertOwnShop(partnerUser, shopCode);
+    await this.scheduleService.replaceTimeSlots(shopCode, dayType, slots);
+    return { success: true };
+  }
+
+  @Get('schedule/monthly')
+  @ApiOperation({
+    summary: '월간 예약 현황 요약 — 일자별 예약건수·휴무여부·잠금여부',
+  })
+  getMonthlySummary(
+    @Param('shopCode') shopCode: string,
+    @Query('year') year: string,
+    @Query('month') month: string,
+  ) {
+    return this.scheduleService.getMonthlySummary(
+      shopCode,
+      Number(year),
+      Number(month),
+    );
   }
 
   @Get('schedule')
@@ -115,21 +131,26 @@ export class ShopScheduleController {
   }
 
   @Patch('daily-slots')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '특정 일자·시간의 정원/잠금 오버라이드' })
-  upsertDailySlot(
+  @ApiOperation({
+    summary: '특정 일자·시간의 정원/잠금 오버라이드(파트너 로그인 전용·본인 소속 업체만)',
+  })
+  async upsertDailySlot(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
     @Param('shopCode') shopCode: string,
     @Body('date') date: string,
     @Body('time') time: string,
     @Body('capacity') capacity?: number,
     @Body('isLocked') isLocked?: boolean,
   ) {
-    return this.scheduleService.upsertDailySlot(shopCode, {
+    this.assertOwnShop(partnerUser, shopCode);
+    await this.scheduleService.upsertDailySlot(shopCode, {
       date,
       time,
       capacity,
       isLocked,
     });
+    return { success: true };
   }
 }

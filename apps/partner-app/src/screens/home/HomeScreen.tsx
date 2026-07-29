@@ -1,6 +1,12 @@
 // PT-HOME-01: 파트너(시공업체) 로그인 후 진입하는 업무 홈 - 확인 대기 알림 + 신차패키지 시공관리/예약시공 입찰 현황 + 오늘의 시공 일정 + 하단내비
+// 예약시공 입찰 통계·확인 대기 알림 배너는 아직 연계할 백엔드(Bid/Notification 모델)가 없어 mock 유지, 나머지는 실 API 연동
+import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { getMe, type PartnerUser } from "../../api/partnerAuth";
+import { getPackageStats, getTodayReservations, type PackageProgressStats, type TodayReservation } from "../../api/reservations";
+import type { NcpkTab } from "../ncpk/ncpkData";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon, AlertCircleIcon, PackageIcon, TagIcon } from "./homeIcons";
 
 interface StatItem {
@@ -9,11 +15,9 @@ interface StatItem {
   colorClass: string;
 }
 
-const PKG_STATS: StatItem[] = [
-  { value: 3, label: "착수대기", colorClass: "text-accent-strong" },
-  { value: 2, label: "시공중", colorClass: "text-brand" },
-  { value: 18, label: "완료", colorClass: "text-status-success" },
-];
+interface PkgStatItem extends StatItem {
+  tab: NcpkTab;
+}
 
 const BID_STATS: StatItem[] = [
   { value: 4, label: "신규요청", colorClass: "text-accent-strong" },
@@ -21,28 +25,16 @@ const BID_STATS: StatItem[] = [
   { value: 3, label: "시공대기", colorClass: "text-[#0E9A96]" },
 ];
 
-type ResvStatus = "방문예정" | "시공중" | "완료";
-
-const STATUS_CHIP: Record<ResvStatus, string> = {
-  방문예정: "text-brand bg-brand-subtle",
-  시공중: "text-accent-strong bg-accent-subtle",
-  완료: "text-status-success bg-status-success-bg",
+const PROGRESS_CHIP: Record<string, { label: string; chipClass: string }> = {
+  APPLIED: { label: "방문예정", chipClass: "text-brand bg-brand-subtle" },
+  IN_PROGRESS: { label: "시공중", chipClass: "text-accent-strong bg-accent-subtle" },
+  DONE: { label: "완료", chipClass: "text-status-success bg-status-success-bg" },
 };
 
-interface TodayReservation {
-  time: string;
-  service: string;
-  customer: string;
-  car: string;
-  plate: string;
-  status: ResvStatus;
+function todayLabel(): string {
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
-
-const TODAY_RESV: TodayReservation[] = [
-  { time: "오후 2:00", customer: "박지훈", service: "유리막코팅", car: "쏘렌토", plate: "78마 1234", status: "시공중" },
-  { time: "오후 4:00", customer: "홍길동", service: "틴팅", car: "Benz E-Class", plate: "12가 3456", status: "방문예정" },
-  { time: "오전 10:30", customer: "이서연", service: "블랙박스", car: "Kia K5", plate: "45나 7890", status: "완료" },
-];
 
 const NAV_ITEMS = [
   { key: "home", label: "홈", Icon: NavHomeIcon, active: true },
@@ -53,10 +45,42 @@ const NAV_ITEMS = [
 
 interface HomeScreenProps {
   onOpenMyPage: () => void;
+  onOpenNcpk: (tab: NcpkTab) => void;
 }
 
-export default function HomeScreen({ onOpenMyPage }: HomeScreenProps) {
+export default function HomeScreen({ onOpenMyPage, onOpenNcpk }: HomeScreenProps) {
   const { toast, showToast } = useToast();
+  const [partnerUser, setPartnerUser] = useState<PartnerUser | null>(null);
+  const [reservationTypes, setReservationTypes] = useState<CommonCodeDetailApi[]>([]);
+  const [todayResv, setTodayResv] = useState<TodayReservation[]>([]);
+  const [loadingToday, setLoadingToday] = useState(true);
+  const [pkgStats, setPkgStats] = useState<PackageProgressStats | null>(null);
+
+  useEffect(() => {
+    getMe()
+      .then(setPartnerUser)
+      .catch((err) => showToast(err instanceof Error ? err.message : "계정 정보를 불러오지 못했어요", "danger"));
+    getCommonCodeDetails("RESERVATION_TYPE")
+      .then(setReservationTypes)
+      .catch(() => {});
+    getTodayReservations()
+      .then(setTodayResv)
+      .catch((err) => showToast(err instanceof Error ? err.message : "오늘의 시공 일정을 불러오지 못했어요", "danger"))
+      .finally(() => setLoadingToday(false));
+    getPackageStats()
+      .then(setPkgStats)
+      .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 통계를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const reservationTypeLabel = (code: string) =>
+    reservationTypes.find((t) => t.detailCode === code)?.detailName ?? code;
+
+  const pkgStatItems: PkgStatItem[] = [
+    { value: pkgStats?.applied ?? 0, label: "착수대기", colorClass: "text-accent-strong", tab: "wait" },
+    { value: pkgStats?.inProgress ?? 0, label: "시공중", colorClass: "text-brand", tab: "ing" },
+    { value: pkgStats?.done ?? 0, label: "완료", colorClass: "text-status-success", tab: "done" },
+  ];
 
   return (
     <div className="absolute inset-0 bg-gray-50">
@@ -85,7 +109,9 @@ export default function HomeScreen({ onOpenMyPage }: HomeScreenProps) {
       >
         {/* greeting */}
         <div className="mx-0.5 mb-3.5">
-          <div className="text-xl font-extrabold tracking-tight text-gray-900">강남 오토바디 김철수님, 안녕하세요</div>
+          <div className="text-xl font-extrabold tracking-tight text-gray-900">
+            {partnerUser ? `${partnerUser.shopName} ${partnerUser.name}님, 안녕하세요` : "안녕하세요"}
+          </div>
           <div className="mt-[3px] text-[13.5px] text-gray-600">오늘 처리할 시공과 입찰을 확인해 보세요.</div>
         </div>
 
@@ -105,18 +131,15 @@ export default function HomeScreen({ onOpenMyPage }: HomeScreenProps) {
           <div className="mb-3.5 flex items-center gap-2">
             <PackageIcon />
             <span className="flex-1 text-base font-extrabold tracking-tight text-gray-900">신차패키지 시공관리</span>
-            <span
-              onClick={() => showToast("신차패키지 시공관리로 이동해요")}
-              className="cursor-pointer text-[13px] font-bold text-brand"
-            >
+            <span onClick={() => onOpenNcpk("wait")} className="cursor-pointer text-[13px] font-bold text-brand">
               바로가기
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {PKG_STATS.map((s) => (
+            {pkgStatItems.map((s) => (
               <div
                 key={s.label}
-                onClick={() => showToast(`신차패키지 ${s.label} ${s.value}건 목록으로 이동해요`)}
+                onClick={() => onOpenNcpk(s.tab)}
                 className="cursor-pointer rounded-xl bg-gray-100 px-3 py-3.5"
               >
                 <div className={`text-[22px] font-extrabold tracking-tight tabular-nums ${s.colorClass}`}>{s.value}</div>
@@ -155,28 +178,39 @@ export default function HomeScreen({ onOpenMyPage }: HomeScreenProps) {
         {/* 오늘의 시공 일정 */}
         <div className="mx-0.5 mb-2.5 flex items-baseline justify-between">
           <span className="text-base font-extrabold tracking-tight text-gray-900">오늘의 시공 일정</span>
-          <span className="text-[13px] text-gray-500 tabular-nums">2026.07.02</span>
+          <span className="text-[13px] text-gray-500 tabular-nums">{todayLabel()}</span>
         </div>
         <div className="flex flex-col gap-2">
-          {TODAY_RESV.map((r) => (
-            <div
-              key={r.time + r.customer}
-              onClick={() => showToast(`${r.customer}님 시공 상세로 이동해요`)}
-              className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm"
-            >
-              <div className="flex items-center gap-2">
-                <span className="flex-1 text-[15px] font-extrabold tracking-tight text-gray-900">
-                  {r.time} · {r.service}
-                </span>
-                <span className={`flex-none rounded-full px-[11px] py-[5px] text-xs font-bold ${STATUS_CHIP[r.status]}`}>
-                  {r.status}
-                </span>
-              </div>
-              <div className="mt-1.5 text-[13px] text-gray-500">
-                {r.customer} · {r.car} · {r.plate}
-              </div>
+          {loadingToday ? (
+            <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
+          ) : todayResv.length === 0 ? (
+            <div className="rounded-[14px] border border-gray-200 bg-white p-4 text-center text-sm text-gray-400 shadow-sm">
+              오늘 예정된 시공이 없어요
             </div>
-          ))}
+          ) : (
+            todayResv.map((r) => {
+              const chip = PROGRESS_CHIP[r.progressStatus] ?? PROGRESS_CHIP.APPLIED;
+              return (
+                <div
+                  key={r.reservationNo}
+                  onClick={() => showToast(`${r.customerName}님 시공 상세로 이동해요`)}
+                  className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-[15px] font-extrabold tracking-tight text-gray-900">
+                      {r.time} · {reservationTypeLabel(r.reservationType)}
+                    </span>
+                    <span className={`flex-none rounded-full px-[11px] py-[5px] text-xs font-bold ${chip.chipClass}`}>
+                      {chip.label}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[13px] text-gray-500">
+                    {[r.customerName, r.car, r.plate].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

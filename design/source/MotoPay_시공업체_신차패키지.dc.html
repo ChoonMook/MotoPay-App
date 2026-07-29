@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mp-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes mp-fade{from{opacity:0}to{opacity:1}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">파트너(시공업체)앱</span> · 신차패키지 시공관리</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1 Depth · PT-NCPK-01 ~ 05</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:800px;line-height:1.6;margin-bottom:32px">파트너 홈(PT-HOME-01)의 <b>신차패키지 시공관리</b> 카드에서 진입하는 5개 화면입니다. 착수대기 → 시공 착수 → 시공중 → 완료 등록 → 고객 인수확인까지 업체가 처리하는 전 과정을 다루며, 고객앱 신차패키지(CU-NCPK / CU-RSVC-16)와 데이터가 연동됩니다. 오른쪽 <b>화면 목록</b>에서 화면을 눌러 이동하고, 실제로 착수·완료 처리를 클릭해볼 수 있어요.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <!-- status bar -->
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ===== 01 시공관리 목록 ===== -->
+        <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 18px 0;background:var(--surface-card)">
+              <div style="display:flex;align-items:center;gap:8px;height:44px">
+                <span style="flex:1;font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">신차패키지 시공관리</span>
+                <span onClick="{{ tapSearch }}" style="cursor:pointer;color:var(--gray-700);display:inline-flex"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>
+              </div>
+              <div style="display:flex;gap:4px;margin-top:6px">
+                <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+                  <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }} <span style="{{ t.countStyle }}">{{ t.count }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 18px 24px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ jobs }}" as="j" hint-placeholder-count="3">
+                  <div onClick="{{ j.onClick }}" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:16px;cursor:pointer;box-shadow:var(--shadow-sm)">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                      <span style="flex:1;font-size:15px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">{{ j.customer }}</span>
+                      <span style="{{ j.chipStyle }}">{{ j.status }}</span>
+                    </div>
+                    <div style="font-size:13.5px;color:var(--text-strong);margin-bottom:3px">{{ j.car }}</div>
+                    <div style="font-size:12.5px;color:var(--text-tertiary);font-family:var(--font-numeric);margin-bottom:3px">VIN {{ j.vin }}</div>
+                    <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:10px">{{ j.schedule }}</div>
+                    <div style="font-size:12.5px;color:var(--text-tertiary);background:var(--surface-sunken);border-radius:9px;padding:9px 11px">{{ j.itemSummary }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:none;height:66px;display:flex;background:var(--surface-card);border-top:1px solid var(--divider);padding-bottom:8px">
+              <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:{{ n.color }}">
+                  {{ n.icon }}
+                  <span style="font-size:10.5px;font-weight:{{ n.weight }}">{{ n.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 02 시공 상세 ===== -->
+        <sc-if value="{{ isDetail }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 12px 0;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;gap:6px;height:50px">
+                <span onClick="{{ goList }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--gray-800)">‹</span>
+                <span style="font-size:17px;font-weight:700;color:var(--gray-900)">시공 상세</span>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+                <span style="flex:none;width:52px;height:52px;border-radius:13px;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="assets/car.png" alt="차량" style="width:44px;height:auto;object-fit:contain"></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:16px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em">{{ curJob.car }}</div>
+                  <div style="font-size:12.5px;color:var(--text-tertiary);margin-top:2px;font-family:var(--font-numeric)">VIN {{ curJob.vin }}</div>
+                </div>
+                <span style="{{ curJob.chipStyle }}">{{ curJob.status }}</span>
+              </div>
+
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 16px;box-shadow:var(--shadow-sm);margin-bottom:12px">
+                <sc-for list="{{ infoRows }}" as="r" hint-placeholder-count="4">
+                  <div style="{{ r.rowStyle }}">
+                    <span style="font-size:13px;color:var(--text-tertiary)">{{ r.k }}</span>
+                    <span style="font-size:13.5px;font-weight:600;color:var(--text-strong)">{{ r.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div onClick="{{ tapCall }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface-brand-subtle);border-radius:12px;padding:13px;margin-bottom:20px;cursor:pointer">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <span style="font-size:13.5px;font-weight:700;color:var(--color-brand)">고객에게 해피콜 걸기</span>
+              </div>
+
+              <div style="font-size:15px;font-weight:800;color:var(--gray-900);letter-spacing:-.02em;margin:2px 2px 10px">시공 항목</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:11px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 15px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ it.name }}</div>
+                      <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ it.spec }}</div>
+                    </div>
+                    <span style="{{ it.tagStyle }}">{{ it.tag }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="flex:none;padding:14px 20px 22px;border-top:1px solid var(--divider);background:var(--surface-card)">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ detailCta }}" hint-size="100%,56px">{{ detailCtaLabel }}</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 04 시공 완료 등록 ===== -->
+        <sc-if value="{{ isDone }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 12px 0;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;gap:6px;height:50px">
+                <span onClick="{{ goDetail }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--gray-800)">‹</span>
+                <span style="font-size:17px;font-weight:700;color:var(--gray-900)">시공 완료 등록</span>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:4px">항목별 완료 체크</div>
+              <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">모든 항목을 완료해야 인수확인을 요청할 수 있어요.</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px">
+                <sc-for list="{{ doneItems }}" as="it" hint-placeholder-count="4">
+                  <div onClick="{{ it.onClick }}" style="{{ it.rowStyle }}">
+                    <span style="{{ it.boxStyle }}">{{ it.check }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14px;font-weight:700;color:var(--text-strong)">{{ it.name }}</div>
+                      <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ it.spec }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:15px;font-weight:800;color:var(--gray-900)">시공 사진</span>
+                <span style="font-size:12.5px;color:var(--text-tertiary);font-variant-numeric:tabular-nums">{{ photoCount }}/10</span>
+              </div>
+              <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">고객 인수확인 화면에 그대로 노출돼요. 최소 3장 이상 등록해 주세요.</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px">
+                <div onClick="{{ addPhoto }}" style="aspect-ratio:1;border:1.5px dashed var(--border-strong);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:var(--surface-card)">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                  <span style="font-size:11.5px;color:var(--text-tertiary);font-weight:600">사진 추가</span>
+                </div>
+                <sc-for list="{{ photos }}" as="p" hint-placeholder-count="3">
+                  <div style="position:relative;aspect-ratio:1;border-radius:12px;background:var(--surface-sunken);overflow:hidden;display:flex;align-items:center;justify-content:center">
+                    <img src="assets/car.png" alt="시공 사진" style="width:80%;height:auto;object-fit:contain">
+                    <span onClick="{{ p.onRemove }}" style="position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(16,25,45,.6);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer">✕</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:10px">작업 메모 <span style="font-size:12px;font-weight:600;color:var(--text-tertiary)">(선택)</span></div>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Textarea" dc-props="{{ memoP }}" hint-size="100%,100px"></x-import>
+            </div>
+            <div style="flex:none;padding:14px 20px 22px;border-top:1px solid var(--divider);background:var(--surface-card)">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ doneCta }}" hint-size="100%,56px">완료 처리하고 인수확인 요청</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== 05 인수확인 대기 ===== -->
+        <sc-if value="{{ isHandover }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 12px 0;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;gap:6px;height:50px">
+                <span onClick="{{ goList }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--gray-800)">‹</span>
+                <span style="font-size:17px;font-weight:700;color:var(--gray-900)">인수확인 대기</span>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px 24px">
+              <div style="{{ hoBannerStyle }}">
+                <span style="{{ hoIconStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                <div>
+                  <div style="font-size:14.5px;font-weight:800;color:{{ hoTitleColor }}">{{ hoTitle }}</div>
+                  <div style="font-size:12.5px;color:var(--text-secondary);margin-top:3px">{{ hoDesc }}</div>
+                </div>
+              </div>
+
+              <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:6px 16px;box-shadow:var(--shadow-sm);margin:16px 0 12px">
+                <sc-for list="{{ hoRows }}" as="r" hint-placeholder-count="4">
+                  <div style="{{ r.rowStyle }}">
+                    <span style="font-size:13px;color:var(--text-tertiary)">{{ r.k }}</span>
+                    <span style="font-size:13.5px;font-weight:600;color:var(--text-strong)">{{ r.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin:18px 2px 10px">고객에게 전달된 시공 사진</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                <sc-for list="{{ photos }}" as="p" hint-placeholder-count="3">
+                  <div style="aspect-ratio:1;border-radius:12px;background:var(--surface-sunken);overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="assets/car.png" alt="시공 사진" style="width:80%;height:auto;object-fit:contain"></div>
+                </sc-for>
+              </div>
+
+              <div style="background:var(--surface-sunken);border-radius:12px;padding:13px 15px;margin-top:18px;font-size:12.5px;color:var(--text-secondary);line-height:1.55">고객이 3일 내 확인하지 않으면 자동 인수 확정되며, 확정 시점부터 정산 대상에 포함돼요.</div>
+            </div>
+            <sc-if value="{{ hoPending }}">
+              <div style="flex:none;padding:14px 20px 22px;border-top:1px solid var(--divider);background:var(--surface-card)">
+                <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ hoRemindBtn }}" hint-size="100%,56px">인수확인 알림 재발송</x-import>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ===== 03 시공 착수 팝업 ===== -->
+        <sc-if value="{{ shStart }}">
+          <div style="position:absolute;inset:0;z-index:70">
+            <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:var(--surface-overlay);animation:mp-fade .25s ease"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface-card);border-radius:20px 20px 0 0;padding:10px 24px 28px;animation:mp-sheet .32s cubic-bezier(.2,.8,.2,1)">
+              <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-300);margin:6px auto 18px"></div>
+              <div style="font-size:20px;font-weight:800;color:var(--gray-900);margin-bottom:4px">시공을 착수할까요?</div>
+              <div style="font-size:13.5px;color:var(--text-secondary);line-height:1.55;margin-bottom:18px">착수하면 고객에게 <b>시공 시작 알림</b>이 발송되고, 상태가 <b>시공중</b>으로 변경돼요.</div>
+
+              <div style="background:var(--surface-sunken);border-radius:var(--radius-lg);padding:6px 16px;margin-bottom:16px">
+                <sc-for list="{{ startRows }}" as="r" hint-placeholder-count="4">
+                  <div style="{{ r.rowStyle }}">
+                    <span style="font-size:13px;color:var(--text-tertiary)">{{ r.k }}</span>
+                    <span style="font-size:13.5px;font-weight:600;color:var(--text-strong)">{{ r.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="font-size:14px;font-weight:700;color:var(--text-body);margin-bottom:10px">시공 항목</div>
+              <div class="mp-scroll" style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;max-height:212px;overflow-y:auto">
+                <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;padding:12px 14px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:13.5px;font-weight:700;color:var(--text-strong)">{{ it.name }}</div>
+                      <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">{{ it.spec }}</div>
+                    </div>
+                    <span style="{{ it.tagStyle }}">{{ it.tag }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;gap:10px">
+                <div style="flex:1"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ startCancelBtn }}" hint-size="100%,56px">취소</x-import></div>
+                <div style="flex:2"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ startConfirmBtn }}" hint-size="100%,56px">시공 착수</x-import></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import>
+          </div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 착수 → 시공중 → 완료등록 → 인수확인 플로우</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 5</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="5">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'list', sheet: null, tab: 'wait', toast: '', toastTone: 'default',
+    jobStatus: '착수대기', eta: '2시간 후', photos: 3, memo: '',
+    checks: [true, true, false, false],
+  };
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+
+  spec() {
+    return {
+      '01': { id:'PT-NCPK-01', name:'신차패키지 시공관리', type:'목록', url:'/partner/ncp', device:'공용(반응형)',
+        func:'배정된 신차패키지 시공 건을 상태별(착수대기·시공중·완료) 탭으로 조회. 고객명·차종·VIN·예약일시·시공 품목 리스트를 카드에 표시.',
+        detail:'[UI요소] 상태 탭(착수대기/시공중/완료 + 건수), 검색, 시공 건 카드(고객명·차종·VIN·예약일시·상태 칩·시공 품목 리스트, 5줄 구성).\n[상태] 탭별 목록/빈 목록. 예약일시 임박 건은 상단 정렬.\n[인터랙션] 카드 탭 시 시공 상세(PT-NCPK-02)로 이동. 홈 카드의 숫자 타일에서 해당 탭으로 딥링크 진입.\n[디자인] 시공 완료 등록은 전체 시공이 끝난 후 일괄 처리하므로 항목별 진행률·개수는 표기하지 않음.' },
+      '02': { id:'PT-NCPK-02', name:'시공 상세', type:'상세', url:'/partner/ncp/dtl', device:'공용(반응형)',
+        func:'고객·차량 정보, 예약일시, 패키지 시공 항목(기본/업그레이드) 확인. 상태에 따라 [시공 착수] 또는 [완료 등록] CTA 노출. 해피콜 연결.',
+        detail:'[UI요소] 차량 카드(차종·VIN), 정보 리스트(고객·연락처·예약일시·패키지명), 해피콜 버튼, 시공 항목 리스트(항목명·사양·기본/업그레이드 태그), 하단 CTA.\n[상태] 착수대기(→시공 착수) / 시공중(→완료 등록) / 완료(→인수확인 보기).\n[인터랙션] CTA 탭 시 착수 팝업(PT-NCPK-03) 또는 완료 등록(PT-NCPK-04)으로 이동.\n[디자인] 항목별 완료 체크는 두지 않고(완료 등록 시 일괄 처리), 업그레이드 항목만 태그로 구분해 시공 누락을 방지.' },
+      '03': { id:'PT-NCPK-03', name:'시공 착수', type:'팝업', url:'-', device:'공용(반응형)',
+        func:'착수 전 고객·차량·시공 항목을 상세히 확인. 착수 시 고객에게 시공 시작 알림 발송, 상태를 시공중으로 변경.',
+        detail:'[UI요소] 대상 상세(고객·연락처·차량·VIN·예약일시·패키지), 시공 항목 리스트(사양·기본/업그레이드), 취소/시공 착수(바텀시트).\n[상태] 확인 대기/처리중/완료.\n[인터랙션] 착수 시 목록·홈 카운트가 착수대기 -1, 시공중 +1로 갱신되고 고객앱 진행현황이 시공중으로 변경.\n[디자인] 되돌릴 수 없는 상태 변경이므로 발송 알림 내용을 명시.' },
+      '04': { id:'PT-NCPK-04', name:'시공 완료 등록', type:'등록/수정', url:'/partner/ncp/done', device:'공용(반응형)',
+        func:'항목별 완료 체크, 시공 사진 등록(최대 10장), 작업 메모 입력 후 완료 처리 및 고객 인수확인 요청.',
+        detail:'[UI요소] 항목별 완료 체크 리스트, 사진 업로드 그리드(최대 10장, 삭제 가능), 작업 메모 입력, 완료 처리 CTA.\n[상태] 전 항목 미완료 시 CTA 비활성, 사진 3장 미만 시 경고.\n[인터랙션] 완료 처리 시 고객앱 인수확인 화면(CU-RSVC-16)에 사진·항목이 그대로 노출되고 인수확인 알림 발송.\n[디자인] 사진은 고객에게 그대로 노출되는 자료임을 안내 문구로 명시.' },
+      '05': { id:'PT-NCPK-05', name:'인수확인 대기', type:'상세', url:'/partner/ncp/handover', device:'공용(반응형)',
+        func:'고객 인수확인 상태 조회. 3일 미확인 시 자동 확정 안내, 인수확인 알림 재발송. 확정 시 정산 대상 편입 안내.',
+        detail:'[UI요소] 상태 배너(대기/확정), 요약 리스트(완료일시·요청일시·자동확정 예정일·정산 예정), 전달된 시공 사진 그리드, 알림 재발송 버튼.\n[상태] 인수확인 대기 / 인수 확정(버튼 미노출).\n[인터랙션] 재발송 시 고객에게 푸시·알림톡 재발송(일 1회 제한).\n[디자인] 자동 확정 기준과 정산 연결을 명확히 안내해 업체 문의를 줄임.' },
+    };
+  }
+  activeId() {
+    if (this.state.sheet === 'start') return '03';
+    return { list:'01', detail:'02', done:'04', handover:'05' }[this.state.screen];
+  }
+  goTo(id) {
+    const map = {
+      '01': { screen:'list', sheet:null },
+      '02': { screen:'detail', sheet:null },
+      '03': { screen:'detail', sheet:'start' },
+      '04': { screen:'done', sheet:null, jobStatus:'시공중' },
+      '05': { screen:'handover', sheet:null, jobStatus:'완료' },
+    }[id];
+    this.setState(map);
+  }
+
+  chip(status) {
+    const base = 'font-size:11.5px;font-weight:800;padding:4px 10px;border-radius:999px;flex:none';
+    const m = {
+      '착수대기': `${base};color:var(--color-accent-strong);background:var(--color-accent-subtle)`,
+      '시공중': `${base};color:var(--color-brand);background:var(--surface-brand-subtle)`,
+      '완료': `${base};color:var(--status-success);background:var(--status-success-bg)`,
+      '인수대기': `${base};color:#0E9A96;background:#E6F6F5`,
+    };
+    return m[status] || base;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const SPEC = this.spec();
+    const aId = this.activeId();
+    const brand = 'var(--color-brand)', muted = 'var(--text-tertiary)';
+
+    const tabDefs = [{ k:'wait', label:'착수대기', count:3 }, { k:'ing', label:'시공중', count:2 }, { k:'done', label:'완료', count:18 }];
+    const tabs = tabDefs.map(t => {
+      const on = st.tab === t.k;
+      return { label: t.label, count: t.count, onClick: () => this.setState({ tab: t.k }),
+        style: `flex:1;text-align:center;padding:11px 0;font-size:13.5px;font-weight:${on ? 800 : 600};color:${on ? brand : muted};border-bottom:2.5px solid ${on ? brand : 'transparent'};cursor:pointer`,
+        countStyle: `font-size:12px;font-weight:800;color:${on ? brand : muted};font-variant-numeric:tabular-nums` };
+    });
+
+    const jobDefs = {
+      wait: [
+        { customer:'박지훈', car:'쏘렌토', vin:'KMHL14JA5MA123456', schedule:'7.2(목) 오후 2:00', items:'글라스틴트 · 블랙박스 · 언더코팅 · 유리막 코팅', status:'착수대기' },
+        { customer:'홍길동', car:'Benz E-Class', vin:'WDD2130421A987654', schedule:'7.3(금) 오전 10:30', items:'글라스틴트 · 블랙박스 · PPF 프론트 외 2건', status:'착수대기' },
+        { customer:'이서연', car:'Kia K5', vin:'KNAG341BCLA556677', schedule:'7.4(토) 오후 1:00', items:'글라스틴트 · 언더코팅 · 유리막 코팅', status:'착수대기' },
+      ],
+      ing: [
+        { customer:'김민수', car:'Genesis G80', vin:'KMTG341RBLU334455', schedule:'7.2(목) 오전 9:00 착수', items:'글라스틴트 · 블랙박스 · 언더코팅 · 유리막 코팅', status:'시공중' },
+        { customer:'정하늘', car:'Volvo XC60', vin:'YV1DZ8858M1112233', schedule:'7.2(목) 오전 11:00 착수', items:'글라스틴트 · 블랙박스 · PPF 프론트 외 2건', status:'시공중' },
+      ],
+      done: [
+        { customer:'최유진', car:'Tesla Model Y', vin:'5YJYGDEE1LF778899', schedule:'7.1(수) 완료 · 인수대기', items:'글라스틴트 · 블랙박스 · 언더코팅 · 유리막 코팅', status:'인수대기' },
+        { customer:'오세훈', car:'BMW 520i', vin:'WBAJA9109KB990011', schedule:'6.30(화) 인수 확정', items:'글라스틴트 · 블랙박스 · PPF 프론트 외 2건', status:'완료' },
+      ],
+    };
+    const jobs = jobDefs[st.tab].map(j => Object.assign({}, j, {
+      chipStyle: this.chip(j.status),
+      itemSummary: j.items,
+      onClick: () => this.setState({ screen:'detail', jobStatus: j.status === '인수대기' || j.status === '완료' ? '완료' : j.status }),
+    }));
+
+    const curJob = { customer:'박지훈', car:'쏘렌토', vin:'KMHL14JA5MA123456', total:4, status: st.jobStatus, chipStyle: this.chip(st.jobStatus) };
+
+    const rowS = (i, n) => `display:flex;align-items:center;justify-content:space-between;padding:13px 0;${i < n - 1 ? 'border-bottom:1px solid var(--divider)' : ''}`;
+    const infoDefs = [
+      { k:'고객', v:'박지훈' }, { k:'연락처', v:'010-1234-••••' },
+      { k:'예약일시', v:'2026.07.02(목) 오후 2:00' }, { k:'패키지', v:'신차 케어 패키지 4종' },
+    ];
+    const infoRows = infoDefs.map((r, i) => Object.assign({}, r, { rowStyle: rowS(i, infoDefs.length) }));
+
+    const itemDefs = [
+      { name:'글라스틴트 (틴팅)', spec:'루마 버텍스 300 · 전면 15% / 측면 5%', tag:'기본' },
+      { name:'블랙박스', spec:'4채널 QHD · 상시녹화', tag:'업그레이드' },
+      { name:'하부 언더코팅', spec:'부식·소음 방지', tag:'기본' },
+      { name:'유리막 코팅', spec:'세라믹 2년 지속', tag:'업그레이드' },
+    ];
+    const items = itemDefs.map(it => Object.assign({}, it, {
+      tagStyle: `flex:none;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:5px;${it.tag === '업그레이드' ? 'color:var(--color-accent-strong);background:var(--color-accent-subtle)' : 'color:var(--text-secondary);background:var(--surface-sunken)'}`,
+    }));
+
+    const startRowDefs = [
+      { k:'고객', v:'박지훈 · 010-1234-••••' },
+      { k:'차량', v:'쏘렌토 · VIN KMHL14JA5MA123456' },
+      { k:'예약일시', v:'2026.07.02(목) 오후 2:00' },
+      { k:'패키지', v:'신차 케어 패키지 4종' },
+    ];
+
+    const doneItems = itemDefs.map((it, i) => {
+      const on = st.checks[i];
+      return Object.assign({}, it, {
+        check: on ? '✓' : '',
+        onClick: () => this.setState(s => { const c = s.checks.slice(); c[i] = !c[i]; return { checks: c }; }),
+        rowStyle: `display:flex;align-items:center;gap:11px;background:var(--surface-card);border:1px solid ${on ? brand : 'var(--border-subtle)'};border-radius:14px;padding:14px 15px;cursor:pointer`,
+        boxStyle: `flex:none;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;${on ? `background:${brand};border:1.5px solid ${brand}` : 'background:var(--surface-card);border:1.5px solid var(--border-strong)'}`,
+      });
+    });
+
+    const photos = Array.from({ length: st.photos }, (_, i) => ({ onRemove: () => this.setState(s => ({ photos: Math.max(0, s.photos - 1) })) }));
+    const allChecked = st.checks.every(Boolean);
+
+    const startRows = startRowDefs.map((r, i) => Object.assign({}, r, { rowStyle: rowS(i, startRowDefs.length) }));
+
+    const hoPending = st.jobStatus !== '인수확정';
+    const hoRowDefs = [
+      { k:'시공 완료', v:'2026.07.02(목) 오후 5:10' },
+      { k:'인수확인 요청', v:'2026.07.02(목) 오후 5:10' },
+      { k:'자동 확정 예정', v:'2026.07.05(일)' },
+      { k:'정산 예정', v:'인수 확정 후 익월 10일' },
+    ];
+    const hoRows = hoRowDefs.map((r, i) => Object.assign({}, r, { rowStyle: rowS(i, hoRowDefs.length) }));
+
+    const order = ['01','02','03','04','05'];
+    const typeColors = { '목록':'var(--color-brand)','상세':'#0E9A96','팝업':'var(--color-accent)','등록/수정':'var(--status-success)' };
+    const mapItems = order.map(id => {
+      const sp = SPEC[id]; const active = id === aId; const tc = typeColors[sp.type] || muted;
+      return {
+        id: sp.id.replace('PT-NCPK-',''), name: sp.name, type: sp.type,
+        onClick: () => this.goTo(id),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s;${active ? 'background:var(--surface-brand-subtle);box-shadow:inset 0 0 0 1.5px var(--color-brand)' : 'background:transparent'}`,
+        badgeStyle: `flex:none;width:26px;text-align:center;font-size:11px;font-weight:800;font-family:var(--font-numeric);color:${active ? '#fff' : muted};background:${active ? brand : 'var(--surface-sunken)'};padding:3px 0;border-radius:6px`,
+        typeStyle: `flex:none;font-size:10.5px;font-weight:700;color:${tc};background:${tc}14;padding:3px 8px;border-radius:5px`,
+      };
+    });
+
+    const ctaByStatus = {
+      '착수대기': { label:'시공 착수', onClick: () => this.setState({ sheet:'start' }) },
+      '시공중': { label:'시공 완료 등록', onClick: () => this.setState({ screen:'done' }) },
+      '완료': { label:'인수확인 현황 보기', onClick: () => this.setState({ screen:'handover' }) },
+    };
+    const cta = ctaByStatus[st.jobStatus] || ctaByStatus['착수대기'];
+
+    const navMeta = [{ k:'home', label:'홈' }, { k:'resv', label:'예약관리' }, { k:'pay', label:'정산' }, { k:'my', label:'마이' }];
+    const navPaths = {
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      pay: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21V4a1 1 0 0 1 1-1Z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+    };
+    const navItems = navMeta.map((n, i) => {
+      const active = i === 1;
+      const icon = React.createElement('svg', { width:24, height:24, viewBox:'0 0 24 24', fill:'none', stroke: active ? brand : muted, strokeWidth:1.9, strokeLinecap:'round', strokeLinejoin:'round', dangerouslySetInnerHTML:{ __html: navPaths[n.k] } });
+      return { label: n.label, icon, color: active ? brand : muted, weight: active ? 700 : 500,
+        onClick: () => active ? null : this.showToast(n.label + ' 탭으로 이동해요') };
+    });
+
+    return {
+      navItems,
+      isList: st.screen === 'list', isDetail: st.screen === 'detail',
+      isDone: st.screen === 'done', isHandover: st.screen === 'handover',
+      shStart: st.sheet === 'start',
+      toast: st.toast, toastTone: st.toastTone,
+      mapItems, curSpec: SPEC[aId],
+      tabs, jobs, curJob, infoRows, items, doneItems, photos, photoCount: st.photos, startRows, hoRows, hoPending,
+
+      hoBannerStyle: `display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:16px;${hoPending ? 'background:var(--surface-brand-subtle)' : 'background:var(--status-success-bg);border:1px solid var(--green-500)'}`,
+      hoIconStyle: `flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${hoPending ? brand : 'var(--status-success)'}`,
+      hoTitleColor: hoPending ? brand : 'var(--green-600)',
+      hoTitle: hoPending ? '고객 인수확인을 기다리고 있어요' : '인수가 확정됐어요',
+      hoDesc: hoPending ? '3일 내 미확인 시 자동으로 인수 확정돼요.' : '정산 대상에 포함되었어요.',
+
+      goList: () => this.setState({ screen:'list', sheet:null }),
+      goDetail: () => this.setState({ screen:'detail', sheet:null }),
+      closeSheet: () => this.setState({ sheet:null }),
+      tapSearch: () => this.showToast('고객명·차량번호로 검색해요'),
+      tapCall: () => this.showToast('고객에게 해피콜을 연결해요'),
+      addPhoto: () => this.setState(s => ({ photos: Math.min(10, s.photos + 1) })),
+      memoP: { value: st.memo, onChange: e => this.setState({ memo: e.target.value }), placeholder:'특이사항이나 고객 안내 사항을 남겨주세요', rows: 3 },
+
+      detailCtaLabel: cta.label,
+      detailCta: { variant:'primary', size:'xl', fullWidth:true, onClick: cta.onClick },
+      startCancelBtn: { variant:'outline', size:'xl', fullWidth:true, onClick: () => this.setState({ sheet:null }) },
+      startConfirmBtn: { variant:'primary', size:'xl', fullWidth:true, onClick: () => { this.setState({ sheet:null, jobStatus:'시공중', tab:'ing' }); this.showToast('시공을 착수했어요 · 고객에게 알림 발송', 'success'); } },
+      doneCta: { variant:'primary', size:'xl', fullWidth:true, disabled: !allChecked || st.photos < 3,
+        onClick: () => { this.setState({ screen:'handover', jobStatus:'완료', tab:'done' }); this.showToast('완료 처리했어요 · 고객에게 인수확인 요청', 'success'); } },
+      hoRemindBtn: { variant:'outline', size:'xl', fullWidth:true, onClick: () => this.showToast('인수확인 알림을 재발송했어요', 'success') },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -29,6 +29,9 @@ interface BizMainScreenProps {
   shop: MyShop | null;
   onOpenBasicInfo: () => void;
   onOpenHoliday: () => void;
+  onOpenAvailTime: () => void;
+  onOpenRsvStat: () => void;
+  onOpenPwdChange: () => void;
   onOpenHome: () => void;
   onOpenLogoutConfirm: () => void;
   onPlaceholder: (label: string) => void;
@@ -38,6 +41,9 @@ export default function BizMainScreen({
   shop,
   onOpenBasicInfo,
   onOpenHoliday,
+  onOpenAvailTime,
+  onOpenRsvStat,
+  onOpenPwdChange,
   onOpenHome,
   onOpenLogoutConfirm,
   onPlaceholder,
@@ -91,6 +97,8 @@ export default function BizMainScreen({
                   onClick={() => {
                     if (m.key === "basic") onOpenBasicInfo();
                     else if (m.key === "holiday") onOpenHoliday();
+                    else if (m.key === "availtime") onOpenAvailTime();
+                    else if (m.key === "rsvstat") onOpenRsvStat();
                     else onPlaceholder(m.label);
                   }}
                   className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm"
@@ -115,7 +123,7 @@ export default function BizMainScreen({
                 <span className="text-lg text-gray-400">›</span>
               </div>
               <div
-                onClick={() => onPlaceholder("비밀번호 변경")}
+                onClick={onOpenPwdChange}
                 className="flex items-center gap-3 border-b border-gray-100 px-4 py-[15px]"
               >
                 <span className="flex-none text-gray-700">

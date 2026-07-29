@@ -4,16 +4,19 @@ import AppShell from "./components/AppShell";
 import AuthFlow from "./screens/auth/AuthFlow";
 import HomeScreen from "./screens/home/HomeScreen";
 import BizFlow from "./screens/biz/BizFlow";
+import NcpkFlow from "./screens/ncpk/NcpkFlow";
+import type { NcpkTab } from "./screens/ncpk/ncpkData";
 import { setOnSessionExpired, getAccessToken, clearTokens } from "./api/tokenStorage";
 import { getMe } from "./api/partnerAuth";
 
-type View = "home" | "biz";
+type View = "home" | "biz" | "ncpk";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   // 자동로그인 체크 후 저장된 토큰이 있으면 세션 복원을 시도하는 동안만 true — 토큰이 없으면 처음부터 false라 로그인 화면이 바로 보임
   const [booting, setBooting] = useState(() => !!getAccessToken());
   const [view, setView] = useState<View>("home");
+  const [ncpkTab, setNcpkTab] = useState<NcpkTab>("wait");
 
   // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
   useEffect(() => {
@@ -47,7 +50,15 @@ function App() {
   if (loggedIn) {
     return (
       <AppShell>
-        {view === "home" && <HomeScreen onOpenMyPage={() => setView("biz")} />}
+        {view === "home" && (
+          <HomeScreen
+            onOpenMyPage={() => setView("biz")}
+            onOpenNcpk={(tab) => {
+              setNcpkTab(tab);
+              setView("ncpk");
+            }}
+          />
+        )}
         {view === "biz" && (
           <BizFlow
             onExit={() => setView("home")}
@@ -57,6 +68,7 @@ function App() {
             }}
           />
         )}
+        {view === "ncpk" && <NcpkFlow onExit={() => setView("home")} initialTab={ncpkTab} />}
       </AppShell>
     );
   }

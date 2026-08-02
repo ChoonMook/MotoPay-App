@@ -21,13 +21,12 @@ import {
 } from "./homeIcons";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-const pad2 = (n: number) => String(n).padStart(2, "0");
 
 interface NcpkBooking {
   shopName: string;
   dateLabel: string;
-  /** 방문 예정일이 오늘이거나 지났으면 true — 인수확인 단계로 안내 */
-  due: boolean;
+  /** 파트너앱에서 실제로 기록하는 진행상태(progressStatus)가 DONE이면 true — 인수확인 단계로 안내 */
+  done: boolean;
 }
 
 interface Quote {
@@ -103,23 +102,35 @@ export default function HomeScreen({
     Promise.all([listMyCars(), listMyReservations(), listShops()])
       .then(([cars, reservations, shops]) => {
         const defaultCar = cars.find((c) => c.isDefault) ?? cars[0];
-        setHasEligiblePackage(!!defaultCar?.packageCode);
 
         const activePkgRes = reservations
           .filter((r) => r.reservationType === "PKG" && r.status === "CONFIRMED")
           .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
         if (!activePkgRes) {
+          setHasEligiblePackage(!!defaultCar?.packageCode);
           setNcpkBooking(null);
           return;
         }
-        const now = new Date();
-        const todayKey = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+
+        // 인수확인까지 끝난 예약이면 더 안내할 게 없으니 배너·카드 모두 노출하지 않음(3일 미확인 자동확정도 반영)
+        const autoConfirmed =
+          !!activePkgRes.completedAt &&
+          Date.now() - new Date(activePkgRes.completedAt).getTime() >= 3 * 24 * 60 * 60 * 1000;
+        const handoverClosed =
+          activePkgRes.progressStatus === "DONE" && (!!activePkgRes.handoverConfirmedAt || autoConfirmed);
+        if (handoverClosed) {
+          setHasEligiblePackage(false);
+          setNcpkBooking(null);
+          return;
+        }
+
+        setHasEligiblePackage(!!defaultCar?.packageCode);
         const [y, m, d] = activePkgRes.date.split("-").map(Number);
         const wd = WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()];
         setNcpkBooking({
           shopName: shops.find((s) => s.shopCode === activePkgRes.shopCode)?.name ?? "선정 업체",
           dateLabel: `${activePkgRes.date.replaceAll("-", ".")}(${wd}) ${activePkgRes.time}`,
-          due: activePkgRes.date <= todayKey,
+          done: activePkgRes.progressStatus === "DONE",
         });
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 정보를 불러오지 못했어요", "danger"));
@@ -194,7 +205,7 @@ export default function HomeScreen({
 
         {/* ===== 신차패키지 진행중 예약 카드 — 신청(예약 확정) 후에만 노출. 방문일 도래 전엔 진행상태, 도래 후엔 인수확인 ===== */}
         {ncpkBooking &&
-          (ncpkBooking.due ? (
+          (ncpkBooking.done ? (
             <div className="mt-3 rounded-2xl border border-green-500 bg-status-success-bg p-[18px]" style={{ animation: "mp-fade .3s ease" }}>
               <div className="mb-2.5 flex items-center gap-2">
                 <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-status-success">

@@ -17,9 +17,11 @@ type Screen = "main" | "basicInfo" | "holiday" | "availtime" | "rsvstat" | "pwdC
 interface BizFlowProps {
   onExit: () => void;
   onLogout: () => void;
+  onOpenRsvc: () => void;
+  onOpenStl: () => void;
 }
 
-export default function BizFlow({ onExit, onLogout }: BizFlowProps) {
+export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl }: BizFlowProps) {
   const [screen, setScreen] = useState<Screen>("main");
   const [shop, setShop] = useState<MyShop | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -43,6 +45,8 @@ export default function BizFlow({ onExit, onLogout }: BizFlowProps) {
           onOpenRsvStat={() => setScreen("rsvstat")}
           onOpenPwdChange={() => setScreen("pwdChange")}
           onOpenHome={onExit}
+          onOpenRsvc={onOpenRsvc}
+          onOpenStl={onOpenStl}
           onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
           onPlaceholder={(label) => showToast(`${label}(으)로 이동해요`)}
         />

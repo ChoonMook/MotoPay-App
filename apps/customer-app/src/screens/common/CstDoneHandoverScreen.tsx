@@ -1,12 +1,9 @@
 // CU-RSVC-16 / CU-NCPK-10: 시공완료·인수확인 - 업체 업로드 시공 사진 확인 후 인수확인, 3일 미확인 시 자동확정
 // 신차패키지·예약시공 등 여러 채널에서 공통으로 쓰는 화면. 신차패키지는 시공 정보 요약 카드(차량·VIN·품목)를 함께 보여준다.
 import Button from "../../components/ui/Button";
-import shopThumb from "../../assets/images/shop.png";
 import CommonHeader from "./CommonHeader";
 import { WarnIcon } from "./commonIcons";
 import type { HandoverStatus } from "./commonTypes";
-
-const GALLERY_COUNT = 6;
 
 export interface VehicleSummaryItem {
   name: string;
@@ -25,6 +22,10 @@ interface CstDoneHandoverScreenProps {
   selName: string;
   handover: HandoverStatus;
   vehicleSummary?: VehicleSummary;
+  /** 파트너가 완료 등록 시 첨부한 시공 사진의 실제 URL 목록 */
+  photos: string[];
+  loading?: boolean;
+  confirming?: boolean;
   onBack: () => void;
   onConfirmHandover: () => void;
   onTapPhoto?: (index: number) => void;
@@ -34,6 +35,9 @@ export default function CstDoneHandoverScreen({
   selName,
   handover,
   vehicleSummary,
+  photos,
+  loading = false,
+  confirming = false,
   onBack,
   onConfirmHandover,
   onTapPhoto,
@@ -89,19 +93,23 @@ export default function CstDoneHandoverScreen({
 
         <div className="mx-0.5 mt-5 mb-2.5 flex items-center justify-between">
           <span className="text-sm font-extrabold text-gray-900">시공 완료 사진</span>
-          <span className="text-xs text-gray-500">업체 업로드 · {GALLERY_COUNT}장</span>
+          <span className="text-xs text-gray-500">업체 업로드 · {photos.length}장</span>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {Array.from({ length: GALLERY_COUNT }, (_, i) => (
-            <span
-              key={i}
-              onClick={() => onTapPhoto?.(i)}
-              className={`relative aspect-square overflow-hidden rounded-[10px] bg-gray-100 ${onTapPhoto ? "cursor-pointer" : ""}`}
-            >
-              <img src={shopThumb} alt="시공 사진" className="h-full w-full object-cover object-center" />
-            </span>
-          ))}
-        </div>
+        {loading ? (
+          <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1.5">
+            {photos.map((url, i) => (
+              <span
+                key={url}
+                onClick={() => onTapPhoto?.(i)}
+                className={`relative aspect-square overflow-hidden rounded-[10px] bg-gray-100 ${onTapPhoto ? "cursor-pointer" : ""}`}
+              >
+                <img src={url} alt="시공 사진" className="h-full w-full object-cover object-center" />
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-[18px] flex items-start gap-[9px] rounded-xl bg-gray-100 px-[15px] py-[13px]">
           <span className="mt-px flex-none text-gray-500">
@@ -114,8 +122,8 @@ export default function CstDoneHandoverScreen({
       </div>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-6">
-        <Button size="xl" onClick={onConfirmHandover}>
-          {done ? "후기 작성하기" : "인수 확인하기"}
+        <Button size="xl" disabled={confirming} onClick={onConfirmHandover}>
+          {confirming ? "처리 중..." : done ? "후기 작성하기" : "인수 확인하기"}
         </Button>
       </div>
     </div>

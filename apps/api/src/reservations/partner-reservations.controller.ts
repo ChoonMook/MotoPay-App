@@ -1,11 +1,12 @@
 // GET /shops/me/reservations/today, PATCH /shops/me/reservations/:reservationNo/progress, GET /shops/me/reservations/package-stats
-// GET /shops/me/reservations/packages, GET /shops/me/reservations/packages/:reservationNo
+// GET /shops/me/reservations/packages, GET /shops/me/reservations/packages/:reservationNo, PATCH /shops/me/reservations/:reservationNo/complete
 // — 파트너(시공업체) 로그인 전용, 항상 로그인 계정 소속 업체(shopCode) 기준으로만 조회/수정
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentPartnerUser } from '../partner-auth/decorators/current-partner-user.decorator';
 import { JwtPartnerAuthGuard } from '../partner-auth/guards/jwt-partner-auth.guard';
 import type { SafePartnerUser } from '../partner-auth/partner-auth.types';
+import { CompleteReservationDto } from './dto/complete-reservation.dto';
 import { UpdateReservationProgressDto } from './dto/update-reservation-progress.dto';
 import { ReservationsService } from './reservations.service';
 
@@ -64,6 +65,24 @@ export class PartnerReservationsController {
       partnerUser.shopCode,
       reservationNo,
       dto.progressStatus,
+    );
+    return { success: true };
+  }
+
+  @Patch(':reservationNo/complete')
+  @ApiOperation({
+    summary:
+      '시공 완료 등록(PT-NCPK-04) — 시공중 상태에서만 가능, 시공 사진(3~10장)·작업 메모 저장 후 진행상태를 완료로 전환',
+  })
+  async completeReservation(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('reservationNo') reservationNo: string,
+    @Body() dto: CompleteReservationDto,
+  ) {
+    await this.reservationsService.completeReservation(
+      partnerUser.shopCode,
+      reservationNo,
+      dto,
     );
     return { success: true };
   }

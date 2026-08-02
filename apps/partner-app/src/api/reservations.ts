@@ -40,11 +40,16 @@ export interface PackageJobDetail {
   time: string;
   customerName: string;
   phoneMasked: string;
+  phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: string | null;
   vin: string | null;
   progressStatus: string;
   packageName: string | null;
   items: PackageJobItem[];
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null; // 고객이 인수확인했거나(또는 completedAt+3일 경과로 자동확정된) 시점
+  photos: string[]; // uploads/ 기준 상대경로 — 완료 등록 시 첨부한 시공 사진
 }
 
 /** 내 업체의 오늘 예약 목록(파트너 홈 "오늘의 시공 일정") */
@@ -75,5 +80,16 @@ export function updateReservationProgress(
   return authedRequest<void>(`/shops/me/reservations/${reservationNo}/progress`, {
     method: "PATCH",
     body: JSON.stringify({ progressStatus }),
+  });
+}
+
+/** 시공 완료 등록(PT-NCPK-04) — 시공중 상태에서만 가능, 시공 사진(3~10장, data URI)·작업 메모 저장 후 진행상태를 완료로 전환 */
+export function completeReservationJob(
+  reservationNo: string,
+  params: { photos: string[]; memo?: string },
+): Promise<void> {
+  return authedRequest<void>(`/shops/me/reservations/${reservationNo}/complete`, {
+    method: "PATCH",
+    body: JSON.stringify(params),
   });
 }

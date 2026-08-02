@@ -1,4 +1,5 @@
-// POST /reservations(예약 생성)/GET /reservations/me(내 예약 목록)/PATCH /reservations/:id/cancel(취소)/PATCH /reservations/:id/reschedule(일정변경) — 로그인 필요
+// POST /reservations(예약 생성)/GET /reservations/me(내 예약 목록)/PATCH /reservations/:id/cancel(취소)/PATCH /reservations/:id/reschedule(일정변경)
+// /GET /reservations/:id/handover(시공완료·인수확인 상세)/PATCH /reservations/:id/handover-confirm(인수확인) — 로그인 필요
 import {
   Body,
   Controller,
@@ -73,5 +74,27 @@ export class ReservationsController {
     @Body('time') time: string,
   ) {
     return this.reservationsService.reschedule(user.id, id, { date, time });
+  }
+
+  @Get(':id/handover')
+  @ApiOperation({
+    summary:
+      '시공완료·인수확인 상세(CU-RSVC-16/CU-NCPK-10) — 완료된 시공 사진·메모·구매 항목, 완료일로부터 3일 경과 시 자동 확정',
+  })
+  getHandoverDetail(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.reservationsService.getHandoverDetail(user.id, id);
+  }
+
+  @Patch(':id/handover-confirm')
+  @ApiOperation({ summary: '인수확인 — 시공완료 상태에서만 가능, 1회만 가능' })
+  async confirmHandover(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    await this.reservationsService.confirmHandover(user.id, id);
+    return { success: true };
   }
 }

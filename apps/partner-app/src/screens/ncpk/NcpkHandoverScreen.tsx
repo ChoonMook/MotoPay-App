@@ -1,26 +1,48 @@
-// PT-NCPK-05: 인수확인 대기 - 고객 인수확인 상태 조회, 3일 미확인 시 자동 확정 안내, 인수확인 알림 재발송
+// PT-NCPK-05: 인수확인 현황 - 고객의 실제 인수확인 상태 조회(직접 확인 또는 완료일로부터 3일 경과 시 자동확정), 인수확인 알림 재발송
+import { API_BASE_URL } from "../../api/config";
 import Button from "../../components/ui/Button";
-import carImg from "../../assets/images/car.png";
 import { CheckBadgeIcon } from "./ncpkIcons";
 import type { PackageJobDetail } from "../../api/reservations";
 
-const HO_ROWS = [
-  { k: "시공 완료", v: "2026.07.02(목) 오후 5:10" },
-  { k: "인수확인 요청", v: "2026.07.02(목) 오후 5:10" },
-  { k: "자동 확정 예정", v: "2026.07.05(일)" },
-  { k: "정산 예정", v: "인수 확정 후 익월 10일" },
-];
+const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const HANDOVER_AUTO_CONFIRM_DAYS = 3;
+
+function formatDateTimeLabel(iso: string): string {
+  const d = new Date(iso);
+  const wd = WEEKDAY_KO[d.getDay()];
+  const hh = d.getHours();
+  const ampm = hh < 12 ? "오전" : "오후";
+  const hour12 = hh % 12 === 0 ? 12 : hh % 12;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}(${wd}) ${ampm} ${hour12}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 interface NcpkHandoverScreenProps {
   job: PackageJobDetail;
-  photos: number;
   onBack: () => void;
   onRemind: () => void;
 }
 
-export default function NcpkHandoverScreen({ job, photos, onBack, onRemind }: NcpkHandoverScreenProps) {
-  // 인수확인 확정 상태를 저장할 모델이 아직 없어 이 화면은 항상 대기 배너만 보여주는 자리표시(placeholder)로 남겨둠
-  const hoPending = job.progressStatus !== "인수확정";
+export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandoverScreenProps) {
+  const hoPending = !job.handoverConfirmedAt;
+  const photos = job.photos.map((p) => `${API_BASE_URL}/uploads/${p}`);
+
+  const hoRows = [
+    { k: "시공 완료", v: job.completedAt ? formatDateTimeLabel(job.completedAt) : "-" },
+    { k: "인수확인 요청", v: job.completedAt ? formatDateTimeLabel(job.completedAt) : "-" },
+    hoPending
+      ? {
+          k: "자동 확정 예정",
+          v: job.completedAt
+            ? formatDateTimeLabel(
+                new Date(
+                  new Date(job.completedAt).getTime() + HANDOVER_AUTO_CONFIRM_DAYS * 24 * 60 * 60 * 1000,
+                ).toISOString(),
+              )
+            : "-",
+        }
+      : { k: "인수확인일", v: formatDateTimeLabel(job.handoverConfirmedAt!) },
+    { k: "정산 예정", v: "인수 확정 후 익월 10일" },
+  ];
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -29,7 +51,7 @@ export default function NcpkHandoverScreen({ job, photos, onBack, onRemind }: Nc
           <span onClick={onBack} className="flex h-9 w-9 cursor-pointer items-center justify-center text-[22px] text-gray-800">
             ‹
           </span>
-          <span className="text-[17px] font-bold text-gray-900">인수확인 대기</span>
+          <span className="text-[17px] font-bold text-gray-900">인수확인 현황</span>
         </div>
       </div>
 
@@ -57,10 +79,10 @@ export default function NcpkHandoverScreen({ job, photos, onBack, onRemind }: Nc
         </div>
 
         <div className="my-4 rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
-          {HO_ROWS.map((r, i) => (
+          {hoRows.map((r, i) => (
             <div
               key={r.k}
-              className={`flex items-center justify-between py-[13px] ${i < HO_ROWS.length - 1 ? "border-b border-gray-100" : ""}`}
+              className={`flex items-center justify-between py-[13px] ${i < hoRows.length - 1 ? "border-b border-gray-100" : ""}`}
             >
               <span className="text-[13px] text-gray-500">{r.k}</span>
               <span className="text-[13.5px] font-semibold text-gray-800">{r.v}</span>
@@ -68,13 +90,22 @@ export default function NcpkHandoverScreen({ job, photos, onBack, onRemind }: Nc
           ))}
         </div>
 
-        <div className="mx-0.5 mt-[18px] mb-2.5 text-[15px] font-extrabold text-gray-900">
+        {job.completionMemo && (
+          <>
+            <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold text-gray-900">작업 메모</div>
+            <div className="mb-[18px] rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-[13.5px] leading-relaxed text-gray-700">
+              {job.completionMemo}
+            </div>
+          </>
+        )}
+
+        <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold text-gray-900">
           고객에게 전달된 시공 사진
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {Array.from({ length: photos }, (_, i) => (
+          {photos.map((photo, i) => (
             <div key={i} className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-              <img src={carImg} alt="시공 사진" className="h-auto w-4/5 object-contain" />
+              <img src={photo} alt="시공 사진" className="h-full w-full object-cover" />
             </div>
           ))}
         </div>

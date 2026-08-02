@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/colors.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/typography.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/tokens/radius.css">
+<link rel="stylesheet" href="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/styles.css">
+<script src="_ds/cardoc-design-system-b13f1d3b-672c-4baa-88ef-fde55eff77b6/_ds_bundle.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#E7EAEE;font-family:var(--font-sans)}
+  a{color:var(--color-brand);text-decoration:none}
+  a:hover{color:var(--color-brand-strong)}
+  @keyframes mp-screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .mp-scroll::-webkit-scrollbar{width:0;height:0}
+  .mp-scroll{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-width:1360px;padding:44px 52px 80px;font-family:var(--font-sans);color:var(--text-body)">
+
+  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">MotoPay <span style="color:var(--color-brand)">파트너(시공업체)앱</span> · 정산·후기</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text-tertiary);padding-bottom:4px">1~2 Depth · PT-STL-01 ~ 03</div>
+  </div>
+  <div style="font-size:14px;color:var(--text-secondary);max-width:820px;line-height:1.6;margin-bottom:32px">프로그램목록표의 <b>정산·후기</b> 3개 화면(PT-STL-01~03)입니다. 이번 달 정산 예정 금액을 허브에서 바로 확인하고, 기간·상태별 정산 내역 조회·엑셀 다운로드, 고객 후기 확인까지 이어지는 흐름을 다룹니다.</div>
+
+  <div style="display:flex;gap:44px;align-items:flex-start">
+
+    <!-- ============ PHONE ============ -->
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="position:relative;width:375px;height:812px;background:var(--surface-page);border-radius:30px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(16,25,45,.34),0 0 0 1px rgba(0,0,0,.04)">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;z-index:60;font-size:13px;font-weight:700;color:var(--gray-900);pointer-events:none">
+          <span>9:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="16" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.1 0 4 .82 5.42 2.16l1.34-1.4A9.6 9.6 0 0 0 8 .2 9.6 9.6 0 0 0 1.24 2.96l1.34 1.4A7.6 7.6 0 0 1 8 2.2Zm0 3.6c1.1 0 2.1.44 2.84 1.16l1.35-1.4A5.6 5.6 0 0 0 8 5a5.6 5.6 0 0 0-4.19 1.56l1.35 1.4A3.98 3.98 0 0 1 8 5.8Zm0 3.4L9.8 11h.02L8 12l-1.82-2.8H8Z"></path></svg>
+            <span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-flex;align-items:center;padding:1.5px"><span style="width:14px;height:100%;background:currentColor;border-radius:1px"></span></span>
+          </span>
+        </div>
+
+        <!-- ================= 01 정산·후기 (허브) ================= -->
+        <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 18px 14px;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <span style="font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--gray-900)">정산·후기</span>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:18px 18px 24px">
+              <div style="background:linear-gradient(180deg,var(--surface-brand-subtle),var(--surface-card));border:1px solid var(--border-subtle);border-radius:18px;padding:22px 20px;margin-bottom:18px">
+                <div style="font-size:12.5px;font-weight:700;color:var(--color-brand);margin-bottom:8px">이번 달 정산 예정 금액</div>
+                <div style="font-size:30px;font-weight:800;color:var(--gray-900);font-family:var(--font-numeric);letter-spacing:-.02em">{{ monthTotalLabel }}</div>
+                <div style="display:flex;gap:14px;margin-top:14px">
+                  <div style="flex:1">
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-bottom:2px">정산완료</div>
+                    <div style="font-size:15px;font-weight:800;color:var(--gray-900);font-family:var(--font-numeric)">{{ doneAmountLabel }}</div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-bottom:2px">정산대기</div>
+                    <div style="font-size:15px;font-weight:800;color:var(--color-brand);font-family:var(--font-numeric)">{{ waitAmountLabel }}</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div onClick="{{ goHist }}" style="display:flex;align-items:center;gap:12px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:16px;cursor:pointer;box-shadow:var(--shadow-sm)">
+                  <span style="flex:none;color:var(--color-brand)">{{ histIcon }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:700;color:var(--gray-900)">정산 내역 조회</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">기간·상태별 조회, 엑셀 다운로드</div>
+                  </div>
+                  <span style="color:var(--text-tertiary);font-size:18px">›</span>
+                </div>
+                <div onClick="{{ goReview }}" style="display:flex;align-items:center;gap:12px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:16px;cursor:pointer;box-shadow:var(--shadow-sm)">
+                  <span style="flex:none;color:var(--color-brand)">{{ reviewIcon }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:700;color:var(--gray-900)">후기 조회</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px">평점 {{ avgRating }} · 후기 {{ reviewCount }}건</div>
+                  </div>
+                  <span style="color:var(--text-tertiary);font-size:18px">›</span>
+                </div>
+              </div>
+            </div>
+            <div style="flex:none;height:66px;display:flex;background:var(--surface-card);border-top:1px solid var(--divider);padding-bottom:8px">
+              <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:{{ n.color }}">
+                  {{ n.icon }}
+                  <span style="font-size:10.5px;font-weight:{{ n.weight }}">{{ n.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ================= 02 정산 내역 조회 ================= -->
+        <sc-if value="{{ isHist }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 12px 12px;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;gap:6px;height:50px">
+                <span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--gray-800)">‹</span>
+                <span style="font-size:17px;font-weight:700;color:var(--gray-900)">정산 내역 조회</span>
+              </div>
+              <div style="display:flex;gap:7px;overflow-x:auto;padding:2px 6px 4px" class="mp-scroll">
+                <sc-for list="{{ periodChips }}" as="p" hint-placeholder-count="4">
+                  <span onClick="{{ p.onClick }}" style="{{ p.chipStyle }}">{{ p.label }}</span>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:7px;padding:6px 6px 2px">
+                <sc-for list="{{ statusChips }}" as="sc2" hint-placeholder-count="3">
+                  <span onClick="{{ sc2.onClick }}" style="{{ sc2.chipStyle }}">{{ sc2.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:14px 18px 24px">
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ histRows }}" as="h" hint-placeholder-count="3">
+                  <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow-sm)">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                      <span style="flex:1;font-size:12px;color:var(--text-tertiary);font-family:var(--font-numeric)">{{ h.date }}</span>
+                      <span style="{{ h.chipStyle }}">{{ h.statusLabel }}</span>
+                    </div>
+                    <div style="font-size:13.5px;font-weight:700;color:var(--gray-900);margin-bottom:8px">{{ h.customer }} · {{ h.car }}</div>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+                      <div style="font-size:11.5px;color:var(--text-tertiary)">수수료 {{ h.feeLabel }}</div>
+                      <div style="font-size:16px;font-weight:800;color:var(--gray-900);font-family:var(--font-numeric)">{{ h.amountLabel }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ histEmpty }}"><div style="text-align:center;padding:60px 0;font-size:13px;color:var(--text-tertiary)">해당 조건의 정산 내역이 없어요</div></sc-if>
+              </div>
+            </div>
+            <div style="flex:none;padding:14px 20px 22px;border-top:1px solid var(--divider);background:var(--surface-card)">
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ excelBtn }}" hint-size="100%,52px">엑셀 다운로드</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ================= 03 후기 조회 ================= -->
+        <sc-if value="{{ isReview }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:mp-screen .32s ease">
+            <div style="flex:none;padding:50px 12px 0;background:var(--surface-card);border-bottom:1px solid var(--divider)">
+              <div style="display:flex;align-items:center;gap:6px;height:50px">
+                <span onClick="{{ goMain }}" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--gray-800)">‹</span>
+                <span style="font-size:17px;font-weight:700;color:var(--gray-900)">후기 조회</span>
+              </div>
+            </div>
+            <div class="mp-scroll" style="flex:1;overflow-y:auto;padding:16px 18px 24px">
+              <div style="display:flex;align-items:center;gap:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm)">
+                <div style="text-align:center">
+                  <div style="font-size:26px;font-weight:800;color:var(--gray-900);font-family:var(--font-numeric)">{{ avgRating }}</div>
+                  <div style="display:flex;gap:1px;margin-top:2px;color:#F5A623">{{ avgStars }}</div>
+                </div>
+                <div style="flex:1;border-left:1px solid var(--divider);padding-left:16px">
+                  <div style="font-size:13px;color:var(--text-secondary)">전체 후기</div>
+                  <div style="font-size:16px;font-weight:800;color:var(--gray-900);font-family:var(--font-numeric)">{{ reviewCount }}건</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ reviewRows }}" as="r" hint-placeholder-count="3">
+                  <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:14px;padding:15px 16px">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                      <span style="display:flex;gap:1px;color:#F5A623;font-size:13px">{{ r.stars }}</span>
+                      <span style="font-size:11.5px;color:var(--text-tertiary)">{{ r.date }}</span>
+                    </div>
+                    <div style="font-size:13.5px;line-height:1.55;color:var(--text-body);margin-bottom:8px">{{ r.content }}</div>
+                    <div style="font-size:11.5px;color:var(--text-tertiary)">{{ r.customerMasked }} · {{ r.car }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div onClick="{{ loadMore }}" style="text-align:center;margin-top:14px;font-size:12.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-sunken);border-radius:10px;padding:11px;cursor:pointer">후기 더 보기</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- 직접입력 기간 팝업 -->
+        <sc-if value="{{ showDatePop }}">
+          <div style="position:absolute;inset:0;z-index:80;background:rgba(16,20,30,.5);display:flex;align-items:flex-end">
+            <div style="width:100%;background:var(--surface-card);border-radius:20px 20px 0 0;padding:20px 20px 26px;animation:mp-screen .28s ease">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <span style="font-size:16px;font-weight:800;color:var(--gray-900)">기간 직접입력</span>
+                <span onClick="{{ closeDatePop }}" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-tertiary);font-size:18px">✕</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="flex:1;min-width:0"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ dateFromP }}" hint-size="100%,74px"></x-import></div>
+                <span style="flex:none;color:var(--text-tertiary);font-size:13px;padding-top:22px">~</span>
+                <div style="flex:1;min-width:0"><x-import component-from-global-scope="CardocDesignSystem_b13f1d.Input" dc-props="{{ dateToP }}" hint-size="100%,74px"></x-import></div>
+              </div>
+              <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Button" dc-props="{{ dateApplyBtn }}" hint-size="100%,52px">적용</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- toast -->
+        <sc-if value="{{ toast }}">
+          <div style="position:absolute;left:0;right:0;bottom:40px;z-index:90;display:flex;justify-content:center;padding:0 24px">
+            <x-import component-from-global-scope="CardocDesignSystem_b13f1d.Toast" tone="{{ toastTone }}" hint-size="auto,44px">{{ toast }}</x-import>
+          </div>
+        </sc-if>
+
+      </div>
+      <div style="font-size:12px;color:var(--text-tertiary)">375 × 812 · 앱 화면(모바일 뷰포트) · 정산·후기 플로우</div>
+    </div>
+
+    <!-- ============ SCREEN MAP ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px 20px 12px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:3px">화면 목록 · 3</div>
+        <div style="font-size:12.5px;color:var(--text-tertiary);margin-bottom:14px">행을 누르면 프로토타입이 해당 화면으로 이동해요</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <sc-for list="{{ mapItems }}" as="item" hint-placeholder-count="3">
+            <div onClick="{{ item.onClick }}" style="{{ item.rowStyle }}">
+              <span style="{{ item.badgeStyle }}">{{ item.id }}</span>
+              <span style="flex:1;font-size:13.5px;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</span>
+              <span style="{{ item.typeStyle }}">{{ item.type }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SPEC ============ -->
+    <div style="flex:none;width:400px;display:flex;flex-direction:column;gap:20px">
+      <div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;box-shadow:var(--shadow-sm)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:800;color:#fff;background:var(--color-brand);padding:3px 8px;border-radius:6px;letter-spacing:.02em">{{ curSpec.id }}</span>
+          <span style="font-size:16px;font-weight:800;color:var(--gray-900)">{{ curSpec.name }}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">유형 · {{ curSpec.type }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px;font-family:var(--font-numeric)">{{ curSpec.url }}</span>
+          <span style="font-size:11.5px;color:var(--text-secondary);background:var(--surface-sunken);padding:4px 10px;border-radius:6px">{{ curSpec.device }}</span>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">주요기능</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-body);margin-bottom:16px">{{ curSpec.func }}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--text-tertiary);letter-spacing:.04em;margin-bottom:6px">화면 상세 정의</div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--text-secondary);white-space:pre-line">{{ curSpec.detail }}</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    screen: 'main', period: 'all', status: 'all', reviewShown: 3, toast: '', toastTone: 'default',
+    showDatePop: false, dateFrom: '', dateTo: '', customLabel: '',
+    settlements: [
+      { id: 's1', date: '2026.08.01', customer: '정하늘', car: '현대 싼타페', amount: 480000, fee: 24000, status: 'done', period: 'this' },
+      { id: 's2', date: '2026.07.29', customer: '한도윤', car: '제네시스 GV70', amount: 620000, fee: 31000, status: 'done', period: 'this' },
+      { id: 's3', date: '2026.07.20', customer: '박지훈', car: 'BMW 5시리즈', amount: 820000, fee: 41000, status: 'wait', period: 'this' },
+      { id: 's4', date: '2026.06.28', customer: '최유나', car: '테슬라 모델Y', amount: 580000, fee: 29000, status: 'done', period: 'last' },
+      { id: 's5', date: '2026.06.14', customer: '오세훈', car: '폭스바겐 티구안', amount: 350000, fee: 17500, status: 'hold', period: 'last' },
+    ],
+    reviews: [
+      { id: 'r1', rating: 5, content: '작업이 꼼꼼하고 상담도 친절하게 해주셔서 만족스러웠어요.', customer: '김*준', car: '아이오닉 6', date: '2026.07.30' },
+      { id: 'r2', rating: 4, content: '시공 결과는 좋았는데 예정 시간보다 조금 늦게 시작됐어요.', customer: '이*연', car: 'EV6', date: '2026.07.22' },
+      { id: 'r3', rating: 5, content: '가격 대비 만족도가 높아요. 다음에도 이용할게요.', customer: '박*훈', car: '5시리즈', date: '2026.07.15' },
+      { id: 'r4', rating: 5, content: '설명을 자세히 해주셔서 믿고 맡길 수 있었습니다.', customer: '최*나', car: '모델Y', date: '2026.06.30' },
+      { id: 'r5', rating: 3, content: '결과물은 무난했지만 안내 문자가 조금 늦었어요.', customer: '오*훈', car: '티구안', date: '2026.06.18' },
+    ],
+  };
+
+  componentWillUnmount() { clearTimeout(this._t); }
+  showToast(msg, tone) { clearTimeout(this._t); this.setState({ toast: msg, toastTone: tone || 'default' }); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+  won(n) { return Number(n || 0).toLocaleString('ko-KR') + '원'; }
+  f(key, extra) { return Object.assign({ value: this.state[key], onChange: e => this.setState({ [key]: e.target ? e.target.value : e }) }, extra); }
+  stars(n) { return '★★★★★☆☆☆☆☆'.slice(5 - n, 10 - n); }
+
+  icon(name) {
+    const paths = {
+      hist: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 14h3M8 17h6"/>',
+      review: '<path d="M12 2.5 14.7 8.6l6.6.7-5 4.4 1.5 6.5L12 16.9l-5.8 3.3 1.5-6.5-5-4.4 6.6-.7Z"/>',
+      home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>',
+      resv: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+      pay: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-2.5-1.6L14 21l-2-1.6L10 21l-2.5-1.6L5 21V4a1 1 0 0 1 1-1Z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>',
+      my: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+    };
+    return React.createElement('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.85, strokeLinecap: 'round', strokeLinejoin: 'round', dangerouslySetInnerHTML: { __html: paths[name] } });
+  }
+
+  spec() {
+    return {
+      '01': { id: 'PT-STL-01', name: '정산·후기', type: '주화면', url: '/settle', device: '공용(반응형)',
+        func: '정산 내역 및 고객 후기 확인을 위한 허브 화면.',
+        detail: '[UI요소] 이번 달 정산 예정 금액(정산완료/대기 구분 표시), 정산내역·후기조회 진입 메뉴, 하단 네비게이션.\n[상태] 정산 대기 있음/없음.\n[인터랙션] 메뉴 탭 시 하위 화면 이동.\n[디자인고려사항] 금액을 상단에 크게 노출해 업체의 핵심 관심사(정산)에 즉시 응답.' },
+      '02': { id: 'PT-STL-02', name: '정산 내역 조회', type: '목록', url: '/settle/settle-hist', device: '공용(반응형)',
+        func: '정산 대상·완료·보류 내역을 기간별로 조회하고 엑셀로 다운로드.',
+        detail: '[UI요소] 기간 필터(전체/이번달/지난달/직접입력), 상태 필터(대기/완료/보류), 정산 내역 리스트, 엑셀 다운로드 버튼.\n[상태] 필터별 목록 전환.\n[인터랙션] 다운로드 탭 시 현재 필터 기준 엑셀 파일 생성.\n[디자인고려사항] 세무 처리용으로 활용되는 만큼 다운로드 파일에 필요한 항목(정산일·건별 금액·수수료)을 빠짐없이 포함.' },
+      '03': { id: 'PT-STL-03', name: '후기 조회', type: '목록', url: '/settle/review', device: '공용(반응형)',
+        func: '업체 프로필 평점·후기 목록을 페이징으로 조회.',
+        detail: '[UI요소] 평균 평점, 후기 건수, 개별 후기 리스트(별점·내용·고객명 마스킹·차종).\n[상태] 후기 없음/있음, 페이징.\n[인터랙션] 스크롤 시 페이징 로드.\n[디자인고려사항] 고객명은 개인정보 보호를 위해 마스킹 처리(예: 김*동).' },
+    };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const brand = 'var(--color-brand)', muted = 'var(--text-tertiary)', teal = '#0E9A96';
+    const SPEC = this.spec();
+
+    const done = st.settlements.filter(s => s.status === 'done' && s.period === 'this');
+    const wait = st.settlements.filter(s => s.status === 'wait' && s.period === 'this');
+    const monthTotal = [...done, ...wait].reduce((a, s) => a + s.amount, 0);
+    const doneAmount = done.reduce((a, s) => a + s.amount, 0);
+    const waitAmount = wait.reduce((a, s) => a + s.amount, 0);
+
+    const avgRatingNum = st.reviews.length ? (st.reviews.reduce((a, r) => a + r.rating, 0) / st.reviews.length) : 0;
+    const avgRating = avgRatingNum.toFixed(1);
+    const reviewCount = st.reviews.length;
+
+    // ---- nav ----
+    const navMeta = [ { k: 'home', label: '홈' }, { k: 'resv', label: '예약관리' }, { k: 'pay', label: '정산' }, { k: 'my', label: '마이' } ];
+    const navItems = navMeta.map((n, i) => {
+      const active = i === 2;
+      return { label: n.label, icon: this.icon(n.k), color: active ? brand : muted, weight: active ? 700 : 500,
+        onClick: () => active ? this.setState({ screen: 'main' }) : this.showToast(n.label + ' 탭으로 이동해요') };
+    });
+
+    // ---- history filters ----
+    const periodMeta = [ { k: 'all', label: '전체' }, { k: 'this', label: '이번달' }, { k: 'last', label: '지난달' }, { k: 'custom', label: st.period === 'custom' && st.customLabel ? st.customLabel : '직접입력' } ];
+    const periodChips = periodMeta.map(p => ({
+      label: p.label, onClick: () => p.k === 'custom' ? this.setState({ showDatePop: true }) : this.setState({ period: p.k }),
+      chipStyle: `flex:none;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;${st.period === p.k ? `background:${brand};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}`,
+    }));
+    const statusMeta = [ { k: 'all', label: '전체' }, { k: 'wait', label: '대기' }, { k: 'done', label: '완료' }, { k: 'hold', label: '보류' } ];
+    const statusChips = statusMeta.map(s => ({
+      label: s.label, onClick: () => this.setState({ status: s.k }),
+      chipStyle: `flex:none;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;${st.status === s.k ? `background:${teal};color:#fff` : 'background:var(--surface-sunken);color:var(--text-secondary)'}`,
+    }));
+    const statusLabelMap = { wait: '대기', done: '완료', hold: '보류' };
+    const statusColorMap = { wait: brand, done: teal, hold: muted };
+    const filtered = st.settlements.filter(s => (st.period === 'all' || s.period === st.period) && (st.status === 'all' || s.status === st.status));
+    const histRows = filtered.map(s => ({
+      date: s.date, customer: s.customer, car: s.car, feeLabel: this.won(s.fee), amountLabel: this.won(s.amount), statusLabel: statusLabelMap[s.status],
+      chipStyle: `font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;background:${statusColorMap[s.status]};color:#fff`,
+    }));
+
+    // ---- reviews ----
+    const shown = st.reviews.slice(0, st.reviewShown);
+    const reviewRows = shown.map(r => ({ stars: this.stars(r.rating), content: r.content, customerMasked: r.customer, car: r.car, date: r.date }));
+
+    // ---- screen map ----
+    const order = ['01','02','03'];
+    const typeColors = { '주화면': brand, '목록': teal };
+    const screenOfId = { '01': 'main', '02': 'hist', '03': 'review' };
+    const aId = Object.keys(screenOfId).find(k => screenOfId[k] === st.screen) || '01';
+    const mapItems = order.map(id => {
+      const sp = SPEC[id]; const active = id === aId; const tc = typeColors[sp.type] || muted;
+      return {
+        id: sp.id, name: sp.name, type: sp.type,
+        onClick: () => this.setState({ screen: screenOfId[id] }),
+        rowStyle: `display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;${active ? 'background:var(--surface-brand-subtle)' : ''}`,
+        badgeStyle: `flex:none;font-size:10.5px;font-weight:800;color:${active ? '#fff' : tc};background:${active ? brand : 'var(--surface-sunken)'};padding:2px 7px;border-radius:5px;font-family:var(--font-numeric)`,
+        typeStyle: `flex:none;font-size:11px;font-weight:700;color:${tc}`,
+      };
+    });
+
+    return {
+      isMain: st.screen === 'main', isHist: st.screen === 'hist', isReview: st.screen === 'review',
+      goMain: () => this.setState({ screen: 'main' }),
+      goHist: () => this.setState({ screen: 'hist' }),
+      goReview: () => this.setState({ screen: 'review' }),
+      histIcon: this.icon('hist'), reviewIcon: this.icon('review'),
+      monthTotalLabel: this.won(monthTotal), doneAmountLabel: this.won(doneAmount), waitAmountLabel: this.won(waitAmount),
+      avgRating, avgStars: this.stars(Math.round(avgRatingNum)), reviewCount,
+      navItems, mapItems, curSpec: SPEC[aId], toast: st.toast, toastTone: st.toastTone,
+
+      periodChips, statusChips, histRows, histEmpty: histRows.length === 0,
+      excelBtn: { variant: 'primary', size: 'lg', fullWidth: true, onClick: () => this.showToast('현재 필터 기준 엑셀 파일을 생성했어요', 'success') },
+
+      showDatePop: st.showDatePop,
+      closeDatePop: () => this.setState({ showDatePop: false }),
+      dateFromP: this.f('dateFrom', { label: '시작일', placeholder: 'YYYY.MM.DD' }),
+      dateToP: this.f('dateTo', { label: '종료일', placeholder: 'YYYY.MM.DD' }),
+      dateApplyBtn: { variant: 'primary', size: 'lg', fullWidth: true, disabled: !st.dateFrom || !st.dateTo,
+        onClick: () => this.setState({ showDatePop: false, period: 'custom', customLabel: st.dateFrom + ' ~ ' + st.dateTo }) },
+
+      reviewRows,
+      loadMore: () => {
+        if (st.reviewShown >= st.reviews.length) { this.showToast('더 이상 후기가 없어요'); return; }
+        this.setState(s => ({ reviewShown: Math.min(s.reviewShown + 2, s.reviews.length) }));
+      },
+    };
+  }
+}
+
+</script>
+</body>
+</html>

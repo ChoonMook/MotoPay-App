@@ -10,7 +10,6 @@ interface NcpkDetailScreenProps {
   loading: boolean;
   updating: boolean;
   onBack: () => void;
-  onTapCall: () => void;
   onStart: () => void;
   onGoDone: () => void;
   onGoHandover: () => void;
@@ -21,7 +20,6 @@ export default function NcpkDetailScreen({
   loading,
   updating,
   onBack,
-  onTapCall,
   onStart,
   onGoDone,
   onGoHandover,
@@ -90,13 +88,15 @@ export default function NcpkDetailScreen({
           ))}
         </div>
 
-        <div
-          onClick={onTapCall}
-          className="mb-5 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-subtle p-[13px]"
-        >
-          <PhoneCallIcon />
-          <span className="text-[13.5px] font-bold text-brand">고객에게 해피콜 걸기</span>
-        </div>
+        {job.progressStatus === "APPLIED" && job.phone && (
+          <a
+            href={`tel:${job.phone.replace(/[^0-9+]/g, "")}`}
+            className="mb-5 flex items-center justify-center gap-2 rounded-xl bg-brand-subtle p-[13px]"
+          >
+            <PhoneCallIcon />
+            <span className="text-[13.5px] font-bold text-brand">고객에게 해피콜 걸기</span>
+          </a>
+        )}
 
         <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold tracking-tight text-gray-900">시공 항목</div>
         {job.items.length === 0 ? (

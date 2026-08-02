@@ -14,7 +14,10 @@ import {
   listMyReservations,
   cancelReservation,
   rescheduleReservation,
+  getHandoverDetail,
+  confirmHandover,
   type ReservationApi,
+  type HandoverDetail,
 } from "../../api/reservations";
 import PkgScreen from "./PkgScreen";
 import MyPkgCfmScreen, { type PkgGroup } from "./MyPkgCfmScreen";
@@ -53,17 +56,6 @@ const SHOP_MOCK_STATS: Record<string, { official: boolean; rating: string; revie
   "서초 프리미엄 디테일": { official: false, rating: "4.7", reviews: "641" },
 };
 const DEFAULT_SHOP_STATS = { official: false, rating: "4.8", reviews: "-" };
-
-const SVC_VEHICLE: VehicleSummary = {
-  car: "Benz E-Class",
-  vin: "WDD···4821",
-  items: [
-    { name: "썬팅 (윈도우 틴팅)", prod: "글라스틴트 펜더 (기본)", sub: "전면 15% 외 · 5면", tag: "기본" },
-    { name: "블랙박스 4채널 QHD", sub: "상시 녹화 · 주차 감시", tag: "업그레이드" },
-    { name: "하부 언더코팅", sub: "부식·소음 방지", tag: "기본" },
-    { name: "유리막 코팅 세라믹 2년", sub: "외장 광택 보호", tag: "업그레이드" },
-  ],
-};
 
 interface NcpkFlowProps {
   onExit: () => void;
@@ -122,7 +114,9 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
   const [payProcessing, setPayProcessing] = useState(false);
   const [pointUse, setPointUse] = useState(0);
   const [couponSel, setCouponSel] = useState<string | null>(null);
-  const [handover, setHandover] = useState<HandoverStatus>("pending");
+  const [handoverDetail, setHandoverDetail] = useState<HandoverDetail | null>(null);
+  const [loadingHandover, setLoadingHandover] = useState(false);
+  const [confirmingHandover, setConfirmingHandover] = useState(false);
   const [reviewStar, setReviewStar] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
@@ -237,12 +231,30 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
     pkgGroups.length === 0 ? "시공 항목 없음" : pkgGroups.length === 1 ? pkgGroups[0].name : `${pkgGroups[0].name} 외 ${pkgGroups.length - 1}건`;
   const paidAmountLabel = payTotal > 0 ? `${nfmt(payTotal)}원 결제완료` : "결제 금액 없음";
 
-  // CU-NCPK-10/CU-RSVC-20 예약 상세 — 실제로 시공완료 여부를 판단할 백엔드 신호가 없어, 예약한 방문일이
-  // 오늘이거나 지났으면 인수확인 단계로, 아직 남았으면 예약상세(진행현황)로 안내하는 것을 대리 지표로 사용
+  // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 실제 완료 등록된 차량·구성상품·사진으로 화면 구성
+  const handover: HandoverStatus = handoverDetail?.handoverStatus === "confirmed" ? "done" : "pending";
+  const handoverVehicleSummary: VehicleSummary | undefined = handoverDetail
+    ? {
+        car: handoverDetail.car ?? "-",
+        vin: handoverDetail.vin ?? "-",
+        items: handoverDetail.items.map((it) => ({
+          name: it.name,
+          sub: it.spec ?? "",
+          tag: it.tag === "OPTION" ? "업그레이드" : "기본",
+        })),
+      }
+    : undefined;
+  const handoverPhotoUrls = handoverDetail?.photos.map((p) => `${API_BASE_URL}/uploads/${p}`) ?? [];
+
+  // CU-NCPK-10/CU-RSVC-20 예약 상세 — 파트너앱에서 실제로 기록하는 진행상태(progressStatus)를 기준으로
+  // 완료 여부를 판단해 인수확인 단계로 안내할지, 예약상세(진행현황)로 안내할지 결정
   const todayKey = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-  const bookingDue = !!sel && sel <= todayKey;
+  const activeReservationProgress =
+    reservationsApi.find((r) => r.reservationNo === reservationNo)?.progressStatus ?? "APPLIED";
+  const bookingDone = activeReservationProgress === "DONE";
   const hasBooking = !!reservationNo;
-  const bookingCancellable = hasBooking && !bookingCancelled && !bookingDue;
+  // 시공 시작(IN_PROGRESS) 이후에는 일정변경·예약취소 모두 불가 — 백엔드 cancel()/reschedule()과 동일 기준
+  const bookingCancellable = hasBooking && !bookingCancelled && activeReservationProgress === "APPLIED";
   const bookingVisitLabel = reschedDay ? `${reschedCalY}.${pad2(reschedCalM)}.${pad2(reschedDay)} ${reschedTime}` : formatVisitLabel(sel, time);
   const bookingRows: Array<[string, string]> = [
     ["방문 일시", bookingVisitLabel],
@@ -250,7 +262,14 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
     ["업그레이드 차액", paidAmountLabel],
   ];
   const bookingStages = bookingCancelled ? ["선정완료", "시공예정", "취소됨"] : ["선정완료", "시공예정", "시공중", "시공완료"];
-  const bookingCur = 1; // 0-indexed: 시공예정 — "시공중" 이후 단계는 실제 진행 상태를 알려줄 백엔드 신호가 없어 항상 미도달로 표시
+  // 0-indexed: cancelled면 기존과 동일하게 "시공예정"에 고정, 그 외엔 실제 progressStatus를 그대로 반영
+  const bookingCur = bookingCancelled
+    ? 1
+    : activeReservationProgress === "DONE"
+      ? 3
+      : activeReservationProgress === "IN_PROGRESS"
+        ? 2
+        : 1;
   const bookingTimeline: BookingTimelineStep[] = bookingStages.map((label, i) => {
     const cancelledStep = bookingCancelled && i === bookingStages.length - 1;
     const done = i < bookingCur;
@@ -312,6 +331,17 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
     if (shopIdx >= 0) setShopIndex(shopIdx);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reservationsApi, shopsApi]);
+
+  // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 인수확인 화면에 들어올 때마다 최신 상태(사진·인수확인 여부)를 다시 조회
+  useEffect(() => {
+    if (screen !== "handover" || reservationId === null) return;
+    setLoadingHandover(true);
+    getHandoverDetail(reservationId)
+      .then(setHandoverDetail)
+      .catch((err) => showToast(err instanceof Error ? err.message : "인수확인 정보를 불러오지 못했어요", "danger"))
+      .finally(() => setLoadingHandover(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, reservationId]);
 
   useEffect(() => {
     const packageCode = (carsApi.find((c) => c.isDefault) ?? carsApi[0])?.packageCode;
@@ -446,12 +476,12 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
       {screen === "main" && (
         <PkgScreen
           onCheckPkg={() => setScreen("pkg")}
-          onTapResvCard={() => setScreen(bookingDue ? "handover" : "bookingdtl")}
+          onTapResvCard={() => setScreen(bookingDone ? "handover" : "bookingdtl")}
           onNavHome={onExit}
           onNavToast={(label) => showToast(`${label} 탭으로 이동해요`)}
           booking={
             hasBooking
-              ? { itemSummaryLabel, shopName: selShopName, dateLabel: bookingDue ? visitLabel : bookingVisitLabel, done: bookingDue }
+              ? { itemSummaryLabel, shopName: selShopName, dateLabel: bookingDone ? visitLabel : bookingVisitLabel, done: bookingDone }
               : null
           }
         />
@@ -586,12 +616,24 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
         <CstDoneHandoverScreen
           selName={selShopName}
           handover={handover}
-          vehicleSummary={SVC_VEHICLE}
+          vehicleSummary={handoverVehicleSummary}
+          photos={handoverPhotoUrls}
+          loading={loadingHandover}
+          confirming={confirmingHandover}
           onBack={goMain}
-          onConfirmHandover={() => {
+          onConfirmHandover={async () => {
             if (handover !== "done") {
-              setHandover("done");
-              showToast("인수가 확인되었어요. 감사합니다!", "success");
+              if (reservationId === null) return;
+              setConfirmingHandover(true);
+              try {
+                await confirmHandover(reservationId);
+                setHandoverDetail(await getHandoverDetail(reservationId));
+                showToast("인수가 확인되었어요. 감사합니다!", "success");
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : "인수확인에 실패했어요", "danger");
+              } finally {
+                setConfirmingHandover(false);
+              }
             } else {
               setSheet("review");
               setReviewStar(0);

@@ -145,9 +145,23 @@ model NewCarPurchaseCustomer {
   package Product? @relation(fields: [packageCode], references: [productCode])
   member  User?    @relation(fields: [memberId], references: [id])
   myCars  MyCar[] // 이 구매정보로 생성된 내 차량 정보(신차매핑)
+  selectedItems NewCarPurchaseItem[] // 이 구매건에서 실제 선택한 업그레이드옵션·추가옵션(기본상품은 항상 포함이라 별도 기록 안 함)
 
   @@index([phoneHash])
   @@map("new_car_purchase_customers")
+}
+
+// 신차 구매 고객이 패키지 구성상품 중 실제로 선택한 업그레이드옵션(OPTION)·추가옵션(ADD)만 기록
+// (ProductBundleItem은 패키지의 카탈로그 정의일 뿐, 이 구매건에서 실제 적용된 항목은 이 테이블로 별도 관리)
+// 기본상품(BASIC)은 항상 포함되므로 여기 기록하지 않음 — 파트너앱 시공상세는 기본상품 전체 + 이 테이블에 있는 항목만 표시
+model NewCarPurchaseItem {
+  vin           String // 구매정보 -> NewCarPurchaseCustomer.vin
+  componentCode String // 선택한 구성상품 -> Product.productCode
+
+  purchase NewCarPurchaseCustomer @relation(fields: [vin], references: [vin])
+
+  @@id([vin, componentCode])
+  @@map("new_car_purchase_items")
 }
 
 // 내 차량 정보 — 회원이 보유한 차량 목록. 신차 구매 매핑 시 자동 생성되거나(regType='MAP') 고객이 직접 등록(regType='MANUAL')
@@ -312,12 +326,30 @@ model Reservation {
   cancelReason    String? // 취소 사유 -> CommonCodeDetail(code='CANCEL_REASON') — 취소된 건만 값 존재
   cancelReasonEtc String?  @db.Text // 취소 사유가 기타(ETC)일 때의 자유 입력 텍스트
   cancelledAt     DateTime? @db.Timestamp(3) // 취소 처리 일시
+  completionMemo  String?  @db.Text // 시공 완료 등록 시 파트너가 남긴 작업 메모(선택)
+  completedAt     DateTime? @db.Timestamp(3) // 시공 완료 처리 일시 — progressStatus가 DONE으로 바뀐 시점
+  handoverConfirmedAt DateTime? @db.Timestamp(3) // 고객 인수확인 일시 — 직접 확인하거나, completedAt+3일 경과 시 자동 확정된 시점
   createdAt       DateTime @default(now()) @db.Timestamp(3)
   updatedAt       DateTime @updatedAt @db.Timestamp(3)
 
   shop   Shop @relation(fields: [shopCode], references: [shopCode])
   member User @relation(fields: [memberId], references: [id])
+  photos ReservationPhoto[] // 시공 완료 등록 시 첨부한 시공 사진(고객 인수확인 화면에 그대로 노출)
 
   @@index([shopCode, date, time])
   @@map("reservations")
+}
+
+// 시공 완료 등록(PT-NCPK-04) 시 첨부하는 시공 사진 — 고객 인수확인 화면(CU-RSVC-16)에 그대로 노출됨
+model ReservationPhoto {
+  id            Int      @id @default(autoincrement())
+  reservationNo String // 소속 예약 -> Reservation.reservationNo
+  photoPath     String // 서버 uploads/ 기준 상대경로
+  sortOrder     Int      @default(0) // 표시 순서
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+
+  reservation Reservation @relation(fields: [reservationNo], references: [reservationNo])
+
+  @@index([reservationNo])
+  @@map("reservation_photos")
 }

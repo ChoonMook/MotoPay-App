@@ -5,7 +5,7 @@
 // 고객앱/파트너앱 중 마지막으로 보던 쪽을 기억: 두 앱이 서로 다른 origin(포트)이라 각자의 localStorage로는
 // 공유가 안 되므로, 네이티브 레이어(AsyncStorage)에서 웹뷰의 최초 진입 URL 자체를 결정한다
 import { useEffect, useRef, useState } from "react";
-import { BackHandler, StyleSheet, View } from "react-native";
+import { BackHandler, Linking, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from "react-native-webview";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -71,6 +71,16 @@ export default function WebViewScreen() {
     }
   };
 
+  // tel: 링크(해피콜 등)는 웹뷰 안에서 열리지 않으므로 가로채 네이티브 다이얼러로 넘김.
+  // Linking.openURL은 canOpenURL 검사를 거치지 않아 Android의 패키지 가시성 제한(API 30+)에 걸리지 않음
+  const onShouldStartLoadWithRequest = (request: WebViewNavigation) => {
+    if (request.url.startsWith("tel:")) {
+      Linking.openURL(request.url);
+      return false;
+    }
+    return true;
+  };
+
   const onMessage = async (event: WebViewMessageEvent) => {
     let request: BridgeRequest;
     try {
@@ -102,6 +112,7 @@ export default function WebViewScreen() {
         injectedJavaScriptBeforeContentLoaded={INJECTED_BEFORE_LOAD}
         onMessage={onMessage}
         onNavigationStateChange={onNavigationStateChange}
+        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         style={styles.flex}
       />
     </SafeAreaView>

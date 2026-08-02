@@ -7,8 +7,10 @@ import {
 import type { Reservation } from '@prisma/client';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
 import { maskPhone } from '../common/mask/mask-phone';
+import { saveReservationPhoto } from '../common/storage/reservation-photo-storage';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import type { CompleteReservationDto } from './dto/complete-reservation.dto';
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -97,11 +99,16 @@ export interface PackageJobDetailView {
   time: string;
   customerName: string;
   phoneMasked: string;
+  phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: string | null;
   vin: string | null;
   progressStatus: string;
   packageName: string | null;
   items: PackageJobItem[];
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null; // 고객이 인수확인했거나(또는 completedAt+3일 경과로 자동확정된) 시점 — PT-NCPK-05 인수확인 현황에 사용
+  photos: string[]; // uploads/ 기준 상대경로 — 완료 등록 시 첨부한 시공 사진
 }
 
 function summarizeItems(items: PackageJobItem[]): string {
@@ -110,6 +117,22 @@ function summarizeItems(items: PackageJobItem[]): string {
   if (names.length <= 4) return names.join(' · ');
   return `${names.slice(0, 3).join(' · ')} 외 ${names.length - 3}건`;
 }
+
+// CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 파트너가 완료 등록한 시공 사진·메모와 실제 구매 패키지 항목을 함께 응답
+export interface HandoverDetailView {
+  reservationNo: string;
+  progressStatus: string;
+  car: string | null;
+  vin: string | null;
+  items: PackageJobItem[];
+  photos: string[]; // uploads/ 기준 상대경로
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null;
+  handoverStatus: 'pending' | 'confirmed';
+}
+
+const HANDOVER_AUTO_CONFIRM_DAYS = 3;
 
 @Injectable()
 export class ReservationsService {
@@ -194,7 +217,7 @@ export class ReservationsService {
   }
 
   /**
-   * 예약 취소 — 확정(CONFIRMED) 상태만 취소 가능, 이미 지난 예약은 취소 불가.
+   * 예약 취소 — 확정(CONFIRMED) 상태·시공 시작 전(progressStatus='APPLIED')·이미 지나지 않은 예약만 취소 가능.
    * 취소 사유·일시를 함께 저장하고 상태를 CANCELLED로 전환(슬롯 정원 계산에서 자동 제외됨 —
    * create()의 정원 카운트가 status:'CONFIRMED' 조건이라 취소 즉시 해당 시간대가 다시 비어짐).
    */
@@ -208,6 +231,9 @@ export class ReservationsService {
       throw new BadRequestException(
         '이미 취소되었거나 취소할 수 없는 예약입니다.',
       );
+    }
+    if (reservation.progressStatus !== 'APPLIED') {
+      throw new BadRequestException('시공이 시작된 예약은 취소할 수 없습니다.');
     }
     if (reservation.date < todayUtcMidnight()) {
       throw new BadRequestException('이미 지난 예약은 취소할 수 없습니다.');
@@ -226,7 +252,8 @@ export class ReservationsService {
   }
 
   /**
-   * 일정 변경 — 확정(CONFIRMED) 상태만 가능, 새 일시도 휴무일·정원·잠금을 create()와 동일하게 검증.
+   * 일정 변경 — 확정(CONFIRMED) 상태·시공 시작 전(progressStatus='APPLIED')만 가능,
+   * 새 일시도 휴무일·정원·잠금을 create()와 동일하게 검증.
    * 같은 행의 date/time을 갱신하는 방식이라 기존 시간대는 정원 계산에서 자동으로 빠짐(별도 해제 처리 불필요).
    */
   async reschedule(
@@ -237,6 +264,9 @@ export class ReservationsService {
     const reservation = await this.findOwnedOrThrow(memberId, id);
     if (reservation.status !== 'CONFIRMED') {
       throw new BadRequestException('취소되었거나 변경할 수 없는 예약입니다.');
+    }
+    if (reservation.progressStatus !== 'APPLIED') {
+      throw new BadRequestException('시공이 시작된 예약은 일정을 변경할 수 없습니다.');
     }
     if (reservation.date < todayUtcMidnight()) {
       throw new BadRequestException(
@@ -347,6 +377,51 @@ export class ReservationsService {
     });
   }
 
+  /**
+   * 시공 완료 등록(PT-NCPK-04) — 시공중 상태에서만 가능. 시공 사진을 저장하고 작업 메모와 함께
+   * progressStatus를 DONE으로 전환. 사진은 고객 인수확인 화면에 그대로 노출되는 자료라 3~10장 범위를 서버에서도 검증(DTO).
+   */
+  async completeReservation(
+    shopCode: string,
+    reservationNo: string,
+    dto: CompleteReservationDto,
+  ): Promise<void> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (!reservation || reservation.shopCode !== shopCode) {
+      throw new NotFoundException('예약을 찾을 수 없습니다.');
+    }
+    if (reservation.status !== 'CONFIRMED') {
+      throw new BadRequestException('취소된 예약은 완료 처리할 수 없습니다.');
+    }
+    if (reservation.progressStatus !== 'IN_PROGRESS') {
+      throw new BadRequestException('시공중 상태에서만 완료 처리할 수 있습니다.');
+    }
+
+    const photoPaths = await Promise.all(
+      dto.photos.map((photo) => saveReservationPhoto(photo)),
+    );
+
+    await this.prisma.$transaction([
+      this.prisma.reservationPhoto.createMany({
+        data: photoPaths.map((photoPath, index) => ({
+          reservationNo,
+          photoPath,
+          sortOrder: index,
+        })),
+      }),
+      this.prisma.reservation.update({
+        where: { reservationNo },
+        data: {
+          progressStatus: 'DONE',
+          completionMemo: dto.memo?.trim() || null,
+          completedAt: new Date(),
+        },
+      }),
+    ]);
+  }
+
   async getPackageStats(shopCode: string): Promise<PackageProgressStats> {
     const grouped = await this.prisma.reservation.groupBy({
       by: ['progressStatus'],
@@ -404,24 +479,35 @@ export class ReservationsService {
       throw new NotFoundException('신차패키지 예약을 찾을 수 없습니다.');
     }
 
-    const { car, packageName, items } = await this.resolveMemberPackage(
-      reservation.memberId,
-    );
-    const phoneMasked = reservation.member.phoneEncrypted
-      ? maskPhone(this.phoneCrypto.decrypt(reservation.member.phoneEncrypted))
-      : '-';
+    const [{ car, packageName, items }, photos, handoverConfirmedAt] =
+      await Promise.all([
+        this.resolveMemberPackage(reservation.memberId),
+        this.prisma.reservationPhoto.findMany({
+          where: { reservationNo },
+          orderBy: { sortOrder: 'asc' },
+        }),
+        this.resolveHandoverConfirmation(reservation),
+      ]);
+    const phone = reservation.member.phoneEncrypted
+      ? this.phoneCrypto.decrypt(reservation.member.phoneEncrypted)
+      : null;
 
     return {
       reservationNo: reservation.reservationNo,
       date: formatDateOnly(reservation.date),
       time: formatTimeOnly(reservation.time),
       customerName: reservation.member.name,
-      phoneMasked,
+      phoneMasked: phone ? maskPhone(phone) : '-',
+      phone,
       car: car?.name ?? null,
       vin: car?.vin ?? null,
       progressStatus: reservation.progressStatus,
       packageName,
       items,
+      completionMemo: reservation.completionMemo,
+      completedAt: reservation.completedAt?.toISOString() ?? null,
+      handoverConfirmedAt: handoverConfirmedAt?.toISOString() ?? null,
+      photos: photos.map((p) => p.photoPath),
     };
   }
 
@@ -432,7 +518,7 @@ export class ReservationsService {
   }> {
     const car = await this.prisma.myCar.findFirst({
       where: { memberId, regType: 'MAP', purchaseVin: { not: null } },
-      include: { purchase: true },
+      include: { purchase: { include: { selectedItems: true } } },
       orderBy: { createdAt: 'desc' },
     });
     if (!car) {
@@ -444,6 +530,12 @@ export class ReservationsService {
     if (!packageCode) {
       return { car: carView, packageName: null, items: [] };
     }
+
+    // 업그레이드옵션(OPTION)·추가옵션(ADD)은 실제 구매 시 선택한 것만 표시 —
+    // NewCarPurchaseItem에 기록이 없으면 미선택으로 간주. 기본상품(BASIC)은 항상 포함.
+    const selectedCodes = new Set(
+      (car.purchase?.selectedItems ?? []).map((s) => s.componentCode),
+    );
 
     try {
       const detail = await this.productsService.getPackageDetail(packageCode);
@@ -457,14 +549,86 @@ export class ReservationsService {
       });
       const items: PackageJobItem[] = [
         ...detail.basicItems.map((i) => toItem(i, 'BASIC')),
-        ...detail.optionItems.map((i) => toItem(i, 'OPTION')),
-        ...detail.addItems.map((i) => toItem(i, 'OPTION')),
+        ...detail.optionItems
+          .filter((i) => selectedCodes.has(i.componentCode))
+          .map((i) => toItem(i, 'OPTION')),
+        ...detail.addItems
+          .filter((i) => selectedCodes.has(i.componentCode))
+          .map((i) => toItem(i, 'OPTION')),
       ];
       return { car: carView, packageName: detail.package.name, items };
     } catch {
       // 매핑된 패키지 상품이 삭제·비활성화된 경우 등 — 차량 정보만 있고 시공 항목은 빈 목록으로 응답
       return { car: carView, packageName: null, items: [] };
     }
+  }
+
+  async getHandoverDetail(
+    memberId: string,
+    id: number,
+  ): Promise<HandoverDetailView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.progressStatus !== 'DONE') {
+      throw new BadRequestException('아직 시공이 완료되지 않은 예약입니다.');
+    }
+
+    const [{ car, items }, photos, handoverConfirmedAt] = await Promise.all([
+      this.resolveMemberPackage(memberId),
+      this.prisma.reservationPhoto.findMany({
+        where: { reservationNo: reservation.reservationNo },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      this.resolveHandoverConfirmation(reservation),
+    ]);
+
+    return {
+      reservationNo: reservation.reservationNo,
+      progressStatus: reservation.progressStatus,
+      car: car?.name ?? null,
+      vin: car?.vin ?? null,
+      items,
+      photos: photos.map((p) => p.photoPath),
+      completionMemo: reservation.completionMemo,
+      completedAt: reservation.completedAt?.toISOString() ?? null,
+      handoverConfirmedAt: handoverConfirmedAt?.toISOString() ?? null,
+      handoverStatus: handoverConfirmedAt ? 'confirmed' : 'pending',
+    };
+  }
+
+  async confirmHandover(memberId: string, id: number): Promise<void> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.progressStatus !== 'DONE') {
+      throw new BadRequestException('아직 시공이 완료되지 않은 예약입니다.');
+    }
+    if (await this.resolveHandoverConfirmation(reservation)) {
+      throw new BadRequestException('이미 인수확인이 완료된 예약입니다.');
+    }
+    await this.prisma.reservation.update({
+      where: { id },
+      data: { handoverConfirmedAt: new Date() },
+    });
+  }
+
+  /**
+   * 인수확인 시점 계산 — 고객이 직접 확인했으면 그 시점을 그대로 반환.
+   * 아직 확인하지 않았어도 완료일로부터 3일이 지났으면 그 3일째 시점으로 자동 확정 처리하고 저장한다
+   * (실서비스라면 배치·스케줄러로 처리할 일이지만, 별도 스케줄러 인프라가 없어 조회 시점에 지연 확정하는 방식으로 대신함).
+   */
+  private async resolveHandoverConfirmation(
+    reservation: Reservation,
+  ): Promise<Date | null> {
+    if (reservation.handoverConfirmedAt) return reservation.handoverConfirmedAt;
+    if (!reservation.completedAt) return null;
+    const autoConfirmAt = new Date(
+      reservation.completedAt.getTime() +
+        HANDOVER_AUTO_CONFIRM_DAYS * 24 * 60 * 60 * 1000,
+    );
+    if (new Date() < autoConfirmAt) return null;
+    const updated = await this.prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { handoverConfirmedAt: autoConfirmAt },
+    });
+    return updated.handoverConfirmedAt;
   }
 
   private async findOwnedOrThrow(

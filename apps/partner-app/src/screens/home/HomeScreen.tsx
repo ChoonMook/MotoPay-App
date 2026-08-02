@@ -7,6 +7,7 @@ import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/common
 import { getMe, type PartnerUser } from "../../api/partnerAuth";
 import { getPackageStats, getTodayReservations, type PackageProgressStats, type TodayReservation } from "../../api/reservations";
 import type { NcpkTab } from "../ncpk/ncpkData";
+import type { BidTab } from "../rsvc/RsvcBidboxScreen";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon, AlertCircleIcon, PackageIcon, TagIcon } from "./homeIcons";
 
 interface StatItem {
@@ -19,10 +20,14 @@ interface PkgStatItem extends StatItem {
   tab: NcpkTab;
 }
 
-const BID_STATS: StatItem[] = [
-  { value: 4, label: "신규요청", colorClass: "text-accent-strong" },
-  { value: 2, label: "참여중", colorClass: "text-brand" },
-  { value: 3, label: "시공대기", colorClass: "text-[#0E9A96]" },
+interface BidStatItem extends StatItem {
+  target: { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" };
+}
+
+const BID_STATS: BidStatItem[] = [
+  { value: 4, label: "신규요청", colorClass: "text-accent-strong", target: { screen: "bidbox", tab: "new" } },
+  { value: 2, label: "참여중", colorClass: "text-brand", target: { screen: "bidbox", tab: "active" } },
+  { value: 3, label: "시공대기", colorClass: "text-[#0E9A96]", target: { screen: "waitlist" } },
 ];
 
 const PROGRESS_CHIP: Record<string, { label: string; chipClass: string }> = {
@@ -46,9 +51,11 @@ const NAV_ITEMS = [
 interface HomeScreenProps {
   onOpenMyPage: () => void;
   onOpenNcpk: (tab: NcpkTab) => void;
+  onOpenRsvc: (target?: { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" }) => void;
+  onOpenStl: () => void;
 }
 
-export default function HomeScreen({ onOpenMyPage, onOpenNcpk }: HomeScreenProps) {
+export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpenStl }: HomeScreenProps) {
   const { toast, showToast } = useToast();
   const [partnerUser, setPartnerUser] = useState<PartnerUser | null>(null);
   const [reservationTypes, setReservationTypes] = useState<CommonCodeDetailApi[]>([]);
@@ -154,10 +161,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk }: HomeScreenProps
           <div className="mb-3.5 flex items-center gap-2">
             <TagIcon />
             <span className="flex-1 text-base font-extrabold tracking-tight text-gray-900">예약시공 입찰</span>
-            <span
-              onClick={() => showToast("예약시공 입찰 목록으로 이동해요")}
-              className="cursor-pointer text-[13px] font-bold text-brand"
-            >
+            <span onClick={() => onOpenRsvc()} className="cursor-pointer text-[13px] font-bold text-brand">
               바로가기
             </span>
           </div>
@@ -165,7 +169,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk }: HomeScreenProps
             {BID_STATS.map((s) => (
               <div
                 key={s.label}
-                onClick={() => showToast(`예약시공 ${s.label} ${s.value}건 목록으로 이동해요`)}
+                onClick={() => onOpenRsvc(s.target)}
                 className="cursor-pointer rounded-xl bg-gray-100 px-3 py-3.5"
               >
                 <div className={`text-[22px] font-extrabold tracking-tight tabular-nums ${s.colorClass}`}>{s.value}</div>
@@ -220,7 +224,15 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk }: HomeScreenProps
           <div
             key={key}
             onClick={() =>
-              active ? undefined : key === "my" ? onOpenMyPage() : showToast(`${label} 탭으로 이동해요`)
+              active
+                ? undefined
+                : key === "my"
+                  ? onOpenMyPage()
+                  : key === "resv"
+                    ? onOpenRsvc()
+                    : key === "pay"
+                      ? onOpenStl()
+                      : showToast(`${label} 탭으로 이동해요`)
             }
             className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-1"
           >

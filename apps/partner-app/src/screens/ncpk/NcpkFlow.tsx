@@ -1,10 +1,10 @@
 // PT-NCPK-01~05 신차패키지 시공관리를 엮는 상태 컨테이너 - 착수대기→착수→시공중→완료등록→인수확인 흐름
-// 목록·상세·착수는 실 API 연동(Reservation 진행상태). 완료 등록의 항목체크·사진·메모와 인수확인 화면은
-// 이를 저장할 백엔드 모델이 아직 없어 화면 자체는 로컬 상태로만 동작하고, 완료 처리 시 진행상태만 DONE으로 반영함
+// 목록·상세·착수·완료등록·인수확인 현황 모두 실 API 연동. 항목별 체크는 제출 전 화면 내 확인 게이트일 뿐 별도 저장하지 않음
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import {
+  completeReservationJob,
   getPackageJobDetail,
   getPackageJobs,
   updateReservationProgress,
@@ -39,7 +39,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
   const [updating, setUpdating] = useState(false);
 
   const [checks, setChecks] = useState<boolean[]>([]);
-  const [photos, setPhotos] = useState(0);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [memo, setMemo] = useState("");
 
   useEffect(() => {
@@ -91,10 +91,10 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
   const allChecked = checks.every(Boolean);
 
   const confirmDone = async () => {
-    if (!selectedJob || !allChecked || photos < 3) return;
+    if (!selectedJob || !allChecked || photos.length < 3) return;
     setUpdating(true);
     try {
-      await updateReservationProgress(selectedJob.reservationNo, "DONE");
+      await completeReservationJob(selectedJob.reservationNo, { photos, memo: memo.trim() || undefined });
       setSelectedJob({ ...selectedJob, progressStatus: "DONE" });
       patchJobStatus(selectedJob.reservationNo, "DONE");
       setTab("done");
@@ -106,6 +106,15 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
       setUpdating(false);
     }
   };
+
+  // PT-NCPK-05 인수확인 현황 — 화면 진입마다 최신 상태(고객이 그 사이 확인했을 수 있음)를 다시 조회
+  useEffect(() => {
+    if (screen !== "handover" || !selectedJob) return;
+    getPackageJobDetail(selectedJob.reservationNo)
+      .then(setSelectedJob)
+      .catch((err) => showToast(err instanceof Error ? err.message : "인수확인 현황을 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   const tabCounts: Record<NcpkTab, number> = { wait: 0, ing: 0, done: 0 };
   for (const j of jobs) tabCounts[progressToTab(j.progressStatus)] += 1;
@@ -133,11 +142,10 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
           loading={loadingDetail}
           updating={updating}
           onBack={() => setScreen("list")}
-          onTapCall={() => showToast("고객에게 해피콜을 연결해요")}
           onStart={() => setSheet("start")}
           onGoDone={() => {
             setChecks(selectedJob ? selectedJob.items.map(() => false) : []);
-            setPhotos(0);
+            setPhotos([]);
             setMemo("");
             setScreen("done");
           }}
@@ -151,20 +159,21 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
           checks={checks}
           onToggleCheck={toggleCheck}
           photos={photos}
-          onAddPhoto={() => setPhotos((p) => Math.min(10, p + 1))}
-          onRemovePhoto={() => setPhotos((p) => Math.max(0, p - 1))}
+          onAddPhoto={(dataUri) => setPhotos((p) => (p.length < 10 ? [...p, dataUri] : p))}
+          onRemovePhoto={(index) => setPhotos((p) => p.filter((_, i) => i !== index))}
           memo={memo}
           onChangeMemo={setMemo}
           onBack={() => setScreen("detail")}
           onConfirm={confirmDone}
-          canConfirm={allChecked && photos >= 3 && !updating}
+          canConfirm={allChecked && photos.length >= 3 && !updating}
+          confirming={updating}
+          onError={(message) => showToast(message, "danger")}
         />
       )}
 
       {screen === "handover" && selectedJob && (
         <NcpkHandoverScreen
           job={selectedJob}
-          photos={photos}
           onBack={() => setScreen("list")}
           onRemind={() => showToast("인수확인 알림을 재발송했어요", "success")}
         />

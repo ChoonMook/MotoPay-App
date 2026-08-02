@@ -33,6 +33,8 @@ interface BizMainScreenProps {
   onOpenRsvStat: () => void;
   onOpenPwdChange: () => void;
   onOpenHome: () => void;
+  onOpenRsvc: () => void;
+  onOpenStl: () => void;
   onOpenLogoutConfirm: () => void;
   onPlaceholder: (label: string) => void;
 }
@@ -45,6 +47,8 @@ export default function BizMainScreen({
   onOpenRsvStat,
   onOpenPwdChange,
   onOpenHome,
+  onOpenRsvc,
+  onOpenStl,
   onOpenLogoutConfirm,
   onPlaceholder,
 }: BizMainScreenProps) {
@@ -149,7 +153,17 @@ export default function BizMainScreen({
         {NAV_ITEMS.map(({ key, label, Icon, active }) => (
           <div
             key={key}
-            onClick={() => (active ? undefined : key === "home" ? onOpenHome() : onPlaceholder(`${label} 탭`))}
+            onClick={() =>
+              active
+                ? undefined
+                : key === "home"
+                  ? onOpenHome()
+                  : key === "resv"
+                    ? onOpenRsvc()
+                    : key === "pay"
+                      ? onOpenStl()
+                      : onPlaceholder(`${label} 탭`)
+            }
             className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-1"
           >
             <Icon color={active ? "var(--color-brand)" : "var(--text-tertiary)"} />

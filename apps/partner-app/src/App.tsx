@@ -6,10 +6,14 @@ import HomeScreen from "./screens/home/HomeScreen";
 import BizFlow from "./screens/biz/BizFlow";
 import NcpkFlow from "./screens/ncpk/NcpkFlow";
 import type { NcpkTab } from "./screens/ncpk/ncpkData";
+import RsvcFlow from "./screens/rsvc/RsvcFlow";
+import type { BidTab } from "./screens/rsvc/RsvcBidboxScreen";
+import StlFlow from "./screens/stl/StlFlow";
 import { setOnSessionExpired, getAccessToken, clearTokens } from "./api/tokenStorage";
 import { getMe } from "./api/partnerAuth";
 
-type View = "home" | "biz" | "ncpk";
+type View = "home" | "biz" | "ncpk" | "rsvc" | "stl";
+type RsvcTarget = { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" } | undefined;
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -17,6 +21,13 @@ function App() {
   const [booting, setBooting] = useState(() => !!getAccessToken());
   const [view, setView] = useState<View>("home");
   const [ncpkTab, setNcpkTab] = useState<NcpkTab>("wait");
+  const [rsvcTarget, setRsvcTarget] = useState<RsvcTarget>(undefined);
+
+  const openRsvc = (target?: RsvcTarget) => {
+    setRsvcTarget(target);
+    setView("rsvc");
+  };
+  const openStl = () => setView("stl");
 
   // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
   useEffect(() => {
@@ -57,6 +68,8 @@ function App() {
               setNcpkTab(tab);
               setView("ncpk");
             }}
+            onOpenRsvc={openRsvc}
+            onOpenStl={openStl}
           />
         )}
         {view === "biz" && (
@@ -66,9 +79,23 @@ function App() {
               setLoggedIn(false);
               setView("home");
             }}
+            onOpenRsvc={() => openRsvc()}
+            onOpenStl={openStl}
           />
         )}
         {view === "ncpk" && <NcpkFlow onExit={() => setView("home")} initialTab={ncpkTab} />}
+        {view === "rsvc" && (
+          <RsvcFlow
+            onExit={() => setView("home")}
+            onOpenStl={openStl}
+            onOpenMyPage={() => setView("biz")}
+            initialScreen={rsvcTarget?.screen ?? "main"}
+            initialBidTab={rsvcTarget?.screen === "bidbox" ? rsvcTarget.tab : undefined}
+          />
+        )}
+        {view === "stl" && (
+          <StlFlow onExit={() => setView("home")} onOpenRsvc={() => openRsvc()} onOpenMyPage={() => setView("biz")} />
+        )}
       </AppShell>
     );
   }

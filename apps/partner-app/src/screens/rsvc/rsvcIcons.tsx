@@ -53,13 +53,6 @@ export function PhoneCallIcon() {
   );
 }
 
-export function AddPhotoIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.9" strokeLinecap="round">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
 
 export function ChevronDownIcon() {
   return (

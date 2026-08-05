@@ -50,6 +50,20 @@ export class PartnerReservationsController {
     return this.reservationsService.listBidJobsForShop(partnerUser.shopCode);
   }
 
+  @Get('bids/:reservationNo')
+  @ApiOperation({
+    summary: '예약시공(입찰) 완료건 상세(PT-RSVC-11) — 완료 등록 시 저장된 사진·메모·인수확인 상태',
+  })
+  getBidDetail(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('reservationNo') reservationNo: string,
+  ) {
+    return this.reservationsService.getBidJobDetail(
+      partnerUser.shopCode,
+      reservationNo,
+    );
+  }
+
   @Get('packages/:reservationNo')
   @ApiOperation({
     summary: '신차패키지 시공 상세(PT-NCPK-02) — 고객·차량·패키지 구성상품 포함',

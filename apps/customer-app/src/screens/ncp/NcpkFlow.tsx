@@ -641,7 +641,6 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
               setReviewPhotos([]);
             }
           }}
-          onTapPhoto={(i) => showToast(`시공 사진 ${i + 1}번을 크게 봐요`)}
         />
       )}
 

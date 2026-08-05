@@ -159,6 +159,7 @@ export function mapBidJob(job: BidJob, carLabel: (car: ShopBidRequestCarApi | nu
     id: job.reservationNo,
     requestNo: job.requestNo,
     customer: job.customerName,
+    phone: job.phone,
     car: carLabel(job.car) ?? "-",
     vin: "-", // 예약시공(입찰) 요청엔 VIN 데이터가 없음(신차패키지와 달리 실물 차량 매핑이 없음)
     status: JOB_PROGRESS_LABELS[job.progressStatus] ?? "착수전",

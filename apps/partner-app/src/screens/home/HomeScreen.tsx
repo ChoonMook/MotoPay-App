@@ -61,9 +61,10 @@ interface HomeScreenProps {
   onOpenNcpk: (tab: NcpkTab) => void;
   onOpenRsvc: (target?: { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" }) => void;
   onOpenStl: () => void;
+  onOpenTodayJob: (reservation: TodayReservation) => void;
 }
 
-export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpenStl }: HomeScreenProps) {
+export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpenStl, onOpenTodayJob }: HomeScreenProps) {
   const { toast, showToast } = useToast();
   const [partnerUser, setPartnerUser] = useState<PartnerUser | null>(null);
   const [reservationTypes, setReservationTypes] = useState<CommonCodeDetailApi[]>([]);
@@ -230,7 +231,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
               return (
                 <div
                   key={r.reservationNo}
-                  onClick={() => showToast(`${r.customerName}님 시공 상세로 이동해요`)}
+                  onClick={() => onOpenTodayJob(r)}
                   className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm"
                 >
                   <div className="flex items-center gap-2">

@@ -34,6 +34,7 @@ export interface RsvcJob {
   id: string;
   requestNo: string; // -> BidRequest.requestNo — 낙찰결과 화면("시공 착수 등록하기")에서 방금 생성된 job을 찾기 위한 연결 키
   customer: string;
+  phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — tel: 링크로 전화 앱 연동에 사용
   car: string;
   vin: string;
   status: JobStatus;

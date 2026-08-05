@@ -63,10 +63,20 @@ export interface BidJob {
   date: string; // "YYYY-MM-DD"
   time: string; // "HH:mm"
   customerName: string;
+  phoneMasked: string;
+  phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: ShopBidRequestCarApi | null;
   progressStatus: string; // APPLIED/IN_PROGRESS/DONE -> CommonCodeDetail(code='RESERVATION_PROGRESS')
   items: ShopBidRequestItemApi[];
   positions: ShopBidRequestPositionApi[];
+}
+
+export interface BidJobDetail {
+  reservationNo: string;
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null;
+  photos: string[]; // uploads/ 기준 상대경로 — 완료 등록 시 첨부한 시공 사진
 }
 
 export interface CallLog {
@@ -99,6 +109,11 @@ export function getPackageJobDetail(reservationNo: string): Promise<PackageJobDe
 /** 내 업체의 예약시공(입찰) 시공 건 목록(PT-RSVC-08) — 낙찰 확정된 Reservation(BID) 전체 */
 export function getBidJobs(): Promise<BidJob[]> {
   return authedRequest<BidJob[]>("/shops/me/reservations/bids");
+}
+
+/** 예약시공(입찰) 완료건 상세(PT-RSVC-11) — 완료 등록 시 저장된 사진·메모·인수확인 상태 */
+export function getBidJobDetail(reservationNo: string): Promise<BidJobDetail> {
+  return authedRequest<BidJobDetail>(`/shops/me/reservations/bids/${reservationNo}`);
 }
 
 /** 예약 시공 진행상태 변경(신청/시공중/완료) */

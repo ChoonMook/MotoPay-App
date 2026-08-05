@@ -1,6 +1,8 @@
 // CU-RSVC-16 / CU-NCPK-10: 시공완료·인수확인 - 업체 업로드 시공 사진 확인 후 인수확인, 3일 미확인 시 자동확정
 // 신차패키지·예약시공 등 여러 채널에서 공통으로 쓰는 화면. 신차패키지는 시공 정보 요약 카드(차량·VIN·품목)를 함께 보여준다.
+import { useState } from "react";
 import Button from "../../components/ui/Button";
+import PhotoLightbox from "../../components/ui/PhotoLightbox";
 import CommonHeader from "./CommonHeader";
 import { WarnIcon, StarIcon } from "./commonIcons";
 import type { HandoverStatus } from "./commonTypes";
@@ -35,7 +37,6 @@ interface CstDoneHandoverScreenProps {
   confirming?: boolean;
   onBack: () => void;
   onConfirmHandover: () => void;
-  onTapPhoto?: (index: number) => void;
 }
 
 export default function CstDoneHandoverScreen({
@@ -48,9 +49,9 @@ export default function CstDoneHandoverScreen({
   confirming = false,
   onBack,
   onConfirmHandover,
-  onTapPhoto,
 }: CstDoneHandoverScreenProps) {
   const done = handover === "done";
+  const [viewingPhotoUrl, setViewingPhotoUrl] = useState<string | null>(null);
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -107,11 +108,11 @@ export default function CstDoneHandoverScreen({
           <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
         ) : (
           <div className="grid grid-cols-3 gap-1.5">
-            {photos.map((url, i) => (
+            {photos.map((url) => (
               <span
                 key={url}
-                onClick={() => onTapPhoto?.(i)}
-                className={`relative aspect-square overflow-hidden rounded-[10px] bg-gray-100 ${onTapPhoto ? "cursor-pointer" : ""}`}
+                onClick={() => setViewingPhotoUrl(url)}
+                className="relative aspect-square cursor-pointer overflow-hidden rounded-[10px] bg-gray-100"
               >
                 <img src={url} alt="시공 사진" className="h-full w-full object-cover object-center" />
               </span>
@@ -147,6 +148,8 @@ export default function CstDoneHandoverScreen({
           </Button>
         )}
       </div>
+
+      <PhotoLightbox photoUrl={viewingPhotoUrl} onClose={() => setViewingPhotoUrl(null)} />
     </div>
   );
 }

@@ -11,6 +11,8 @@ import type { BidTab } from "./screens/rsvc/RsvcBidboxScreen";
 import StlFlow from "./screens/stl/StlFlow";
 import { setOnSessionExpired, getAccessToken, clearTokens } from "./api/tokenStorage";
 import { getMe } from "./api/partnerAuth";
+import type { TodayReservation } from "./api/reservations";
+import { pushBackAction } from "./native/backHandler";
 
 type View = "home" | "biz" | "ncpk" | "rsvc" | "stl";
 type RsvcTarget = { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" } | undefined;
@@ -22,12 +24,33 @@ function App() {
   const [view, setView] = useState<View>("home");
   const [ncpkTab, setNcpkTab] = useState<NcpkTab>("wait");
   const [rsvcTarget, setRsvcTarget] = useState<RsvcTarget>(undefined);
+  // 홈 "오늘의 시공 일정" 카드에서 특정 예약을 바로 열 때만 값이 설정됨 — 그 외 진입 경로(바로가기·하단내비 등)는 항상 초기화
+  const [ncpkTargetReservationNo, setNcpkTargetReservationNo] = useState<string | undefined>(undefined);
+  const [rsvcTargetReservationNo, setRsvcTargetReservationNo] = useState<string | undefined>(undefined);
 
+  const openNcpk = (tab: NcpkTab) => {
+    setNcpkTab(tab);
+    setNcpkTargetReservationNo(undefined);
+    setView("ncpk");
+  };
   const openRsvc = (target?: RsvcTarget) => {
     setRsvcTarget(target);
+    setRsvcTargetReservationNo(undefined);
     setView("rsvc");
   };
   const openStl = () => setView("stl");
+
+  // 홈 "오늘의 시공 일정" 카드 탭 — 예약유형(PKG/BID)에 따라 해당 시공관리 화면으로 이동해 그 건을 바로 연다
+  const openTodayJob = (r: TodayReservation) => {
+    if (r.reservationType === "PKG") {
+      setNcpkTargetReservationNo(r.reservationNo);
+      setView("ncpk");
+    } else {
+      setRsvcTarget({ screen: "waitlist" });
+      setRsvcTargetReservationNo(r.reservationNo);
+      setView("rsvc");
+    }
+  };
 
   // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
   useEffect(() => {
@@ -48,6 +71,13 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 하드웨어 백버튼 기본 동작: 홈이 아닌 탭(view)에서 뒤로가기를 누르면 홈으로 돌아감(각 Flow 내부의 화면 이동은
+  // 그 Flow 자신의 useEffect가 더 안쪽 단계의 뒤로가기를 처리 — 스택 구조라 안쪽이 항상 먼저 소비됨)
+  useEffect(() => {
+    if (view === "home") return;
+    return pushBackAction(() => setView("home"));
+  }, [view]);
+
   if (booting) {
     return (
       <AppShell>
@@ -64,12 +94,10 @@ function App() {
         {view === "home" && (
           <HomeScreen
             onOpenMyPage={() => setView("biz")}
-            onOpenNcpk={(tab) => {
-              setNcpkTab(tab);
-              setView("ncpk");
-            }}
+            onOpenNcpk={openNcpk}
             onOpenRsvc={openRsvc}
             onOpenStl={openStl}
+            onOpenTodayJob={openTodayJob}
           />
         )}
         {view === "biz" && (
@@ -83,7 +111,9 @@ function App() {
             onOpenStl={openStl}
           />
         )}
-        {view === "ncpk" && <NcpkFlow onExit={() => setView("home")} initialTab={ncpkTab} />}
+        {view === "ncpk" && (
+          <NcpkFlow onExit={() => setView("home")} initialTab={ncpkTab} initialReservationNo={ncpkTargetReservationNo} />
+        )}
         {view === "rsvc" && (
           <RsvcFlow
             onExit={() => setView("home")}
@@ -91,6 +121,7 @@ function App() {
             onOpenMyPage={() => setView("biz")}
             initialScreen={rsvcTarget?.screen ?? "main"}
             initialBidTab={rsvcTarget?.screen === "bidbox" ? rsvcTarget.tab : undefined}
+            initialReservationNo={rsvcTargetReservationNo}
           />
         )}
         {view === "stl" && (

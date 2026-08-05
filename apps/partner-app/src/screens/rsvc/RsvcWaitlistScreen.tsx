@@ -87,18 +87,18 @@ export default function RsvcWaitlistScreen({
                     {itemSummary(j.items)}
                   </div>
                 </div>
-                <div className="mt-2.5 flex gap-2">
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCall(j);
-                    }}
-                    className="flex cursor-pointer items-center gap-1.5 rounded-[9px] bg-brand-subtle px-[11px] py-[7px] text-xs font-bold text-brand"
-                  >
-                    <PhoneCallIcon />
-                    해피콜
-                  </span>
-                  {j.status === "착수전" && (
+                {j.status === "착수전" && (
+                  <div className="mt-2.5 flex gap-2">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCall(j);
+                      }}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-[9px] bg-brand-subtle px-[11px] py-[7px] text-xs font-bold text-brand"
+                    >
+                      <PhoneCallIcon />
+                      해피콜
+                    </span>
                     <span
                       onClick={(e) => {
                         e.stopPropagation();
@@ -108,8 +108,8 @@ export default function RsvcWaitlistScreen({
                     >
                       일정 변경 요청
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

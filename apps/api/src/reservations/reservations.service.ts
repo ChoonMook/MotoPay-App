@@ -122,10 +122,22 @@ export interface BidJobView {
   date: string;
   time: string;
   customerName: string;
+  phoneMasked: string;
+  phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: { carBrandCode: string; carModelCode: string; trimName: string | null } | null;
   progressStatus: string;
   items: BidRequestItem[];
   positions: BidRequestPosition[];
+}
+
+// PT-RSVC-11 예약시공 완료건 상세("인수확인 현황") — 시공 항목/차량 등은 목록(BidJobView)에 이미 있어
+// 여기서는 완료 등록 시 저장된 사진·메모·인수확인 상태만 추가로 응답
+export interface BidJobDetailView {
+  reservationNo: string;
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null;
+  photos: string[]; // uploads/ 기준 상대경로
 }
 
 // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 파트너가 완료 등록한 시공 사진·메모와 실제 구매 패키지 항목을 함께 응답
@@ -547,17 +559,55 @@ export class ReservationsService {
       orderBy: [{ date: 'asc' }, { time: 'asc' }],
     });
 
-    return reservations.map((r) => ({
-      reservationNo: r.reservationNo,
-      requestNo: r.requestNo!,
-      date: formatDateOnly(r.date),
-      time: formatTimeOnly(r.time),
-      customerName: r.member.name,
-      car: r.request?.myCar ?? null,
-      progressStatus: r.progressStatus,
-      items: r.request?.items ?? [],
-      positions: r.request?.positions ?? [],
-    }));
+    return reservations.map((r) => {
+      const phone = r.member.phoneEncrypted ? this.phoneCrypto.decrypt(r.member.phoneEncrypted) : null;
+      return {
+        reservationNo: r.reservationNo,
+        requestNo: r.requestNo!,
+        date: formatDateOnly(r.date),
+        time: formatTimeOnly(r.time),
+        customerName: r.member.name,
+        phoneMasked: phone ? maskPhone(phone) : '-',
+        phone,
+        car: r.request?.myCar ?? null,
+        progressStatus: r.progressStatus,
+        items: r.request?.items ?? [],
+        positions: r.request?.positions ?? [],
+      };
+    });
+  }
+
+  /** 예약시공(입찰) 완료건 상세(PT-RSVC-11) — 완료 등록 시 저장된 사진·메모·인수확인 상태 */
+  async getBidJobDetail(
+    shopCode: string,
+    reservationNo: string,
+  ): Promise<BidJobDetailView> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (
+      !reservation ||
+      reservation.shopCode !== shopCode ||
+      reservation.reservationType !== 'BID'
+    ) {
+      throw new NotFoundException('예약시공 예약을 찾을 수 없습니다.');
+    }
+
+    const [photos, handoverConfirmedAt] = await Promise.all([
+      this.prisma.reservationPhoto.findMany({
+        where: { reservationNo },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      this.resolveHandoverConfirmation(reservation),
+    ]);
+
+    return {
+      reservationNo: reservation.reservationNo,
+      completionMemo: reservation.completionMemo,
+      completedAt: reservation.completedAt?.toISOString() ?? null,
+      handoverConfirmedAt: handoverConfirmedAt?.toISOString() ?? null,
+      photos: photos.map((p) => p.photoPath),
+    };
   }
 
   async getPackageJobDetail(

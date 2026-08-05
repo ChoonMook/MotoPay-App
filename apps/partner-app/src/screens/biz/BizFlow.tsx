@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import { pushBackAction } from "../../native/backHandler";
 import { clearTokens } from "../../api/tokenStorage";
 import { getMyShop, type MyShop } from "../../api/shops";
 import BizMainScreen from "./BizMainScreen";
@@ -33,6 +34,14 @@ export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl }: Biz
       .catch((err) => showToast(err instanceof Error ? err.message : "업체 정보를 불러오지 못했어요", "danger"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 하드웨어 백버튼: 화면 상단 '‹' 버튼의 onBack과 동일한 대상으로 이동. 루트 화면(main)에서는 등록하지 않아
+  // 상위(App.tsx)의 "홈으로" 처리로 자연스럽게 넘어감
+  useEffect(() => {
+    if (showLogoutConfirm) return pushBackAction(() => setShowLogoutConfirm(false));
+    if (screen === "main") return;
+    return pushBackAction(() => setScreen("main"));
+  }, [screen, showLogoutConfirm]);
 
   return (
     <>

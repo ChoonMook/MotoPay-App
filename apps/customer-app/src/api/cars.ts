@@ -15,6 +15,8 @@ export interface MyCarApi {
   isDefault: boolean;
   /** 신차매핑(MAP) 차량이 연결된 패키지 상품코드 -> Product.productCode(prodType='PKG'). GET /cars/me 응답에만 포함됨(수기등록은 null) */
   packageCode?: string | null;
+  /** 이 패키지가 매핑된 시점 — 이 시점 이후에 생성된 예약만 이 패키지에 대한 예약으로 간주(수기등록은 null) */
+  mappedAt?: string | null;
 }
 
 export interface MyCarInput {

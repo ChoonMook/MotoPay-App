@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import CallLogSheet, { type CallResult } from "../../components/ui/CallLogSheet";
+import { pushBackAction } from "../../native/backHandler";
 import {
+  addCallLog,
   completeReservationJob,
+  getCallLogs,
   getPackageJobDetail,
   getPackageJobs,
   updateReservationProgress,
+  type CallLog,
   type PackageJob,
   type PackageJobDetail,
 } from "../../api/reservations";
@@ -23,12 +28,14 @@ type Screen = "list" | "detail" | "done" | "handover";
 interface NcpkFlowProps {
   onExit: () => void;
   initialTab?: NcpkTab;
+  /** 홈 "오늘의 시공 일정"에서 특정 예약을 바로 열 때만 값이 전달됨 — 있으면 목록 대신 그 건의 상세를 바로 조회 */
+  initialReservationNo?: string;
 }
 
-export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps) {
+export default function NcpkFlow({ onExit, initialTab = "wait", initialReservationNo }: NcpkFlowProps) {
   const { toast, showToast } = useToast();
   const [screen, setScreen] = useState<Screen>("list");
-  const [sheet, setSheet] = useState<"start" | null>(null);
+  const [sheet, setSheet] = useState<"start" | "callLog" | null>(null);
   const [tab, setTab] = useState<NcpkTab>(initialTab);
 
   const [jobs, setJobs] = useState<PackageJob[]>([]);
@@ -41,6 +48,12 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
   const [checks, setChecks] = useState<boolean[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [memo, setMemo] = useState("");
+
+  const [callResult, setCallResult] = useState<CallResult>("CONNECTED");
+  const [callMemo, setCallMemo] = useState("");
+  const [callLogs, setCallLogs] = useState<CallLog[]>([]);
+  const [loadingCallLogs, setLoadingCallLogs] = useState(false);
+  const [savingCallLog, setSavingCallLog] = useState(false);
 
   useEffect(() => {
     getPackageJobs()
@@ -66,6 +79,63 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
       })
       .finally(() => setLoadingDetail(false));
   };
+
+  // 홈 "오늘의 시공 일정"에서 진입한 경우 목록을 거치지 않고 해당 예약 상세를 바로 연다
+  useEffect(() => {
+    if (!initialReservationNo) return;
+    openJob({ reservationNo: initialReservationNo } as PackageJob);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 해피콜 이력 저장 시트 진입 — 열 때마다 그 job의 최신 이력을 다시 조회(RsvcFlow.tsx와 동일 패턴)
+  const openCallLog = (reservationNo: string) => {
+    setSheet("callLog");
+    setCallLogs([]);
+    setLoadingCallLogs(true);
+    getCallLogs(reservationNo)
+      .then(setCallLogs)
+      .catch((err) => showToast(err instanceof Error ? err.message : "해피콜 이력을 불러오지 못했어요", "danger"))
+      .finally(() => setLoadingCallLogs(false));
+  };
+
+  // 해피콜 버튼 탭 — 실제 전화 앱을 열고, 통화 후 파트너앱으로 돌아오면(탭이 다시 보이는 시점을 통화 종료로 간주)
+  // 이력 저장 팝업을 자동으로 띄운다. 웹 환경이라 실제 통화 종료 이벤트를 받을 방법이 없어 근사치로 처리
+  const [pendingCallReservationNo, setPendingCallReservationNo] = useState<string | null>(null);
+  const startCall = (job: PackageJobDetail) => {
+    if (!job.phone) {
+      showToast("등록된 연락처가 없어요", "danger");
+      return;
+    }
+    setPendingCallReservationNo(job.reservationNo);
+    window.location.href = `tel:${job.phone}`;
+  };
+  useEffect(() => {
+    if (!pendingCallReservationNo) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      const reservationNo = pendingCallReservationNo;
+      setPendingCallReservationNo(null);
+      openCallLog(reservationNo);
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [pendingCallReservationNo]);
+
+  // 하드웨어 백버튼: 화면 상단 '‹' 버튼의 onBack과 동일한 대상으로 이동. 루트 화면(list)에서는 등록하지 않아
+  // 상위(App.tsx)의 "홈으로" 처리로 자연스럽게 넘어감
+  useEffect(() => {
+    if (sheet) return pushBackAction(() => setSheet(null));
+    switch (screen) {
+      case "detail":
+        return pushBackAction(() => setScreen("list"));
+      case "done":
+        return pushBackAction(() => setScreen("detail"));
+      case "handover":
+        return pushBackAction(() => setScreen("list"));
+      default:
+        return;
+    }
+  }, [screen, sheet]);
 
   const confirmStart = async () => {
     if (!selectedJob) return;
@@ -150,6 +220,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
             setScreen("done");
           }}
           onGoHandover={() => setScreen("handover")}
+          onCall={startCall}
         />
       )}
 
@@ -185,6 +256,33 @@ export default function NcpkFlow({ onExit, initialTab = "wait" }: NcpkFlowProps)
           onCancel={() => setSheet(null)}
           onConfirm={confirmStart}
           confirming={updating}
+        />
+      )}
+
+      {sheet === "callLog" && selectedJob && (
+        <CallLogSheet
+          logs={callLogs}
+          loadingLogs={loadingCallLogs}
+          result={callResult}
+          onChangeResult={setCallResult}
+          memo={callMemo}
+          onChangeMemo={setCallMemo}
+          saving={savingCallLog}
+          onClose={() => setSheet(null)}
+          onSave={async () => {
+            if (savingCallLog) return;
+            setSavingCallLog(true);
+            try {
+              await addCallLog(selectedJob.reservationNo, { result: callResult, memo: callMemo.trim() || undefined });
+              setSheet(null);
+              setCallMemo("");
+              showToast("해피콜 이력이 저장되었어요", "success");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "해피콜 이력 저장에 실패했습니다", "danger");
+            } finally {
+              setSavingCallLog(false);
+            }
+          }}
         />
       )}
 

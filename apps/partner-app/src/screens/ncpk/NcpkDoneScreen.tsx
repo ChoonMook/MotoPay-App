@@ -1,43 +1,10 @@
 // PT-NCPK-04: 시공 완료 등록 - 항목별 완료 체크, 시공 사진(최대 10장) 등록, 작업 메모 입력 후 완료 처리
-import { useRef } from "react";
+import { useState } from "react";
 import Button from "../../components/ui/Button";
 import Textarea from "../../components/ui/Textarea";
+import PhotoUploadGrid from "../../components/ui/PhotoUploadGrid";
+import PhotoLightbox from "../../components/ui/PhotoLightbox";
 import type { PackageJobItem } from "../../api/reservations";
-import { AddPhotoIcon } from "./ncpkIcons";
-
-const MAX_PHOTOS = 10;
-const MAX_IMAGE_DIMENSION = 1600; // 이 크기를 넘는 변은 축소(가로세로 비율 유지)
-const IMAGE_JPEG_QUALITY = 0.82;
-
-// 폰 카메라 원본(수 MB~십수 MB)을 그대로 base64로 올리면 요청이 너무 커지므로,
-// 캔버스로 긴 변 기준 축소 + JPEG 압축해서 업로드 용량을 줄인다
-function resizeImageToDataUri(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.width, img.height));
-      const width = Math.round(img.width * scale);
-      const height = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("이미지를 처리하지 못했습니다"));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error("이미지를 읽지 못했습니다"));
-    };
-    img.src = objectUrl;
-  });
-}
 
 interface NcpkDoneScreenProps {
   items: PackageJobItem[];
@@ -70,18 +37,7 @@ export default function NcpkDoneScreen({
   confirming,
   onError,
 }: NcpkDoneScreenProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      onAddPhoto(await resizeImageToDataUri(file));
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "사진을 처리하지 못했습니다");
-    }
-  };
+  const [viewingPhotoUrl, setViewingPhotoUrl] = useState<string | null>(null);
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -129,41 +85,12 @@ export default function NcpkDoneScreen({
           })}
         </div>
 
-        <div className="mb-1 flex items-baseline justify-between">
-          <span className="text-[15px] font-extrabold text-gray-900">시공 사진</span>
-          <span className="text-[12.5px] tabular-nums text-gray-500">{photos.length}/{MAX_PHOTOS}</span>
-        </div>
-        <div className="mb-6 text-[12.5px] text-gray-600">
-          고객 인수확인 화면에 그대로 노출돼요. 최소 3장 이상 등록해 주세요.
-        </div>
-        <div className="mb-6 grid grid-cols-3 gap-2">
-          {photos.length < MAX_PHOTOS && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-[1.5px] border-dashed border-gray-400 bg-white"
-            >
-              <AddPhotoIcon />
-              <span className="text-[11.5px] font-semibold text-gray-500">사진 추가</span>
-            </div>
-          )}
-          {photos.map((photo, i) => (
-            <div key={i} className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-              <img src={photo} alt="시공 사진" className="h-full w-full object-cover" />
-              <span
-                onClick={() => onRemovePhoto(i)}
-                className="absolute top-[5px] right-[5px] flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-black/60 text-xs text-white"
-              >
-                ✕
-              </span>
-            </div>
-          ))}
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={onFileSelected}
+        <PhotoUploadGrid
+          photos={photos}
+          onAddPhoto={onAddPhoto}
+          onRemovePhoto={onRemovePhoto}
+          onViewPhoto={setViewingPhotoUrl}
+          onError={onError}
         />
 
         <div className="mb-2.5 text-[15px] font-extrabold text-gray-900">
@@ -182,6 +109,8 @@ export default function NcpkDoneScreen({
           {confirming ? "처리 중..." : "완료 처리하고 인수확인 요청"}
         </Button>
       </div>
+
+      <PhotoLightbox photoUrl={viewingPhotoUrl} onClose={() => setViewingPhotoUrl(null)} />
     </div>
   );
 }

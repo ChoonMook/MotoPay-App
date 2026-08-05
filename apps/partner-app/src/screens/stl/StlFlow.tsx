@@ -1,8 +1,9 @@
 // PT-STL-01~03 정산·후기 상태 컨테이너 - 허브↔정산내역조회/후기조회 흐름을 엮음
 // 백엔드에 정산/후기 모델이 아직 없어 로컬 state 목업으로만 시연 (rsvc 모듈과 동일한 패턴)
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import { pushBackAction } from "../../native/backHandler";
 import { INITIAL_REVIEWS, INITIAL_SETTLEMENTS } from "./stlData";
 import StlMainScreen from "./StlMainScreen";
 import StlHistScreen from "./StlHistScreen";
@@ -45,6 +46,14 @@ export default function StlFlow({ onExit, onOpenRsvc, onOpenMyPage }: StlFlowPro
 
   const histRows = settlements.filter((s) => (period === "all" || s.period === period) && (status === "all" || s.status === status));
   const reviewRows = reviews.slice(0, reviewShown);
+
+  // 하드웨어 백버튼: 화면 상단 '‹' 버튼의 onBack과 동일한 대상으로 이동. 루트 화면(main)에서는 등록하지 않아
+  // 상위(App.tsx)의 "홈으로" 처리로 자연스럽게 넘어감
+  useEffect(() => {
+    if (showDatePop) return pushBackAction(() => setShowDatePop(false));
+    if (screen === "main") return;
+    return pushBackAction(() => setScreen("main"));
+  }, [screen, showDatePop]);
 
   return (
     <div className="absolute inset-0 bg-gray-50">

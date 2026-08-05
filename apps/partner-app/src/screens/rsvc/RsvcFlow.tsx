@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import { pushBackAction } from "../../native/backHandler";
 import { getMyBidRequests, type ShopBidRequestCarApi } from "../../api/bidRequests";
 import { submitBidPlan } from "../../api/bidPlans";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
@@ -14,16 +15,18 @@ import { submitBidOffer } from "../../api/bidOffers";
 import {
   addCallLog,
   completeReservationJob,
+  getBidJobDetail,
   getBidJobs,
   getCallLogs,
   updateReservationProgress,
+  type BidJobDetail,
   type CallLog,
 } from "../../api/reservations";
 import { CAR_INST_TO_PROD_CAT, POS_NAMES, buildPlanDraft, mapBidJob, mapBidRequest, posNameToCode } from "./rsvcData";
 import type { BidReq, JobStatus, PlanLine, RsvcJob, RsvcProduct } from "./rsvcTypes";
 import RsvcMainScreen from "./RsvcMainScreen";
 import RsvcWaitlistScreen from "./RsvcWaitlistScreen";
-import RsvcCallLogSheet, { type CallResult } from "./RsvcCallLogSheet";
+import CallLogSheet, { type CallResult } from "../../components/ui/CallLogSheet";
 import RsvcBidboxScreen, { type BidTab } from "./RsvcBidboxScreen";
 import RsvcReqDetailScreen from "./RsvcReqDetailScreen";
 import RsvcBidJoinScreen from "./RsvcBidJoinScreen";
@@ -34,6 +37,7 @@ import RsvcPickResultScreen from "./RsvcPickResultScreen";
 import RsvcStartSheet from "./RsvcStartSheet";
 import RsvcBidSubmitConfirmSheet from "./RsvcBidSubmitConfirmSheet";
 import RsvcDoneScreen from "./RsvcDoneScreen";
+import RsvcHandoverScreen from "./RsvcHandoverScreen";
 import RsvcReschedScreen from "./RsvcReschedScreen";
 
 type Screen =
@@ -46,6 +50,7 @@ type Screen =
   | "plansearch"
   | "pickresult"
   | "done"
+  | "handover"
   | "resched";
 
 interface RsvcFlowProps {
@@ -54,9 +59,18 @@ interface RsvcFlowProps {
   onOpenMyPage: () => void;
   initialScreen?: "main" | "waitlist" | "bidbox";
   initialBidTab?: BidTab;
+  /** 홈 "오늘의 시공 일정"에서 특정 예약을 바로 열 때만 값이 전달됨 — 있으면 목록 진입 직후 그 건을 바로 연다 */
+  initialReservationNo?: string;
 }
 
-export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScreen = "main", initialBidTab = "new" }: RsvcFlowProps) {
+export default function RsvcFlow({
+  onExit,
+  onOpenStl,
+  onOpenMyPage,
+  initialScreen = "main",
+  initialBidTab = "new",
+  initialReservationNo,
+}: RsvcFlowProps) {
   const { toast, showToast } = useToast();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
@@ -89,7 +103,13 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
         };
         setReqs(rows.map((r) => mapBidRequest(r, carLabel)));
         setShopCode(shop.shopCode);
-        setJobs(bidJobs.map((j) => mapBidJob(j, carLabel)));
+        const mappedJobs = bidJobs.map((j) => mapBidJob(j, carLabel));
+        setJobs(mappedJobs);
+        // 홈 "오늘의 시공 일정"에서 진입한 경우 목록 대신 그 건을 바로 연다(착수전이면 착수 시트, 시공중이면 완료 화면)
+        if (initialReservationNo) {
+          const target = mappedJobs.find((j) => j.id === initialReservationNo);
+          if (target) openJob(target);
+        }
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "입찰함을 불러오지 못했습니다", "danger"))
       .finally(() => setLoadingReqs(false));
@@ -103,6 +123,9 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
   const [bidTime, setBidTime] = useState(""); // 선택한 시공 가능 시간("HH:mm") — 고객 희망일(req.desiredDate) 기준 업체 실제 스케줄에서 선택
   const [daySlots, setDaySlots] = useState<DailySlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const [jobDetail, setJobDetail] = useState<BidJobDetail | null>(null);
+  const [loadingJobDetail, setLoadingJobDetail] = useState(false);
 
   const [callResult, setCallResult] = useState<CallResult>("CONNECTED");
   const [callMemo, setCallMemo] = useState("");
@@ -139,6 +162,7 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
     id: "",
     requestNo: "",
     customer: "",
+    phone: null,
     car: "",
     vin: "",
     status: "착수전",
@@ -186,12 +210,25 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
 
   const openJob = (job: RsvcJob) => {
     setActiveJobId(job.id);
+    // 시공 대기 목록으로 돌아갔을 때 이 job이 보이는 탭과 항상 맞춰둠(홈 "오늘의 시공 일정"처럼 목록을 거치지 않고
+    // 바로 들어온 경우에도 완료 건이면 완료 탭이 보여야 함)
+    setWaitlistTab(job.status);
     if (job.status === "착수전") {
       setSheet("start");
     } else if (job.status === "시공중") {
       setScreen("done");
     } else {
-      showToast("이미 완료된 건이에요");
+      // 완료건 — NcpkHandoverScreen과 동일한 패턴으로 첨부 사진·메모·인수확인 상태를 조회해 보여줌
+      setScreen("handover");
+      setJobDetail(null);
+      setLoadingJobDetail(true);
+      getBidJobDetail(job.id)
+        .then(setJobDetail)
+        .catch((err) => {
+          showToast(err instanceof Error ? err.message : "시공 상세를 불러오지 못했어요", "danger");
+          setScreen("waitlist");
+        })
+        .finally(() => setLoadingJobDetail(false));
     }
   };
 
@@ -206,6 +243,29 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
       .catch((err) => showToast(err instanceof Error ? err.message : "해피콜 이력을 불러오지 못했어요", "danger"))
       .finally(() => setLoadingCallLogs(false));
   };
+
+  // 해피콜 버튼 탭 — 실제 전화 앱을 열고, 통화 후 파트너앱으로 돌아오면(탭이 다시 보이는 시점을 통화 종료로 간주)
+  // 이력 저장 팝업을 자동으로 띄운다. 웹 환경이라 실제 통화 종료 이벤트를 받을 방법이 없어 근사치로 처리
+  const [pendingCallJob, setPendingCallJob] = useState<RsvcJob | null>(null);
+  const startCall = (job: RsvcJob) => {
+    if (!job.phone) {
+      showToast("등록된 연락처가 없어요", "danger");
+      return;
+    }
+    setPendingCallJob(job);
+    window.location.href = `tel:${job.phone}`;
+  };
+  useEffect(() => {
+    if (!pendingCallJob) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      const job = pendingCallJob;
+      setPendingCallJob(null);
+      openCallLog(job);
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [pendingCallJob]);
 
   // 추천안 작성 화면 진입 — 요청 항목별 실 카탈로그(GET /products)를 조회해 초안을 만들고,
   // 고객 희망일(req.desiredDate) 기준 내 업체의 실제 예약 가능 시간대도 함께 조회(RsvcBidJoinScreen과 동일 패턴)
@@ -253,6 +313,33 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
 
   const posLine = planPosIdx != null ? planDraft[planPosIdx] : null;
 
+  // 하드웨어 백버튼: 화면 상단 '‹' 버튼의 onBack과 동일한 대상으로 이동. 루트 화면(main)에서는 등록하지 않아
+  // 상위(App.tsx)의 "홈으로" 처리로 자연스럽게 넘어감
+  useEffect(() => {
+    if (planPosIdx != null) return pushBackAction(() => setPlanPosIdx(null));
+    if (sheet) return pushBackAction(() => setSheet(null));
+    switch (screen) {
+      case "waitlist":
+      case "bidbox":
+        return pushBackAction(() => setScreen("main"));
+      case "reqdetail":
+        return pushBackAction(() => setScreen("bidbox"));
+      case "bidjoin":
+      case "planwrite":
+        return pushBackAction(() => setScreen("reqdetail"));
+      case "plansearch":
+        return pushBackAction(() => setScreen("planwrite"));
+      case "pickresult":
+        return pushBackAction(() => setScreen("bidbox"));
+      case "done":
+      case "handover":
+      case "resched":
+        return pushBackAction(() => setScreen("waitlist"));
+      default:
+        return;
+    }
+  }, [screen, sheet, planPosIdx]);
+
   const activeGeneralCount = reqs.filter((r) => r.type === "general" && r.status === "active").length + 1;
   // "착수전·시공중 건"만 시공 대기로 집계(완료 건은 제외) — jobStatusChipClass 라벨과 동일 기준
   const waitingJobs = jobs.filter((j) => j.status !== "완료");
@@ -289,7 +376,7 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
           tabCounts={waitlistTabCounts}
           onBack={() => setScreen("main")}
           onOpenJob={openJob}
-          onCall={openCallLog}
+          onCall={startCall}
           onResched={(job) => {
             setActiveJobId(job.id);
             setScreen("resched");
@@ -470,6 +557,15 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
         />
       )}
 
+      {screen === "handover" && (
+        <RsvcHandoverScreen
+          job={jobDetail}
+          loading={loadingJobDetail}
+          onBack={() => setScreen("waitlist")}
+          onRemind={() => showToast("인수확인 알림을 재발송했어요", "success")}
+        />
+      )}
+
       {screen === "resched" && (
         <RsvcReschedScreen
           job={curJob}
@@ -512,7 +608,7 @@ export default function RsvcFlow({ onExit, onOpenStl, onOpenMyPage, initialScree
       )}
 
       {sheet === "callLog" && (
-        <RsvcCallLogSheet
+        <CallLogSheet
           logs={callLogs}
           loadingLogs={loadingCallLogs}
           result={callResult}

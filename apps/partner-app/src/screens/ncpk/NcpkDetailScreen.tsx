@@ -13,6 +13,7 @@ interface NcpkDetailScreenProps {
   onStart: () => void;
   onGoDone: () => void;
   onGoHandover: () => void;
+  onCall: (job: PackageJobDetail) => void;
 }
 
 export default function NcpkDetailScreen({
@@ -23,6 +24,7 @@ export default function NcpkDetailScreen({
   onStart,
   onGoDone,
   onGoHandover,
+  onCall,
 }: NcpkDetailScreenProps) {
   const header = (
     <div className="flex-none border-b border-gray-100 bg-white pt-[50px] px-3">
@@ -89,13 +91,13 @@ export default function NcpkDetailScreen({
         </div>
 
         {job.progressStatus === "APPLIED" && job.phone && (
-          <a
-            href={`tel:${job.phone.replace(/[^0-9+]/g, "")}`}
-            className="mb-5 flex items-center justify-center gap-2 rounded-xl bg-brand-subtle p-[13px]"
+          <div
+            onClick={() => onCall(job)}
+            className="mb-5 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand-subtle p-[13px]"
           >
             <PhoneCallIcon />
             <span className="text-[13.5px] font-bold text-brand">고객에게 해피콜 걸기</span>
-          </a>
+          </div>
         )}
 
         <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold tracking-tight text-gray-900">시공 항목</div>

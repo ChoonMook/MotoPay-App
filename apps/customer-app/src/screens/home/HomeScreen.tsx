@@ -141,8 +141,17 @@ export default function HomeScreen({
       .then(([cars, reservations, shops, bidRequests]) => {
         const defaultCar = cars.find((c) => c.isDefault) ?? cars[0];
 
+        // 예약(Reservation)엔 어느 패키지에 대한 예약인지 연결하는 값이 없어, 대표차량의 패키지가 매핑된 시점(mappedAt)
+        // 이후에 생성된 예약만 "그 패키지에 대한 예약"으로 간주한다 — 그 이전 예약은 이전에 매핑됐던(이미 종료된) 다른
+        // 패키지의 이력일 뿐이라 지금 매핑된 패키지의 대기 배너를 가리면 안 됨
+        const mappedAt = defaultCar?.mappedAt ? new Date(defaultCar.mappedAt).getTime() : null;
         const activePkgRes = reservations
-          .filter((r) => r.reservationType === "PKG" && r.status === "CONFIRMED")
+          .filter(
+            (r) =>
+              r.reservationType === "PKG" &&
+              r.status === "CONFIRMED" &&
+              (mappedAt === null || new Date(r.createdAt).getTime() >= mappedAt),
+          )
           .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
         if (!activePkgRes) {
           setHasEligiblePackage(!!defaultCar?.packageCode);

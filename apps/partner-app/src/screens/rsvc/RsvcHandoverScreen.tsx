@@ -1,10 +1,10 @@
-// PT-NCPK-05: 인수확인 현황 - 고객의 실제 인수확인 상태 조회(직접 확인 또는 완료일로부터 3일 경과 시 자동확정), 인수확인 알림 재발송
+// PT-RSVC-11: 인수확인 현황 - 완료건의 시공 사진·작업 메모·고객 인수확인 상태 조회(NcpkHandoverScreen.tsx와 동일 패턴)
 import { useState } from "react";
 import { API_BASE_URL } from "../../api/config";
+import type { BidJobDetail } from "../../api/reservations";
 import Button from "../../components/ui/Button";
 import PhotoLightbox from "../../components/ui/PhotoLightbox";
-import { CheckBadgeIcon } from "./ncpkIcons";
-import type { PackageJobDetail } from "../../api/reservations";
+import { CheckBadgeIcon } from "./rsvcIcons";
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
 const HANDOVER_AUTO_CONFIRM_DAYS = 3;
@@ -18,14 +18,36 @@ function formatDateTimeLabel(iso: string): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}(${wd}) ${ampm} ${hour12}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-interface NcpkHandoverScreenProps {
-  job: PackageJobDetail;
+interface RsvcHandoverScreenProps {
+  job: BidJobDetail | null;
+  loading: boolean;
   onBack: () => void;
   onRemind: () => void;
 }
 
-export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandoverScreenProps) {
+export default function RsvcHandoverScreen({ job, loading, onBack, onRemind }: RsvcHandoverScreenProps) {
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState<string | null>(null);
+
+  const header = (
+    <div className="flex-none border-b border-gray-100 bg-white pt-[50px] px-3">
+      <div className="flex h-[50px] items-center gap-1.5">
+        <span onClick={onBack} className="flex h-9 w-9 cursor-pointer items-center justify-center text-[22px] text-gray-800">
+          ‹
+        </span>
+        <span className="text-[17px] font-bold text-gray-900">인수확인 현황</span>
+      </div>
+    </div>
+  );
+
+  if (loading || !job) {
+    return (
+      <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
+        {header}
+        <div className="flex flex-1 items-center justify-center text-sm text-gray-400">불러오는 중...</div>
+      </div>
+    );
+  }
+
   const hoPending = !job.handoverConfirmedAt;
   const photos = job.photos.map((p) => `${API_BASE_URL}/uploads/${p}`);
 
@@ -49,14 +71,7 @@ export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandov
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
-      <div className="flex-none border-b border-gray-100 bg-white pt-[50px] px-3">
-        <div className="flex h-[50px] items-center gap-1.5">
-          <span onClick={onBack} className="flex h-9 w-9 cursor-pointer items-center justify-center text-[22px] text-gray-800">
-            ‹
-          </span>
-          <span className="text-[17px] font-bold text-gray-900">인수확인 현황</span>
-        </div>
-      </div>
+      {header}
 
       <div className="mp-scroll flex-1 overflow-y-auto px-5 py-[18px]">
         <div
@@ -102,9 +117,7 @@ export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandov
           </>
         )}
 
-        <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold text-gray-900">
-          고객에게 전달된 시공 사진
-        </div>
+        <div className="mx-0.5 mb-2.5 text-[15px] font-extrabold text-gray-900">고객에게 전달된 시공 사진</div>
         <div className="grid grid-cols-3 gap-2">
           {photos.map((photo, i) => (
             <div

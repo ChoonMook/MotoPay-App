@@ -10,9 +10,11 @@ import type { CreateMyCarDto } from './dto/create-my-car.dto';
 import type { UpdateMyCarDto } from './dto/update-my-car.dto';
 
 // 신차매핑(MAP) 차량이 연결된 패키지 상품코드 -> Product.productCode(prodType='PKG')를
-// NewCarPurchaseCustomer.packageCode에서 조인해 얹은 뷰 — 수기등록(MANUAL)은 항상 null
+// NewCarPurchaseCustomer.packageCode/mappedAt에서 조인해 얹은 뷰 — 수기등록(MANUAL)은 항상 null.
+// mappedAt은 홈 화면이 "이 패키지에 대해 예약이 이미 있는지"를 판단할 때(예약 생성시점과 비교) 필요
 export interface MyCarView extends MyCar {
   packageCode: string | null;
+  mappedAt: string | null;
 }
 
 @Injectable()
@@ -23,12 +25,13 @@ export class CarsService {
   async listMyCars(userId: string): Promise<MyCarView[]> {
     const cars = await this.prisma.myCar.findMany({
       where: { memberId: userId },
-      include: { purchase: { select: { packageCode: true } } },
+      include: { purchase: { select: { packageCode: true, mappedAt: true } } },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
     });
     return cars.map(({ purchase, ...car }) => ({
       ...car,
       packageCode: purchase?.packageCode ?? null,
+      mappedAt: purchase?.mappedAt?.toISOString() ?? null,
     }));
   }
 

@@ -1,7 +1,8 @@
-// PT-RSVC-03: 해피콜 이력 저장 팝업 - 이전 통화 이력을 보여주고, 통화 결과·메모를 새로 저장
-import BottomSheet from "../../components/ui/BottomSheet";
-import Button from "../../components/ui/Button";
-import Textarea from "../../components/ui/Textarea";
+// PT-RSVC-03/PT-NCPK-02: 해피콜 이력 저장 팝업 - 이전 통화 이력을 보여주고, 통화 결과·메모를 새로 저장
+// 신차패키지·예약시공 양쪽에서 공용으로 쓰는 컴포넌트
+import BottomSheet from "./BottomSheet";
+import Button from "./Button";
+import Textarea from "./Textarea";
 import type { CallLog } from "../../api/reservations";
 
 const CALL_RESULT_META = [
@@ -23,7 +24,7 @@ function formatLogDateTime(iso: string): string {
   return `${mm}.${dd} ${hh}:${mi}`;
 }
 
-interface RsvcCallLogSheetProps {
+interface CallLogSheetProps {
   logs: CallLog[];
   loadingLogs: boolean;
   result: CallResult;
@@ -35,7 +36,7 @@ interface RsvcCallLogSheetProps {
   onSave: () => void;
 }
 
-export default function RsvcCallLogSheet({
+export default function CallLogSheet({
   logs,
   loadingLogs,
   result,
@@ -45,7 +46,7 @@ export default function RsvcCallLogSheet({
   saving,
   onClose,
   onSave,
-}: RsvcCallLogSheetProps) {
+}: CallLogSheetProps) {
   return (
     <BottomSheet onClose={onClose} maxHeight="none">
       <div className="mb-4 text-lg font-extrabold text-gray-900">해피콜 이력 저장</div>

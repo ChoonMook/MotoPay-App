@@ -19,6 +19,18 @@ export interface PackageDetail {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** 상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면에서 파트너가 카테고리별 추천 상품을 검색할 때 사용 */
+  async list(params: { prodCat?: string; prodType?: string }): Promise<Product[]> {
+    return this.prisma.product.findMany({
+      where: {
+        useYn: true,
+        ...(params.prodCat ? { prodCat: params.prodCat } : {}),
+        ...(params.prodType ? { prodType: params.prodType } : {}),
+      },
+      orderBy: { price: 'asc' },
+    });
+  }
+
   /**
    * 패키지 상세 조회 — 구성상품 매핑(ProductBundleItem)은 DB FK 없이 상품코드 문자열로만 연결돼 있어
    * (Product 자기참조, schema.prisma 주석 참고) 구성상품 정보를 별도로 조회해 직접 조인한다.

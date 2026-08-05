@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { BidRequestsModule } from './bid-requests/bid-requests.module';
 import { CarsModule } from './cars/cars.module';
 import { CommonCodesModule } from './common-codes/common-codes.module';
 import { PartnerAuthModule } from './partner-auth/partner-auth.module';
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     ShopsModule,
     ReservationsModule,
+    BidRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

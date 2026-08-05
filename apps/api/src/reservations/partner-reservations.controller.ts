@@ -1,12 +1,14 @@
 // GET /shops/me/reservations/today, PATCH /shops/me/reservations/:reservationNo/progress, GET /shops/me/reservations/package-stats
 // GET /shops/me/reservations/packages, GET /shops/me/reservations/packages/:reservationNo, PATCH /shops/me/reservations/:reservationNo/complete
+// GET /shops/me/reservations/bids, POST/GET /shops/me/reservations/:reservationNo/call-logs
 // — 파트너(시공업체) 로그인 전용, 항상 로그인 계정 소속 업체(shopCode) 기준으로만 조회/수정
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentPartnerUser } from '../partner-auth/decorators/current-partner-user.decorator';
 import { JwtPartnerAuthGuard } from '../partner-auth/guards/jwt-partner-auth.guard';
 import type { SafePartnerUser } from '../partner-auth/partner-auth.types';
 import { CompleteReservationDto } from './dto/complete-reservation.dto';
+import { CreateCallLogDto } from './dto/create-call-log.dto';
 import { UpdateReservationProgressDto } from './dto/update-reservation-progress.dto';
 import { ReservationsService } from './reservations.service';
 
@@ -38,6 +40,14 @@ export class PartnerReservationsController {
   })
   listPackages(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
     return this.reservationsService.listPackagesForShop(partnerUser.shopCode);
+  }
+
+  @Get('bids')
+  @ApiOperation({
+    summary: '내 업체의 예약시공(입찰) 시공 건 목록(PT-RSVC-08) — 낙찰 확정된 Reservation(BID) 전체',
+  })
+  listBidJobs(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
+    return this.reservationsService.listBidJobsForShop(partnerUser.shopCode);
   }
 
   @Get('packages/:reservationNo')
@@ -85,5 +95,32 @@ export class PartnerReservationsController {
       dto,
     );
     return { success: true };
+  }
+
+  @Post(':reservationNo/call-logs')
+  @ApiOperation({ summary: '해피콜(고객 확인 전화) 이력 등록(PT-RSVC-03)' })
+  async addCallLog(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('reservationNo') reservationNo: string,
+    @Body() dto: CreateCallLogDto,
+  ) {
+    await this.reservationsService.addCallLog(
+      partnerUser.shopCode,
+      reservationNo,
+      dto,
+    );
+    return { success: true };
+  }
+
+  @Get(':reservationNo/call-logs')
+  @ApiOperation({ summary: '해피콜 이력 목록(최신순)' })
+  listCallLogs(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('reservationNo') reservationNo: string,
+  ) {
+    return this.reservationsService.listCallLogs(
+      partnerUser.shopCode,
+      reservationNo,
+    );
   }
 }

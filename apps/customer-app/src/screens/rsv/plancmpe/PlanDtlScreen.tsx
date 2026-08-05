@@ -1,9 +1,10 @@
 // CU-RSVC-13: 추천안 상세 - 소비자가(취소선)·제안가 구분 표시, 추천 사유 전문, 합계 확인 후 선택
+// 평점은 DB에 리뷰 데이터가 없어 미표시(PlanCmpExpertScreen과 동일 정책)
 import shopThumb from "../../../assets/images/shop.png";
 import Button from "../../../components/ui/Button";
 import RsvHeader from "../RsvHeader";
-import { StarIcon, ChevronRightIcon } from "../rsvIcons";
-import { RECOS } from "../rsvTypes";
+import { ChevronRightIcon } from "../rsvIcons";
+import type { RecoPlan } from "../rsvTypes";
 import { nfmt } from "../rsvFormat";
 
 const RecoStarIcon = () => (
@@ -13,15 +14,14 @@ const RecoStarIcon = () => (
 );
 
 interface PlanDtlScreenProps {
-  selId: string;
+  reco: RecoPlan;
   onBack: () => void;
   onOpenProfile: () => void;
   onOpenProdDtl: () => void;
   onPick: () => void;
 }
 
-export default function PlanDtlScreen({ selId, onBack, onOpenProfile, onOpenProdDtl, onPick }: PlanDtlScreenProps) {
-  const reco = RECOS.find((r) => r.id === selId) || RECOS[0];
+export default function PlanDtlScreen({ reco, onBack, onOpenProfile, onOpenProdDtl, onPick }: PlanDtlScreenProps) {
   const total = reco.plans.reduce((s, [, , offer]) => s + offer, 0);
   const retail = reco.plans.reduce((s, [, r]) => s + r, 0);
 
@@ -36,10 +36,7 @@ export default function PlanDtlScreen({ selId, onBack, onOpenProfile, onOpenProd
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[15px] font-extrabold text-gray-900">{reco.name}</div>
-            <div className="mt-[3px] flex items-center gap-1.5 text-[11.5px] text-gray-600">
-              <StarIcon color="var(--color-accent)" />
-              <span className="font-bold">{reco.rating}</span>
-            </div>
+            <div className="mt-[3px] text-[11.5px] text-gray-500">{reco.when}</div>
           </div>
           <span onClick={onOpenProfile} className="flex-none cursor-pointer text-[11.5px] font-bold text-brand">
             프로필 ›

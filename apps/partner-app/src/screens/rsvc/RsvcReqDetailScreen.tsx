@@ -1,6 +1,7 @@
-// PT-RSVC-05: 요청 상세 - 항목·옵션·일정·마감시간 확인 후 입찰 참여 또는 추천안 작성으로 분기
+// PT-RSVC-05: 요청 상세 - 항목·옵션·일정·마감시간 확인 후 입찰 참여(수정) 또는 추천안 작성으로 분기
+// 일반입찰은 고객이 업체를 선택하기 전(status="active", 아직 OPEN)까지는 "입찰 수정하기"로 계속 재제출 가능
 import Button from "../../components/ui/Button";
-import { reqInfoRows, reqTypeChipClass, reqTypeLabel, won } from "./rsvcData";
+import { formatDesiredDateLabel, reqInfoRows, reqTypeChipClass, reqTypeLabel, won } from "./rsvcData";
 import type { BidReq } from "./rsvcTypes";
 
 interface RsvcReqDetailScreenProps {
@@ -12,8 +13,10 @@ interface RsvcReqDetailScreenProps {
 }
 
 export default function RsvcReqDetailScreen({ req, onBack, onGoResult, onGoBidJoin, onGoPlanWrite }: RsvcReqDetailScreenProps) {
-  const mySubmitAmount = req.type === "general" ? (req.myBid ? won(req.myBid) : "") : req.myPlan ? won(req.myPlan.price) : "";
+  const myOfferTotal = req.myOffer ? Object.values(req.myOffer.prices).reduce((sum, p) => sum + (Number(p) || 0), 0) : 0;
+  const mySubmitAmount = req.type === "general" ? (req.myOffer ? won(myOfferTotal) : "") : req.myPlan ? won(req.myPlan.totalOffer) : "";
   const mySubmitLabel = req.type === "general" ? "제출한 견적가" : "제출한 추천 총액";
+  const myOfferTimeLabel = req.myOffer ? `${formatDesiredDateLabel(req.desiredDate)} ${req.myOffer.time}` : "";
   const itemsTitle = req.type === "general" ? "시공 항목" : "고객 요청 항목";
   const rows = reqInfoRows(req);
 
@@ -25,15 +28,8 @@ export default function RsvcReqDetailScreen({ req, onBack, onGoResult, onGoBidJo
     ctaLabel = "결과 확인하기";
     onCta = onGoResult;
   } else if (req.type === "general") {
-    if (req.status === "open") {
-      ctaLabel = "입찰 참여하기";
-      onCta = onGoBidJoin;
-    } else {
-      ctaLabel = "입찰 제출 완료 · 마감 후 결과 확인";
-      ctaVariant = "secondary";
-      ctaDisabled = true;
-      onCta = () => {};
-    }
+    ctaLabel = req.status === "active" ? "입찰 수정하기" : "입찰 참여하기";
+    onCta = onGoBidJoin;
   } else {
     ctaLabel = req.status === "open" ? "추천안 작성하기" : "추천안 수정하기";
     onCta = onGoPlanWrite;
@@ -72,9 +68,17 @@ export default function RsvcReqDetailScreen({ req, onBack, onGoResult, onGoBidJo
         </div>
 
         {mySubmitAmount && (
-          <div className="mb-4 flex items-center justify-between rounded-[14px] bg-brand-subtle px-4 py-3.5">
-            <span className="text-[13px] font-bold text-brand">{mySubmitLabel}</span>
-            <span className="text-base font-extrabold text-brand">{mySubmitAmount}</span>
+          <div className="mb-4 rounded-[14px] bg-brand-subtle px-4">
+            <div className={`flex items-center justify-between py-3.5 ${myOfferTimeLabel ? "border-b border-brand/15" : ""}`}>
+              <span className="text-[13px] font-bold text-brand">{mySubmitLabel}</span>
+              <span className="text-base font-extrabold text-brand">{mySubmitAmount}</span>
+            </div>
+            {myOfferTimeLabel && (
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-[13px] font-bold text-brand">시공 예정일시</span>
+                <span className="text-[13.5px] font-bold text-brand">{myOfferTimeLabel}</span>
+              </div>
+            )}
           </div>
         )}
 

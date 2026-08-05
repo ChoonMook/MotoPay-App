@@ -15,6 +15,14 @@ export function formatTimeOnly(value: Date): string {
   return value.toISOString().slice(11, 16);
 }
 
+/** 오늘(UTC 자정 기준) — @db.Date 컬럼이 UTC 자정으로 저장되므로 동일 기준으로 비교해야 함 */
+export function todayUtcMidnight(): Date {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+}
+
 export type ShopDayType = 'WEEKDAY' | 'SAT' | 'SUN';
 
 // 주의: 공휴일(HOLIDAY) 자동 판별은 별도 공휴일 데이터 소스가 없어 아직 지원하지 않음 — 요일만으로 평일/토/일을 구분

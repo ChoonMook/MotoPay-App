@@ -1,192 +1,218 @@
-// PT-RSVC-01~13 예약시공관리(입찰) 목업 데이터·카탈로그·공용 포맷 헬퍼
-// 백엔드 입찰/추천안 모델이 없어 화면 내 로컬 state로만 흐름을 시연 (design/source .dc.html 원본 데이터 그대로 이식)
-import type { BidReq, PlanLine, ReqType, RsvcJob, RsvcProduct } from "./rsvcTypes";
+// PT-RSVC-01~13 예약시공관리(입찰) 실데이터 매핑·카탈로그·공용 포맷 헬퍼
+// 입찰함·입찰 참여·추천안 작성/제출·상품 카탈로그(GET /products) 모두 실API 연동 완료
+import type {
+  ShopBidRequestApi,
+  ShopBidRequestCarApi,
+  ShopBidRequestItemApi,
+  ShopBidRequestPositionApi,
+} from "../../api/bidRequests";
+import type { BidJob } from "../../api/reservations";
+import type { BidReq, JobStatus, PlanLine, ReqStatus, ReqType, RsvcItem, RsvcJob, RsvcProduct } from "./rsvcTypes";
 
-export const INITIAL_REQS: BidReq[] = [
-  {
-    id: "q1",
-    type: "general",
-    customer: "김민준",
-    car: "현대 아이오닉 6 (2026)",
-    distance: "2.1km",
-    items: [
-      { name: "유리막코팅", spec: "풀보디 패키지" },
-      { name: "PPF", spec: "전면부" },
-    ],
-    budgetLabel: "예산 1,200,000원 내외",
-    deadlineLabel: "D-2 · 08.03 18:00",
-    status: "open",
-  },
-  {
-    id: "q2",
-    type: "general",
-    customer: "이서연",
-    car: "기아 EV6 (2025)",
-    distance: "3.4km",
-    items: [
-      { name: "틴팅", spec: "전체 30%" },
-      { name: "블랙박스", spec: "2채널" },
-    ],
-    budgetLabel: "예산 800,000원 내외",
-    deadlineLabel: "D-1 · 08.01 20:00",
-    status: "active",
-    myBid: 720000,
-  },
-  {
-    id: "q3",
-    type: "expert",
-    customer: "박지훈",
-    car: "BMW 5시리즈 (2024)",
-    distance: "1.6km",
-    category: "외장 디테일링",
-    items: [
-      { name: "외장 디테일링", spec: "생활 스크래치 제거 희망" },
-      { name: "유리막코팅", spec: "광택 유지가 중요해요" },
-    ],
-    budgetLabel: "예산 900,000원 이하",
-    deadlineLabel: "마감 · 07.30 18:00",
-    status: "closed",
-    myPlan: { price: 820000 },
-    picked: true,
-  },
-  {
-    id: "q4",
-    type: "expert",
-    customer: "최유나",
-    car: "테슬라 모델Y (2026)",
-    distance: "4.0km",
-    category: "선루프 스티치",
-    items: [
-      { name: "선루프 스티치", spec: "파노라마 선루프" },
-      { name: "실내크리닝", spec: "천장 오염 제거" },
-    ],
-    budgetLabel: "예산 600,000원 이하",
-    deadlineLabel: "마감 · 07.29 18:00",
-    status: "closed",
-    myPlan: { price: 580000 },
-    picked: false,
-  },
-  {
-    id: "q5",
-    type: "expert",
-    customer: "오세훈",
-    car: "폭스바겐 티구안 (2025)",
-    distance: "2.8km",
-    category: "차량 랩핑",
-    items: [
-      { name: "차량 랩핑", spec: "무광 그레이 희망" },
-      { name: "틴팅", spec: "전면 30% 이상" },
-    ],
-    budgetLabel: "예산 1,500,000원 이하",
-    deadlineLabel: "D-3 · 08.04 18:00",
-    status: "open",
-  },
+// PT-RSVC-02 시공 대기 목록 상태 탭(신차패키지 시공관리의 NCPK_TAB_META와 동일 패턴)
+export const JOB_TAB_META: { key: JobStatus; label: string }[] = [
+  { key: "착수전", label: "착수전" },
+  { key: "시공중", label: "시공중" },
+  { key: "완료", label: "완료" },
 ];
 
-export const INITIAL_JOBS: RsvcJob[] = [
-  {
-    id: "j1",
-    customer: "정하늘",
-    car: "현대 싼타페 (2025)",
-    vin: "KMHXX00XXPU123456",
-    status: "착수전",
-    schedule: "2026.08.02 10:00",
-    items: [
-      { name: "언더코팅", spec: "전체" },
-      { name: "실내크리닝", spec: "풀케어" },
-    ],
+// -> CommonCodeDetail(code='CAR_INST'), apps/customer-app의 rsvTypes.ts INST_CODE_LABELS와 동일
+const INST_CODE_LABELS: Record<string, string> = {
+  TINT: "썬팅·틴팅",
+  PPF: "PPF",
+  BBOX: "블랙박스",
+  CCA: "유리막 코팅",
+  UCOAT: "언더코팅",
+  CLEAN: "광택·디테일링",
+  EXTREP: "외장수리",
+  WHTIRE: "휠·타이어",
+};
+
+// -> CommonCodeDetail(code='BID_TINT_POSITION')
+const TINT_POS_LABELS: Record<string, string> = {
+  FRONT: "전면유리",
+  SIDE_1: "측면 1열",
+  SIDE_2: "측면 2열",
+  REAR: "후면유리",
+  SUNROOF: "선루프",
+};
+// 한글 부위명 -> BID_TINT_POSITION 코드(TINT_POS_LABELS 역매핑) — 추천안 제출 시 사용
+const POS_NAME_TO_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(TINT_POS_LABELS).map(([code, name]) => [name, code]),
+);
+export function posNameToCode(name: string): string {
+  return POS_NAME_TO_CODE[name] ?? name;
+}
+
+// CommonCodeDetail(code='CAR_INST') -> CommonCodeDetail(code='PROD_CAT') 매핑 — 두 코드그룹 값이 서로 달라 명시 매핑 필요
+// (TINT/PPF/BBOX는 코드가 동일, CCA→COAT·WHTIRE→TIRE는 기존 PROD_CAT 코드를 그대로 재사용, CLEAN/UCOAT/EXTREP는 신규 추가된 코드)
+export const CAR_INST_TO_PROD_CAT: Record<string, string> = {
+  TINT: "TINT",
+  PPF: "PPF",
+  BBOX: "BBOX",
+  CCA: "COAT",
+  UCOAT: "UCOAT",
+  CLEAN: "CLEAN",
+  EXTREP: "EXTREP",
+  WHTIRE: "TIRE",
+};
+
+function formatDeadlineLabel(bidDeadlineIso: string): string {
+  const deadline = new Date(bidDeadlineIso);
+  const mm = String(deadline.getMonth() + 1).padStart(2, "0");
+  const dd = String(deadline.getDate()).padStart(2, "0");
+  const hh = String(deadline.getHours()).padStart(2, "0");
+  const mi = String(deadline.getMinutes()).padStart(2, "0");
+  const dateTime = `${mm}.${dd} ${hh}:${mi}`;
+  const diffMs = deadline.getTime() - Date.now();
+  if (diffMs <= 0) return `마감 · ${dateTime}`;
+  return `D-${Math.ceil(diffMs / 86400000)} · ${dateTime}`;
+}
+
+// 신규(신규 입찰 없음)/진행중(내가 이미 응찰·추천, 아직 고객 선택 전 — 수정 가능)/마감(선정완료·마감) 3구분
+function deriveReqStatus(req: ShopBidRequestApi): ReqStatus {
+  if (req.status === "SELECTED" || req.status === "CLOSED") return "closed";
+  if (new Date(req.bidDeadline).getTime() <= Date.now()) return "closed";
+  if (req.myOffer || req.myPlan) return "active";
+  return "open";
+}
+
+/**
+ * GET /shops/me/bid-requests 응답 1건을 화면 표시용 BidReq로 변환(myOffer가 있으면 이미 제출한 입찰 — OPEN인 동안 수정 가능)
+ * carLabel은 apps/customer-app과 동일하게 CommonCodeDetail(CAR_BRAND/CAR_MODEL) 조회로 "벤츠 E-Class"처럼 라벨 변환하는 함수
+ */
+/** 시공 항목(instCode) + 부위/농도(TINT만)를 화면 표시용 RsvcItem[]으로 변환 — mapBidRequest·mapBidJob 공용 */
+export function mapRequestItems(
+  items: ShopBidRequestItemApi[],
+  positions: ShopBidRequestPositionApi[],
+): RsvcItem[] {
+  return items.map((it) => {
+    const name = INST_CODE_LABELS[it.instCode] ?? it.instCode;
+    if (it.instCode === "TINT" && positions.length) {
+      const posSummary = positions.map((p) => `${TINT_POS_LABELS[p.position] ?? p.position} ${p.level}%`).join(" · ");
+      const spec = it.productName ? `${it.productName} · ${posSummary}` : posSummary;
+      return { name, spec, instCode: it.instCode };
+    }
+    return { name, spec: it.productName ?? "", instCode: it.instCode };
+  });
+}
+
+export function mapBidRequest(req: ShopBidRequestApi, carLabel: (car: ShopBidRequestCarApi | null) => string | null): BidReq {
+  const items = mapRequestItems(req.items, req.positions);
+  const budgetLabel =
+    req.reqType === "EXPERT"
+      ? `${won(req.budget ?? 0)} 이하`
+      : `반경 ${req.radiusKm}km · 평점 ${req.minRating ? `${req.minRating.toFixed(1)}★ 이상` : "전체"}`;
+
+  return {
+    id: req.requestNo,
+    type: req.reqType === "EXPERT" ? "expert" : "general",
+    customer: req.customerName,
+    car: carLabel(req.car) ?? "-",
+    distance: "-", // 회원 위치 좌표 미보유로 실거리 계산 불가(반경 조건은 검색 조건 행에만 노출)
+    category: req.reqType === "EXPERT" ? items.map((it) => it.name).join(" · ") : undefined,
+    items,
+    budgetLabel,
+    deadlineLabel: formatDeadlineLabel(req.bidDeadline),
+    desiredDate: req.desiredDate,
+    status: deriveReqStatus(req),
+    myOffer: req.myOffer
+      ? {
+          prices: Object.fromEntries(req.myOffer.items.map((it) => [it.instCode, String(it.price)])),
+          time: req.myOffer.scheduledTime,
+          memo: req.myOffer.memo ?? "",
+        }
+      : undefined,
+    myPlan: req.myPlan
+      ? {
+          planNo: req.myPlan.planNo,
+          items: mapRequestItems(req.myPlan.items, req.myPlan.positions),
+          totalOffer: req.myPlan.items.reduce((sum, it) => sum + it.offerPrice, 0),
+          scheduledTime: req.myPlan.scheduledTime,
+          reason: req.myPlan.reason,
+        }
+      : undefined,
+    // 고객이 선택 완료(SELECTED)했고, 그 선택이 내가 제출한 응찰/추천안과 같으면 낙찰(picked)
+    picked:
+      req.status === "SELECTED" &&
+      ((!!req.myOffer && req.myOffer.offerNo === req.selectedOfferNo) ||
+        (!!req.myPlan && req.myPlan.planNo === req.selectedPlanNo)),
+  };
+}
+
+/** "YYYY-MM-DD" -> "8월 7일(금)" */
+export function formatDesiredDateLabel(desiredDate: string): string {
+  const d = new Date(`${desiredDate}T00:00:00`);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${d.getMonth() + 1}월 ${d.getDate()}일(${weekday})`;
+}
+
+const JOB_PROGRESS_LABELS: Record<string, RsvcJob["status"]> = {
+  APPLIED: "착수전",
+  IN_PROGRESS: "시공중",
+  DONE: "완료",
+};
+
+/** GET /shops/me/reservations/bids 응답 1건을 화면 표시용 RsvcJob으로 변환 */
+export function mapBidJob(job: BidJob, carLabel: (car: ShopBidRequestCarApi | null) => string | null): RsvcJob {
+  return {
+    id: job.reservationNo,
+    requestNo: job.requestNo,
+    customer: job.customerName,
+    car: carLabel(job.car) ?? "-",
+    vin: "-", // 예약시공(입찰) 요청엔 VIN 데이터가 없음(신차패키지와 달리 실물 차량 매핑이 없음)
+    status: JOB_PROGRESS_LABELS[job.progressStatus] ?? "착수전",
+    schedule: `${job.date.replace(/-/g, ".")} ${job.time}`,
+    items: mapRequestItems(job.items, job.positions),
     doneCheck: {},
     photos: [],
     memo: "",
     reschedStatus: "none",
     reschedReason: "",
     reschedDt: "",
-  },
-  {
-    id: "j2",
-    customer: "한도윤",
-    car: "제네시스 GV70 (2024)",
-    vin: "KMTXX00XXPU998877",
-    status: "시공중",
-    schedule: "2026.07.31 14:00",
-    items: [
-      { name: "PPF", spec: "후면부" },
-      { name: "유리막코팅", spec: "휠 전용" },
-    ],
-    doneCheck: { 0: true, 1: false },
-    photos: [],
-    memo: "",
-    reschedStatus: "none",
-    reschedReason: "",
-    reschedDt: "",
-  },
-];
-
-const CATALOG: Record<string, RsvcProduct[]> = {
-  "외장 디테일링": [
-    { id: "d1", name: "프리미엄 폴리싱 3단계", brand: "루페스", price: 280000 },
-    { id: "d2", name: "스탠다드 폴리싱", brand: "루페스", price: 180000 },
-  ],
-  유리막코팅: [
-    { id: "c1", name: "세라믹프로 9H", brand: "CeramicPro", price: 850000 },
-    { id: "c2", name: "글라스코트 프로", brand: "카닥", price: 520000 },
-    { id: "c3", name: "베이직 코팅", brand: "카닥", price: 320000 },
-  ],
-  "선루프 스티치": [
-    { id: "s1", name: "파노라마 풀 스티치", brand: "스티치랩", price: 480000 },
-    { id: "s2", name: "부분 스티치", brand: "스티치랩", price: 260000 },
-  ],
-  실내크리닝: [
-    { id: "i1", name: "풀케어 스팀 크리닝", brand: "카닥케어", price: 240000 },
-    { id: "i2", name: "베이직 케어", brand: "카닥케어", price: 140000 },
-  ],
-  "차량 랩핑": [
-    { id: "w1", name: "2080 무광 풀랩핑", brand: "3M", price: 1800000 },
-    { id: "w2", name: "부분 랩핑(보닛·루프)", brand: "3M", price: 900000 },
-  ],
-  틴팅: [
-    { id: "t1", name: "버텍스 300", brand: "루마", bkey: "luma", price: 600000 },
-    { id: "t2", name: "버텍스 TT", brand: "루마", bkey: "luma", price: 720000 },
-    { id: "t3", name: "브이쿨 K", brand: "V-Kool", bkey: "vcool", price: 850000 },
-    { id: "t4", name: "피니티", brand: "레이노", bkey: "rayno", price: 520000 },
-    { id: "t5", name: "크리스탈리", brand: "3M", bkey: "3m", price: 450000 },
-    { id: "t6", name: "스탠다드 펜더", brand: "글라스틴트", bkey: "glass", price: 300000 },
-  ],
-};
+  };
+}
 
 export const POS_NAMES = ["전면유리", "측면 1열", "측면 2열", "후면유리", "선루프"];
 
-export function products(name: string): RsvcProduct[] {
-  return CATALOG[name] ?? [{ id: "g1", name: "기본 시공", brand: "자체", price: 200000 }];
+/** 카탈로그(GET /products) 결과 3건 넘게 있으면 검색 화면으로, 아니면 드롭다운으로 바로 고르게 함 */
+export function searchable(products: RsvcProduct[]): boolean {
+  return products.length > 3;
 }
 
-export function searchable(name: string): boolean {
-  return products(name).length > 3;
-}
-
-export function hasPos(name: string): boolean {
-  return name === "틴팅";
+export function hasPos(instCode: string): boolean {
+  return instCode === "TINT";
 }
 
 export function won(n: number | string | undefined): string {
   return `${Number(n || 0).toLocaleString("ko-KR")}원`;
 }
 
-export function buildPlanDraft(req: BidReq): PlanLine[] {
-  return req.items.map((it) => {
-    const p = products(it.name)[0];
-    const posLevels: Record<string, string> = {};
-    if (hasPos(it.name)) POS_NAMES.forEach((n) => (posLevels[n] = "15"));
-    return {
-      name: it.name,
-      spec: it.spec,
-      productId: p.id,
-      offer: String(Math.round((p.price * 0.9) / 10000) * 10000),
-      posOff: {},
-      posLevels,
-      posBulk: false,
-    };
-  });
+/**
+ * 요청 항목별 실 카탈로그(productsByInstCode, instCode -> GET /products 결과)로 초안 추천 라인 생성.
+ * 카탈로그에 상품이 하나도 없는 항목은(실무상 발생하지 않아야 함 — 8개 CAR_INST 전부 최소 1개 이상 시딩됨) 제외한다.
+ */
+export function buildPlanDraft(req: BidReq, productsByInstCode: Record<string, RsvcProduct[]>): PlanLine[] {
+  return req.items
+    .filter((it) => it.instCode && (productsByInstCode[it.instCode]?.length ?? 0) > 0)
+    .map((it) => {
+      const instCode = it.instCode!;
+      const p = productsByInstCode[instCode][0];
+      const posLevels: Record<string, string> = {};
+      if (hasPos(instCode)) POS_NAMES.forEach((n) => (posLevels[n] = "15"));
+      return {
+        name: it.name,
+        instCode,
+        spec: it.spec,
+        productCode: p.productCode,
+        productName: p.name,
+        retailPrice: p.price,
+        offer: String(Math.round((p.price * 0.9) / 10000) * 10000),
+        posOff: {},
+        posLevels,
+        posBulk: false,
+      };
+    });
 }
 
 export function reqTypeLabel(type: ReqType): string {
@@ -211,13 +237,13 @@ export function reqInfoRows(req: BidReq): { k: string; v: string }[] {
   return req.type === "general"
     ? [
         { k: "요청 유형", v: "일반입찰" },
-        { k: "예산", v: req.budgetLabel.replace("예산 ", "") },
+        { k: "검색 조건", v: req.budgetLabel },
         { k: "마감", v: req.deadlineLabel },
       ]
     : [
         { k: "요청 유형", v: "전문가추천" },
         { k: "카테고리", v: req.category ?? "-" },
-        { k: "예산", v: req.budgetLabel.replace("예산 ", "") },
+        { k: "예산", v: req.budgetLabel },
         { k: "마감", v: req.deadlineLabel },
       ];
 }

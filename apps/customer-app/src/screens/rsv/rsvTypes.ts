@@ -27,7 +27,6 @@ export type RsvFlowKind = "gen" | "expert";
 export type ItemKey = "tint" | "ppf" | "blackbox" | "glass" | "under" | "detail";
 export type ProdItemKey = "blackbox" | "glass" | "ppf" | "under" | "detail";
 export type PayMethodKey = "bank" | "card";
-export type SortBidKey = "rating" | "price" | "dist";
 
 export interface ItemDef {
   key: ItemKey;
@@ -80,85 +79,75 @@ export const BRAND_DEFS: Array<[string, string]> = [
 
 export const CAT_DEFS = ["외장수리", "썬팅·틴팅", "유리막 코팅", "PPF", "블랙박스", "언더코팅", "광택·디테일링", "휠·타이어"];
 
+// 백엔드 CommonCodeDetail(code='CAR_INST') 코드값 매핑 — 일반입찰 항목(ItemKey)과 전문가추천 카테고리(CAT_DEFS)가
+// 같은 코드그룹을 공유한다(요청 생성 API 연동용)
+export const INST_CODE_BY_ITEM_KEY: Record<ItemKey, string> = {
+  tint: "TINT",
+  ppf: "PPF",
+  blackbox: "BBOX",
+  glass: "CCA",
+  under: "UCOAT",
+  detail: "CLEAN",
+};
+
+export const INST_CODE_BY_CAT_NAME: Record<string, string> = {
+  "외장수리": "EXTREP",
+  "썬팅·틴팅": "TINT",
+  "유리막 코팅": "CCA",
+  PPF: "PPF",
+  "블랙박스": "BBOX",
+  "언더코팅": "UCOAT",
+  "광택·디테일링": "CLEAN",
+  "휠·타이어": "WHTIRE",
+};
+
+// TINT_POSITIONS(commonTypes.ts) 한글 부위명 -> CommonCodeDetail(code='BID_TINT_POSITION') 코드값
+export const TINT_POSITION_TO_CODE: Record<string, string> = {
+  "전면유리": "FRONT",
+  "측면 1열": "SIDE_1",
+  "측면 2열": "SIDE_2",
+  "후면유리": "REAR",
+  "선루프": "SUNROOF",
+};
+
+// CommonCodeDetail(code='BID_TINT_POSITION') 코드값 -> 한글 부위명(위 매핑의 역방향, 입찰 내용 상세의 제품 상세 화면 표시용)
+export const TINT_POSITION_LABELS: Record<string, string> = {
+  FRONT: "전면유리",
+  SIDE_1: "측면 1열",
+  SIDE_2: "측면 2열",
+  REAR: "후면유리",
+  SUNROOF: "선루프",
+};
+
+// instCode -> 한글 라벨(내 요청 목록 카드 표시용, 위 매핑의 역방향)
+export const INST_CODE_LABELS: Record<string, string> = {
+  TINT: "썬팅·틴팅",
+  PPF: "PPF",
+  BBOX: "블랙박스",
+  CCA: "유리막 코팅",
+  UCOAT: "언더코팅",
+  CLEAN: "광택·디테일링",
+  EXTREP: "외장수리",
+  WHTIRE: "휠·타이어",
+};
+
+// id는 응찰번호(offerNo), when은 시공 예정 시각 라벨(예: "8월 7일(금) 14:00") — 평점·거리는 DB에 리뷰/좌표 데이터가 없어 미표시
 export interface Bidder {
   id: string;
   name: string;
-  rating: string;
-  dist: string;
   when: string;
-  best?: boolean;
   items: Array<[string, number]>;
 }
 
-export const BIDDERS: Bidder[] = [
-  {
-    id: "b1",
-    name: "강남 카프로 디테일링",
-    rating: "4.9",
-    dist: "2.3km",
-    when: "이번 주말 가능",
-    best: true,
-    items: [
-      ["썬팅 · 루마 버텍스 300", 380000],
-      ["블랙박스 · 아이나비 QXD3000", 260000],
-    ],
-  },
-  {
-    id: "b2",
-    name: "서초 오토스타일",
-    rating: "4.7",
-    dist: "4.1km",
-    when: "다음 주 평일",
-    items: [
-      ["썬팅 · 루마 버텍스 300", 410000],
-      ["블랙박스 · 아이나비 QXD3000", 285000],
-    ],
-  },
-  {
-    id: "b3",
-    name: "프리미엄 카케어 방배",
-    rating: "4.8",
-    dist: "5.6km",
-    when: "가장 빠른 날",
-    items: [
-      ["썬팅 · 루마 버텍스 300", 430000],
-      ["블랙박스 · 아이나비 QXD3000", 290000],
-    ],
-  },
-];
-
+// id는 추천번호(planNo), when은 시공 예정 시각 라벨 — 평점·거리는 DB에 리뷰/좌표 데이터가 없어 Bidder와 동일하게 미표시
 export interface RecoPlan {
   id: string;
   name: string;
-  rating: string;
-  dist: string;
-  product: string;
+  itemSummary: string; // "유리막 코팅" 또는 "유리막 코팅 외 1건" — 추천 상품 구성 요약
   reason: string;
+  when: string;
   plans: Array<[string, number, number]>; // [상품명, 소비자가, 제안가]
 }
-
-export const RECOS: RecoPlan[] = [
-  {
-    id: "r1",
-    name: "카닥 프리미엄 파트너",
-    rating: "4.9",
-    dist: "3.2km",
-    product: "유리막 코팅 · 게코 9H 프리미엄",
-    reason:
-      "수입차 순정 도장에 최적화된 9H 세라믹으로, 예산 안에서 가장 높은 경도·내구 등급을 추천드려요. 2년 유지관리 방문 1회가 포함된 구성이에요.",
-    plans: [["게코 9H 프리미엄 코팅", 360000, 280000]],
-  },
-  {
-    id: "r2",
-    name: "광택명가 디테일링",
-    rating: "4.6",
-    dist: "6.8km",
-    product: "유리막 코팅 · 크리스탈 세라믹 2년",
-    reason:
-      "가성비 위주로 2년 보증 제품을 구성했어요. 생활 스크래치 커버와 발수 지속성이 우수한 스탠다드 등급이에요.",
-    plans: [["크리스탈 세라믹 2년 코팅", 300000, 230000]],
-  },
-];
 
 export interface CouponDef {
   id: string;

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx ts-node *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"3000: %{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(lsof -nP -iTCP:3000 -sTCP:LISTEN)",
+      "Read(//private/tmp/**)",
+      "Bash(ps -p 3180 -o lstart=,etime=)",
+      "Bash(grep -n \"PartnerBidRequestsController\\\\|shops/me/bid-requests\" /tmp/api-dev.log | tail -10 *)"
+    ]
+  }
+}

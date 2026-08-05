@@ -2,8 +2,13 @@
 // 신차패키지·예약시공 등 여러 채널에서 공통으로 쓰는 화면. 신차패키지는 시공 정보 요약 카드(차량·VIN·품목)를 함께 보여준다.
 import Button from "../../components/ui/Button";
 import CommonHeader from "./CommonHeader";
-import { WarnIcon } from "./commonIcons";
+import { WarnIcon, StarIcon } from "./commonIcons";
 import type { HandoverStatus } from "./commonTypes";
+
+export interface WrittenReview {
+  rating: number;
+  content: string;
+}
 
 export interface VehicleSummaryItem {
   name: string;
@@ -24,6 +29,8 @@ interface CstDoneHandoverScreenProps {
   vehicleSummary?: VehicleSummary;
   /** 파트너가 완료 등록 시 첨부한 시공 사진의 실제 URL 목록 */
   photos: string[];
+  /** 이미 작성된 후기 — 있으면 후기 작성 버튼 대신 별점·내용을 그대로 보여줌 */
+  review?: WrittenReview | null;
   loading?: boolean;
   confirming?: boolean;
   onBack: () => void;
@@ -36,6 +43,7 @@ export default function CstDoneHandoverScreen({
   handover,
   vehicleSummary,
   photos,
+  review,
   loading = false,
   confirming = false,
   onBack,
@@ -122,9 +130,22 @@ export default function CstDoneHandoverScreen({
       </div>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-6">
-        <Button size="xl" disabled={confirming} onClick={onConfirmHandover}>
-          {confirming ? "처리 중..." : done ? "후기 작성하기" : "인수 확인하기"}
-        </Button>
+        {done && review ? (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5">
+            <div className="mb-1.5 flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <StarIcon key={n} color={n <= review.rating ? "var(--color-accent)" : "var(--gray-200)"} />
+              ))}
+            </div>
+            <div className="text-[13px] leading-relaxed whitespace-pre-wrap text-gray-700">
+              {review.content || "작성된 후기 내용이 없어요"}
+            </div>
+          </div>
+        ) : (
+          <Button size="xl" disabled={confirming} onClick={onConfirmHandover}>
+            {confirming ? "처리 중..." : done ? "후기 작성하기" : "인수 확인하기"}
+          </Button>
+        )}
       </div>
     </div>
   );

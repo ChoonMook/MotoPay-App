@@ -153,7 +153,7 @@ export default function RsvcDoneScreen({
       </div>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-[22px]">
-        <Button disabled={!allChecked} onClick={onConfirm}>
+        <Button disabled={!allChecked || job.photos.length < 3} onClick={onConfirm}>
           완료 처리하고 인수확인 요청
         </Button>
       </div>

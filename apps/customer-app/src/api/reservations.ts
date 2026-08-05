@@ -1,5 +1,6 @@
-// apps/api의 예약 생성/조회/취소/일정변경/시공완료·인수확인
-// (POST /reservations, GET /reservations/me, PATCH /reservations/:id/cancel|reschedule, GET/PATCH /reservations/:id/handover*) 호출 — 로그인 필요
+// apps/api의 예약 생성/조회/취소/일정변경/시공완료·인수확인/후기
+// (POST /reservations, GET /reservations/me, PATCH /reservations/:id/cancel|reschedule, GET/PATCH /reservations/:id/handover*,
+// GET/POST /reservations/:id/review) 호출 — 로그인 필요
 import { authedRequest } from "./http";
 
 export interface ReservationApi {
@@ -19,6 +20,7 @@ export interface ReservationApi {
   completionMemo: string | null;
   completedAt: string | null; // progressStatus가 DONE으로 바뀐 시점
   handoverConfirmedAt: string | null; // 고객이 인수확인했거나(또는 completedAt+3일 경과로 자동확정된) 시점
+  requestNo: string | null; // reservationType='BID'인 건만 값 존재 -> BidRequestApi.requestNo
   createdAt: string;
   updatedAt: string;
 }
@@ -79,4 +81,27 @@ export function getHandoverDetail(id: number): Promise<HandoverDetail> {
 /** 인수확인 — 시공완료 상태에서 1회만 가능 */
 export function confirmHandover(id: number): Promise<void> {
   return authedRequest<void>(`/reservations/${id}/handover-confirm`, { method: "PATCH" });
+}
+
+export interface ReviewApi {
+  rating: number;
+  content: string;
+  photos: string[]; // uploads/ 기준 상대경로
+  createdAt: string;
+}
+
+export interface CreateReviewInput {
+  rating: number;
+  content: string;
+  photos?: string[]; // data URI(base64) 목록
+}
+
+/** 후기 조회(CU-RSVC-17) — 작성한 후기가 없으면 null */
+export function getReview(id: number): Promise<ReviewApi | null> {
+  return authedRequest<{ review: ReviewApi | null }>(`/reservations/${id}/review`).then((res) => res.review);
+}
+
+/** 후기 등록 — 시공완료 상태에서 예약당 1회만 가능 */
+export function createReview(id: number, input: CreateReviewInput): Promise<ReviewApi> {
+  return authedRequest<ReviewApi>(`/reservations/${id}/review`, { method: "POST", body: JSON.stringify(input) });
 }

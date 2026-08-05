@@ -12,13 +12,14 @@ const TAB_META: { key: BidTab; label: string; match: ReqStatus }[] = [
 
 interface RsvcBidboxScreenProps {
   reqs: BidReq[];
+  loading: boolean;
   tab: BidTab;
   onChangeTab: (tab: BidTab) => void;
   onBack: () => void;
   onOpenReq: (req: BidReq) => void;
 }
 
-export default function RsvcBidboxScreen({ reqs, tab, onChangeTab, onBack, onOpenReq }: RsvcBidboxScreenProps) {
+export default function RsvcBidboxScreen({ reqs, loading, tab, onChangeTab, onBack, onOpenReq }: RsvcBidboxScreenProps) {
   const list = reqs.filter((r) => r.status === TAB_META.find((t) => t.key === tab)!.match);
 
   return (
@@ -50,7 +51,9 @@ export default function RsvcBidboxScreen({ reqs, tab, onChangeTab, onBack, onOpe
       </div>
 
       <div className="mp-scroll flex-1 overflow-y-auto px-[18px] py-4">
-        {list.length === 0 ? (
+        {loading ? (
+          <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
+        ) : list.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 shadow-sm">
             해당하는 요청이 없어요
           </div>

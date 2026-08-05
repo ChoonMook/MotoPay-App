@@ -1,84 +1,46 @@
-// CU-RSVC-10: 입찰 업체 비교(일반) - 응찰 업체 견적가·평점·거리 비교, 정렬. 카드 탭 시 입찰 내용 상세로 이동
+// CU-RSVC-10: 입찰 업체 비교(일반) - 응찰 업체 항목별 견적 비교(견적가순 고정 정렬). 카드 탭 시 입찰 내용 상세로 이동
+// 평점·거리는 DB에 리뷰/좌표 데이터가 없어 미표시(정렬 옵션도 견적가 하나뿐이라 정렬 UI 자체를 제거)
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import Button from "../../components/ui/Button";
-import { ClockIcon, StarIcon, CircleXIcon } from "./rsvIcons";
-import { BIDDERS, type SortBidKey } from "./rsvTypes";
+import { ClockIcon, CircleXIcon } from "./rsvIcons";
+import type { Bidder } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
-
-const SORT_DEFS: Array<[SortBidKey, string]> = [
-  ["rating", "평점순"],
-  ["price", "견적가순"],
-  ["dist", "거리순"],
-];
 
 function bidTotal(items: Array<[string, number]>) {
   return items.reduce((s, [, p]) => s + p, 0);
 }
 
 interface BidCoCmpGenScreenProps {
-  emptyDemo: boolean;
-  onToggleEmpty: () => void;
-  sortBid: SortBidKey;
-  onSortChange: (key: SortBidKey) => void;
+  bidders: Bidder[];
+  loading: boolean;
   onSelectBid: (id: string) => void;
   onReRequest: () => void;
   onBack: () => void;
 }
 
-export default function BidCoCmpGenScreen({ emptyDemo, onToggleEmpty, sortBid, onSortChange, onSelectBid, onReRequest, onBack }: BidCoCmpGenScreenProps) {
-  const sorted = [...BIDDERS].sort((a, b) => {
-    if (sortBid === "rating") return parseFloat(b.rating) - parseFloat(a.rating);
-    if (sortBid === "price") return bidTotal(a.items) - bidTotal(b.items);
-    return parseFloat(a.dist) - parseFloat(b.dist);
-  });
+export default function BidCoCmpGenScreen({ bidders, loading, onSelectBid, onReRequest, onBack }: BidCoCmpGenScreenProps) {
+  const sorted = [...bidders].sort((a, b) => bidTotal(a.items) - bidTotal(b.items));
+  const lowestTotal = sorted.length ? bidTotal(sorted[0].items) : 0;
+  const showEmpty = !loading && sorted.length === 0;
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <RsvHeader title="입찰 업체 비교" onBack={onBack} />
 
       <div className="flex-none border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
-            <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">
-              <ClockIcon />
-            </span>
-            입찰 진행중 · 마감 D-1
+        <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
+          <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">
+            <ClockIcon />
           </span>
-          <span
-            onClick={onToggleEmpty}
-            className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-[5px] text-[11px] font-extrabold ${
-              emptyDemo ? "bg-accent text-white" : "bg-white text-gray-600 ring-1 ring-gray-400 ring-inset"
-            }`}
-          >
-            {emptyDemo ? "정상 상태로" : "응찰 0건 미리보기"}
-          </span>
-        </div>
+          입찰 진행중 · 마감 D-1
+        </span>
       </div>
 
-      {!emptyDemo && (
-        <div className="flex-none border-b border-gray-100 bg-white px-5 py-3">
-          <div className="flex gap-[7px]">
-            {SORT_DEFS.map(([k, label]) => {
-              const on = sortBid === k;
-              return (
-                <span
-                  key={k}
-                  onClick={() => onSortChange(k)}
-                  className={`cursor-pointer rounded-full px-3.5 py-[7px] text-[12.5px] ${
-                    on ? "bg-brand font-extrabold text-white" : "bg-gray-100 font-semibold text-gray-600"
-                  }`}
-                >
-                  {label}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-4 pb-6">
-        {emptyDemo ? (
+        {loading ? (
+          <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
+        ) : showEmpty ? (
           <div className="flex flex-col items-center gap-3 px-6 pt-11 pb-5 text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-subtle text-accent-strong">
               <CircleXIcon />
@@ -102,6 +64,7 @@ export default function BidCoCmpGenScreen({ emptyDemo, onToggleEmpty, sortBid, o
           <div className="flex flex-col gap-3">
             {sorted.map((b) => {
               const total = bidTotal(b.items);
+              const best = total === lowestTotal;
               return (
                 <div key={b.id} onClick={() => onSelectBid(b.id)} className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-[15px] shadow-sm">
                   <div className="flex items-center gap-2.5">
@@ -111,15 +74,9 @@ export default function BidCoCmpGenScreen({ emptyDemo, onToggleEmpty, sortBid, o
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[14.5px] font-extrabold text-gray-900">{b.name}</span>
-                        {b.best && <span className="flex-none rounded bg-accent-subtle px-1.5 py-0.5 text-[9.5px] font-extrabold text-accent-strong">최저가</span>}
+                        {best && <span className="flex-none rounded bg-accent-subtle px-1.5 py-0.5 text-[9.5px] font-extrabold text-accent-strong">최저가</span>}
                       </div>
-                      <div className="mt-[3px] flex items-center gap-1.5 text-[11.5px] text-gray-600">
-                        <StarIcon color="var(--color-accent)" />
-                        <span className="font-bold">{b.rating}</span>
-                        <span className="text-gray-500">
-                          · {b.dist} · {b.when}
-                        </span>
-                      </div>
+                      <div className="mt-[3px] text-[11.5px] text-gray-500">{b.when}</div>
                     </div>
                   </div>
                   <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3">

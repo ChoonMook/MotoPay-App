@@ -46,6 +46,16 @@ const SUPPLIER_TINT_BLACKBOX_PRODUCTS: ProductSeed[] = [
   { prodType: 'SVC', brand: 'FINEVU', name: '파인뷰 X1000', prodCat: 'BBOX', price: 359000, supplyPrice: 210000 },
 ];
 
+// 예약시공(입찰) 전문가추천 상품카탈로그용 — 기존 PROD_CAT에 대응 상품이 전혀 없던 실내크리닝/언더코팅/외장수리 시공서비스
+const EXPERT_PLAN_CATALOG_PRODUCTS: ProductSeed[] = [
+  { prodType: 'SVC', brand: 'CARCARE', name: '실내 스팀 크리닝', prodCat: 'CLEAN', price: 150000, supplyPrice: 90000 },
+  { prodType: 'SVC', brand: 'CARCARE', name: '가죽시트 클리닝+코팅', prodCat: 'CLEAN', price: 280000, supplyPrice: 170000 },
+  { prodType: 'SVC', brand: 'RUSTX', name: '방청 언더코팅(일반)', prodCat: 'UCOAT', price: 180000, supplyPrice: 110000 },
+  { prodType: 'SVC', brand: 'RUSTX', name: '방청 언더코팅(프리미엄)', prodCat: 'UCOAT', price: 320000, supplyPrice: 200000 },
+  { prodType: 'SVC', brand: 'BODYFIX', name: '외장 판금·도색(부분)', prodCat: 'EXTREP', price: 450000, supplyPrice: 280000 },
+  { prodType: 'SVC', brand: 'BODYFIX', name: '범퍼 흠집 보수', prodCat: 'EXTREP', price: 220000, supplyPrice: 140000 },
+];
+
 // KCC오토 전용 패키지 상품 — 가격은 별도 패키지 할인 없이 구성상품 소비자가/공급가 합산
 const KCC_PACKAGES: ProductSeed[] = [
   // 구성: 글라스틴트 펜더(0000000009) — 300000/180000 그대로
@@ -145,6 +155,7 @@ async function main() {
     ...SUPPLIER_TINT_BLACKBOX_PRODUCTS,
     ...KCC_PACKAGES,
     ...ADD_OPTION_PRODUCTS,
+    ...EXPERT_PLAN_CATALOG_PRODUCTS,
   ];
   for (const p of all) {
     await seedProduct(p);

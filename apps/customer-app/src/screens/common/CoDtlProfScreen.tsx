@@ -65,10 +65,15 @@ export default function CoDtlProfScreen({
         <div className="px-5 pt-[18px] pb-6">
           <div className="text-[19px] font-extrabold text-gray-900">{name}</div>
           <div className="mt-1.5 flex items-center gap-1.5">
-            <StarIcon color="var(--color-accent)" />
-            <span className="text-[13.5px] font-extrabold text-gray-900">{rating}</span>
+            {rating && (
+              <>
+                <StarIcon color="var(--color-accent)" />
+                <span className="text-[13.5px] font-extrabold text-gray-900">{rating}</span>
+              </>
+            )}
             <span className="text-[12.5px] text-gray-500">
-              후기 {reviewCount} · {dist}
+              후기 {reviewCount}
+              {dist ? ` · ${dist}` : ""}
             </span>
           </div>
           <div className="mt-3.5 rounded-xl bg-brand-subtle px-[15px] py-3.5 text-[13px] leading-[1.55] text-gray-600">

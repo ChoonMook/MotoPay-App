@@ -7,8 +7,14 @@ import carImg from "../../assets/images/car.png";
 import shopThumb from "../../assets/images/shop.png";
 import zicM7 from "../../assets/images/zic-m7.png";
 import { listMyCars } from "../../api/cars";
-import { listMyReservations } from "../../api/reservations";
+import { listMyReservations, type ReservationApi } from "../../api/reservations";
 import { listShops } from "../../api/shops";
+import { listMyBidRequests } from "../../api/bidRequests";
+import { getBidOffers } from "../../api/bidOffers";
+import { getBidPlans } from "../../api/bidPlans";
+import { INST_CODE_LABELS } from "../rsv/rsvTypes";
+import type { ReqStatusFilter } from "../rsv/BookingScreen";
+import { nfmt } from "../rsv/rsvFormat";
 import {
   NavHomeIcon,
   NavResvIcon,
@@ -29,32 +35,60 @@ interface NcpkBooking {
   done: boolean;
 }
 
-interface Quote {
-  name: string;
-  official: boolean;
-  rating: string;
-  dist: string;
-  price: string;
+// CU-HOME-01 견적 도착 카드 — BidOffer에는 업체명·항목별 가격만 있어(평점·거리·공식업체 데이터 없음) 그 둘만 표시
+interface QuotePreview {
+  shopName: string;
+  price: number;
 }
 
-const QUOTES: Quote[] = [
-  { name: "강남 오토바디", official: true, rating: "4.9", dist: "2.1km", price: "1,240,000" },
-  { name: "역삼 카케어", official: false, rating: "4.8", dist: "3.4km", price: "1,090,000" },
-  { name: "서초 바디샵", official: false, rating: "4.7", dist: "4.0km", price: "980,000" },
-];
+interface BidQuoteCard {
+  itemSummaryLabel: string;
+  offerCount: number;
+  elapsedHours: number;
+  quotes: QuotePreview[];
+}
+
+// CU-HOME-01 예약시공 진행현황 카드 — 파트너앱이 기록하는 progressStatus를 4단계 스텝으로 환산(NcpkFlow.tsx의 bookingCur와 동일 기준)
+interface BidProgressCard {
+  shopName: string;
+  itemSummaryLabel: string;
+  dateLabel: string;
+  progressStatus: string;
+}
+
+const RESV_STEP_LABELS = ["예약", "방문", "시공중", "완료"];
+const RESV_STEP_CHIP_LABELS: Record<string, string> = {
+  APPLIED: "방문 예정",
+  IN_PROGRESS: "시공 중",
+  DONE: "시공 완료",
+};
+
+function resvStepCur(progressStatus: string): number {
+  if (progressStatus === "DONE") return 3;
+  if (progressStatus === "IN_PROGRESS") return 2;
+  return 1;
+}
+
+// 시공완료(DONE)인데 아직 인수확인이 안 된 건은 3일 내 고객 액션이 필요해 다른 예약보다 항상 먼저 노출한다(신차패키지 배너와 동일 기준)
+function bidHandoverState(r: ReservationApi): "pending" | "active" | "closed" {
+  if (r.progressStatus !== "DONE") return "active";
+  const autoConfirmed =
+    !!r.completedAt && Date.now() - new Date(r.completedAt).getTime() >= 3 * 24 * 60 * 60 * 1000;
+  return r.handoverConfirmedAt || autoConfirmed ? "closed" : "pending";
+}
+
+// 시공 항목 목록 -> "틴팅 외 2건" 형식(RsvFlow.tsx의 regRows 요약 로직과 동일 패턴)
+function itemSummaryLabel(items: { instCode: string }[]): string {
+  if (items.length === 0) return "-";
+  const names = items.map((it) => INST_CODE_LABELS[it.instCode] ?? it.instCode);
+  return names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : names[0];
+}
 
 const QUICK_MENU = [
   { key: "point", label: "포인트", icon: <PointIcon /> },
   { key: "coupon", label: "쿠폰함", icon: <CouponIcon /> },
   { key: "order", label: "주문내역", icon: <PayIcon /> },
   { key: "cs", label: "고객센터", icon: <CsIcon /> },
-];
-
-const RESV_STEPS = [
-  { label: "예약", done: true, cur: false },
-  { label: "방문", done: true, cur: false },
-  { label: "시공중", done: false, cur: true },
-  { label: "완료", done: false, cur: false },
 ];
 
 const NAV_ITEMS = [
@@ -69,7 +103,7 @@ interface HomeScreenProps {
   onOpenNcpk: () => void;
   onOpenNcpkHandover: () => void;
   onOpenNcpkBookingDtl: () => void;
-  onOpenRsv: () => void;
+  onOpenRsv: (filter?: ReqStatusFilter) => void;
   onOpenPoint: () => void;
   onOpenShop: () => void;
   onOpenMyPage: () => void;
@@ -98,9 +132,13 @@ export default function HomeScreen({
   const [hasEligiblePackage, setHasEligiblePackage] = useState(false);
   const [ncpkBooking, setNcpkBooking] = useState<NcpkBooking | null>(null);
 
+  // CU-HOME-01 견적 도착·예약시공 진행현황 — 예약시공(입찰) 요청·응찰·예약 데이터로 조합
+  const [bidQuote, setBidQuote] = useState<BidQuoteCard | null>(null);
+  const [bidProgress, setBidProgress] = useState<BidProgressCard | null>(null);
+
   useEffect(() => {
-    Promise.all([listMyCars(), listMyReservations(), listShops()])
-      .then(([cars, reservations, shops]) => {
+    Promise.all([listMyCars(), listMyReservations(), listShops(), listMyBidRequests()])
+      .then(([cars, reservations, shops, bidRequests]) => {
         const defaultCar = cars.find((c) => c.isDefault) ?? cars[0];
 
         const activePkgRes = reservations
@@ -109,29 +147,79 @@ export default function HomeScreen({
         if (!activePkgRes) {
           setHasEligiblePackage(!!defaultCar?.packageCode);
           setNcpkBooking(null);
-          return;
+        } else {
+          // 인수확인까지 끝난 예약이면 더 안내할 게 없으니 배너·카드 모두 노출하지 않음(3일 미확인 자동확정도 반영)
+          const autoConfirmed =
+            !!activePkgRes.completedAt &&
+            Date.now() - new Date(activePkgRes.completedAt).getTime() >= 3 * 24 * 60 * 60 * 1000;
+          const handoverClosed =
+            activePkgRes.progressStatus === "DONE" && (!!activePkgRes.handoverConfirmedAt || autoConfirmed);
+          if (handoverClosed) {
+            setHasEligiblePackage(false);
+            setNcpkBooking(null);
+          } else {
+            setHasEligiblePackage(!!defaultCar?.packageCode);
+            const [y, m, d] = activePkgRes.date.split("-").map(Number);
+            const wd = WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()];
+            setNcpkBooking({
+              shopName: shops.find((s) => s.shopCode === activePkgRes.shopCode)?.name ?? "선정 업체",
+              dateLabel: `${activePkgRes.date.replaceAll("-", ".")}(${wd}) ${activePkgRes.time}`,
+              done: activePkgRes.progressStatus === "DONE",
+            });
+          }
         }
 
-        // 인수확인까지 끝난 예약이면 더 안내할 게 없으니 배너·카드 모두 노출하지 않음(3일 미확인 자동확정도 반영)
-        const autoConfirmed =
-          !!activePkgRes.completedAt &&
-          Date.now() - new Date(activePkgRes.completedAt).getTime() >= 3 * 24 * 60 * 60 * 1000;
-        const handoverClosed =
-          activePkgRes.progressStatus === "DONE" && (!!activePkgRes.handoverConfirmedAt || autoConfirmed);
-        if (handoverClosed) {
-          setHasEligiblePackage(false);
-          setNcpkBooking(null);
-          return;
-        }
+        // 견적 도착 카드 — 아직 업체를 선택하지 않은 요청(일반입찰/전문가추천 공용) 전체를 대상으로, 실제 응찰·추천안이
+        // 도착한 것 중 가장 최근 요청을 찾는다(가장 최근 요청이라도 아직 응찰이 없으면 그보다 이전 요청을 대신 보여줘야 함)
+        const openRequests = bidRequests
+          .filter((r) => r.status === "OPEN")
+          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        const fetchQuoteFor = (request: (typeof openRequests)[number]): Promise<BidQuoteCard | null> => {
+          const elapsedHours = Math.max(0, Math.floor((Date.now() - new Date(request.createdAt).getTime()) / 3600000));
+          const build = (offerCount: number, quotes: QuotePreview[]): BidQuoteCard | null =>
+            offerCount === 0 ? null : { itemSummaryLabel: itemSummaryLabel(request.items), offerCount, elapsedHours, quotes };
+          return request.reqType === "GENERAL"
+            ? getBidOffers(request.id).then((offers) =>
+                build(
+                  offers.length,
+                  offers
+                    .map((o) => ({ shopName: o.shopName, price: o.items.reduce((sum, it) => sum + it.price, 0) }))
+                    .sort((a, b) => a.price - b.price)
+                    .slice(0, 3),
+                ),
+              )
+            : getBidPlans(request.id).then((plans) =>
+                build(
+                  plans.length,
+                  plans
+                    .map((p) => ({ shopName: p.shopName, price: p.items.reduce((sum, it) => sum + it.offerPrice, 0) }))
+                    .sort((a, b) => a.price - b.price)
+                    .slice(0, 3),
+                ),
+              );
+        };
+        Promise.all(openRequests.map(fetchQuoteFor))
+          .then((results) => setBidQuote(results.find((r) => r !== null) ?? null))
+          .catch((err) => showToast(err instanceof Error ? err.message : "견적 현황을 불러오지 못했어요", "danger"));
 
-        setHasEligiblePackage(!!defaultCar?.packageCode);
-        const [y, m, d] = activePkgRes.date.split("-").map(Number);
-        const wd = WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()];
-        setNcpkBooking({
-          shopName: shops.find((s) => s.shopCode === activePkgRes.shopCode)?.name ?? "선정 업체",
-          dateLabel: `${activePkgRes.date.replaceAll("-", ".")}(${wd}) ${activePkgRes.time}`,
-          done: activePkgRes.progressStatus === "DONE",
-        });
+        // 예약시공 진행현황 카드 — 낙찰 확정된 예약(BID) 중 인수확인 대기 건을 최우선으로(3일 내 액션 필요),
+        // 없으면 나머지(방문예정·시공중) 중 가장 최근 것. 인수확인까지 끝난 건은 완전히 제외
+        const byDateDesc = (a: ReservationApi, b: ReservationApi) => (a.date < b.date ? 1 : -1);
+        const bidReservations = reservations.filter((r) => r.reservationType === "BID" && r.status === "CONFIRMED");
+        const activeBidRes =
+          bidReservations.filter((r) => bidHandoverState(r) === "pending").sort(byDateDesc)[0] ??
+          bidReservations.filter((r) => bidHandoverState(r) === "active").sort(byDateDesc)[0];
+        if (!activeBidRes) {
+          setBidProgress(null);
+        } else {
+          const matchedRequest = bidRequests.find((r) => r.requestNo === activeBidRes.requestNo);
+          setBidProgress({
+            shopName: shops.find((s) => s.shopCode === activeBidRes.shopCode)?.name ?? "선정 업체",
+            itemSummaryLabel: matchedRequest ? itemSummaryLabel(matchedRequest.items) : "-",
+            dateLabel: `${activeBidRes.date.replaceAll("-", ".")} ${activeBidRes.time}`,
+            progressStatus: activeBidRes.progressStatus,
+          });
+        }
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 정보를 불러오지 못했어요", "danger"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -249,54 +337,48 @@ export default function HomeScreen({
             </div>
           ))}
 
-        <div
-          className="mt-3 rounded-2xl border border-gray-200 bg-white p-[18px] shadow-sm"
-          style={{ animation: "mp-fade .3s ease" }}
-        >
-          <div className="mb-1 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-accent" />
-            <span className="text-xs font-extrabold text-accent-strong">견적 도착 · 외장수리</span>
-          </div>
-          <div className="text-lg font-extrabold tracking-tight text-gray-900">
-            업체 <span className="text-brand">3곳</span>의 견적서가 도착했어요
-          </div>
-          <div className="mt-[5px] mb-3.5 text-[13px] text-gray-600">틴팅 외2 · 요청 후 6시간 경과</div>
-          <div className="mb-3.5 flex flex-col gap-2">
-            {QUOTES.map((q, i) => (
-              <div
-                key={q.name}
-                onClick={() => showToast(`${q.name} 견적서를 확인해요`)}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-2.5 py-[9px] ${
-                  i === 0 ? "border-brand bg-brand-subtle" : "border-gray-200 bg-white"
-                }`}
-              >
-                <span className="h-9 w-9 flex-none overflow-hidden rounded-[10px] bg-gray-100">
-                  <img src={shopThumb} alt={q.name} className="block h-full w-full object-cover" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[13.5px] font-bold text-gray-900">{q.name}</span>
-                    {q.official && (
-                      <span className="rounded bg-brand-subtle px-[5px] py-[1.5px] text-[9.5px] font-extrabold text-brand">
-                        공식
-                      </span>
-                    )}
+        {bidQuote && (
+          <div
+            className="mt-3 rounded-2xl border border-gray-200 bg-white p-[18px] shadow-sm"
+            style={{ animation: "mp-fade .3s ease" }}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-accent" />
+              <span className="text-xs font-extrabold text-accent-strong">견적 도착 · {bidQuote.itemSummaryLabel}</span>
+            </div>
+            <div className="text-lg font-extrabold tracking-tight text-gray-900">
+              업체 <span className="text-brand">{bidQuote.offerCount}곳</span>의 견적서가 도착했어요
+            </div>
+            <div className="mt-[5px] mb-3.5 text-[13px] text-gray-600">
+              {bidQuote.itemSummaryLabel} · 요청 후 {bidQuote.elapsedHours}시간 경과
+            </div>
+            <div className="mb-3.5 flex flex-col gap-2">
+              {bidQuote.quotes.map((q, i) => (
+                <div
+                  key={q.shopName}
+                  onClick={() => onOpenRsv()}
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-2.5 py-[9px] ${
+                    i === 0 ? "border-brand bg-brand-subtle" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <span className="h-9 w-9 flex-none overflow-hidden rounded-[10px] bg-gray-100">
+                    <img src={shopThumb} alt={q.shopName} className="block h-full w-full object-cover" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="truncate text-[13.5px] font-bold text-gray-900">{q.shopName}</span>
                   </div>
-                  <div className="mt-px text-[11.5px] text-gray-500">
-                    ★ {q.rating} · {q.dist}
-                  </div>
+                  <span className="text-[15px] font-extrabold tracking-tight text-gray-900 tabular-nums">
+                    {nfmt(q.price)}
+                    <span className="text-[11px] font-semibold">원</span>
+                  </span>
                 </div>
-                <span className="text-[15px] font-extrabold tracking-tight text-gray-900 tabular-nums">
-                  {q.price}
-                  <span className="text-[11px] font-semibold">원</span>
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <Button size="lg" onClick={() => onOpenRsv()}>
+              견적 {bidQuote.offerCount}곳 비교하기
+            </Button>
           </div>
-          <Button size="lg" onClick={() => showToast("업체 3곳 견적 비교 화면으로 이동해요")}>
-            견적 3곳 비교하기
-          </Button>
-        </div>
+        )}
 
         {/* ===== quick menu ===== */}
         <div className="mt-5 grid grid-cols-4 gap-1.5">
@@ -323,64 +405,65 @@ export default function HomeScreen({
         </div>
 
         {/* ===== 예약시공 진행현황 ===== */}
-        <div className="mx-0.5 mt-6 mb-2.5 flex items-center justify-between">
-          <span className="text-base font-extrabold tracking-tight text-gray-900">예약시공 진행현황</span>
-          <span
-            onClick={() => showToast("예약시공 전체 목록으로 이동해요")}
-            className="cursor-pointer text-[12.5px] text-gray-500"
-          >
-            전체보기 ›
-          </span>
-        </div>
-        <div
-          onClick={() => showToast("예약시공 상세로 이동해요")}
-          className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-[18px] shadow-sm"
-        >
-          <div className="mb-4 flex items-center gap-2.5">
-            <span className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-              <img src={carImg} alt="차량" className="h-10 w-auto object-contain" />
-            </span>
-            <div className="flex-1">
-              <div className="text-[14.5px] font-bold text-gray-900">틴팅 · 블랙박스</div>
-              <div className="mt-0.5 text-xs text-gray-500">강남 오토바디 · 3.14(목) 방문 예정</div>
+        {bidProgress && (
+          <>
+            <div className="mx-0.5 mt-6 mb-2.5 flex items-center justify-between">
+              <span className="text-base font-extrabold tracking-tight text-gray-900">예약시공 진행현황</span>
+              <span
+                onClick={() => onOpenRsv(bidProgress.progressStatus === "DONE" ? "DONE" : undefined)}
+                className="cursor-pointer text-[12.5px] text-gray-500"
+              >
+                전체보기 ›
+              </span>
             </div>
-            <span className="rounded-md bg-brand-subtle px-[9px] py-1 text-[11px] font-extrabold text-brand">
-              시공 중
-            </span>
-          </div>
-          <div className="flex items-center">
-            {RESV_STEPS.map((s, i) => {
-              const on = s.done || s.cur;
-              return (
-                <div key={s.label} className="contents">
-                  {i > 0 && (
-                    <span
-                      className={`h-0.5 flex-1 ${
-                        RESV_STEPS[i].done || RESV_STEPS[i].cur ? "bg-brand" : "bg-gray-100"
-                      }`}
-                    />
-                  )}
-                  <div className="flex w-[52px] flex-none flex-col items-center gap-1.5">
-                    <span
-                      className={`flex h-[26px] w-[26px] items-center justify-center rounded-full text-xs font-extrabold ${
-                        on ? "bg-brand text-white" : "bg-gray-100 text-gray-500"
-                      } ${s.cur ? "ring-[3px] ring-brand-subtle" : ""}`}
-                    >
-                      {s.done ? "✓" : i + 1}
-                    </span>
-                    <span
-                      className={`text-[11px] ${s.cur ? "font-bold" : on ? "font-bold" : "font-medium"} ${
-                        on ? "text-gray-900" : "text-gray-500"
-                      }`}
-                    >
-                      {s.label}
-                    </span>
+            <div
+              onClick={() => onOpenRsv(bidProgress.progressStatus === "DONE" ? "DONE" : undefined)}
+              className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-[18px] shadow-sm"
+            >
+              <div className="mb-4 flex items-center gap-2.5">
+                <span className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+                  <img src={carImg} alt="차량" className="h-10 w-auto object-contain" />
+                </span>
+                <div className="flex-1">
+                  <div className="text-[14.5px] font-bold text-gray-900">{bidProgress.itemSummaryLabel}</div>
+                  <div className="mt-0.5 text-xs text-gray-500">
+                    {bidProgress.shopName} · {bidProgress.dateLabel}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <span className="rounded-md bg-brand-subtle px-[9px] py-1 text-[11px] font-extrabold text-brand">
+                  {RESV_STEP_CHIP_LABELS[bidProgress.progressStatus] ?? "방문 예정"}
+                </span>
+              </div>
+              <div className="flex items-center">
+                {RESV_STEP_LABELS.map((label, i) => {
+                  const cur = resvStepCur(bidProgress.progressStatus);
+                  const done = i < cur;
+                  const isCur = i === cur;
+                  const on = done || isCur;
+                  return (
+                    <div key={label} className="contents">
+                      {i > 0 && <span className={`h-0.5 flex-1 ${i <= cur ? "bg-brand" : "bg-gray-100"}`} />}
+                      <div className="flex w-[52px] flex-none flex-col items-center gap-1.5">
+                        <span
+                          className={`flex h-[26px] w-[26px] items-center justify-center rounded-full text-xs font-extrabold ${
+                            on ? "bg-brand text-white" : "bg-gray-100 text-gray-500"
+                          } ${isCur ? "ring-[3px] ring-brand-subtle" : ""}`}
+                        >
+                          {done ? "✓" : i + 1}
+                        </span>
+                        <span
+                          className={`text-[11px] ${on ? "font-bold" : "font-medium"} ${on ? "text-gray-900" : "text-gray-500"}`}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ===== promo ===== */}
         <div

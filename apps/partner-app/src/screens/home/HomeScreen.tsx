@@ -1,12 +1,20 @@
 // PT-HOME-01: 파트너(시공업체) 로그인 후 진입하는 업무 홈 - 확인 대기 알림 + 신차패키지 시공관리/예약시공 입찰 현황 + 오늘의 시공 일정 + 하단내비
-// 예약시공 입찰 통계·확인 대기 알림 배너는 아직 연계할 백엔드(Bid/Notification 모델)가 없어 mock 유지, 나머지는 실 API 연동
+// 확인 대기 알림 배너는 아직 연계할 백엔드(Notification 모델)가 없어 mock 유지, 나머지는 실 API 연동
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import { getMyBidRequests } from "../../api/bidRequests";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { getMe, type PartnerUser } from "../../api/partnerAuth";
-import { getPackageStats, getTodayReservations, type PackageProgressStats, type TodayReservation } from "../../api/reservations";
+import {
+  getBidJobs,
+  getPackageStats,
+  getTodayReservations,
+  type PackageProgressStats,
+  type TodayReservation,
+} from "../../api/reservations";
 import type { NcpkTab } from "../ncpk/ncpkData";
+import { mapBidJob, mapBidRequest } from "../rsvc/rsvcData";
 import type { BidTab } from "../rsvc/RsvcBidboxScreen";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon, AlertCircleIcon, PackageIcon, TagIcon } from "./homeIcons";
 
@@ -24,11 +32,11 @@ interface BidStatItem extends StatItem {
   target: { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" };
 }
 
-const BID_STATS: BidStatItem[] = [
-  { value: 4, label: "신규요청", colorClass: "text-accent-strong", target: { screen: "bidbox", tab: "new" } },
-  { value: 2, label: "참여중", colorClass: "text-brand", target: { screen: "bidbox", tab: "active" } },
-  { value: 3, label: "시공대기", colorClass: "text-[#0E9A96]", target: { screen: "waitlist" } },
-];
+interface BidStats {
+  newCount: number;
+  activeCount: number;
+  waitCount: number;
+}
 
 const PROGRESS_CHIP: Record<string, { label: string; chipClass: string }> = {
   APPLIED: { label: "방문예정", chipClass: "text-brand bg-brand-subtle" },
@@ -62,6 +70,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
   const [todayResv, setTodayResv] = useState<TodayReservation[]>([]);
   const [loadingToday, setLoadingToday] = useState(true);
   const [pkgStats, setPkgStats] = useState<PackageProgressStats | null>(null);
+  const [bidStats, setBidStats] = useState<BidStats>({ newCount: 0, activeCount: 0, waitCount: 0 });
 
   useEffect(() => {
     getMe()
@@ -77,6 +86,24 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
     getPackageStats()
       .then(setPkgStats)
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 통계를 불러오지 못했어요", "danger"));
+    // 신규요청·참여중은 입찰함(신규/진행중 상태) 기준, 시공대기는 착수전·시공중 상태의 실제 시공건(Reservation) 기준
+    // — 별도 통계 API 없이 목록 응답을 그대로 집계(RsvcFlow.tsx와 동일 방식), car 라벨은 통계에 쓰이지 않아 조회 생략
+    getMyBidRequests()
+      .then((rows) => {
+        const reqs = rows.map((r) => mapBidRequest(r, () => null));
+        setBidStats((prev) => ({
+          ...prev,
+          newCount: reqs.filter((r) => r.status === "open").length,
+          activeCount: reqs.filter((r) => r.status === "active").length,
+        }));
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 입찰 현황을 불러오지 못했어요", "danger"));
+    getBidJobs()
+      .then((rows) => {
+        const jobs = rows.map((j) => mapBidJob(j, () => null));
+        setBidStats((prev) => ({ ...prev, waitCount: jobs.filter((j) => j.status !== "완료").length }));
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 시공 대기 현황을 불러오지 못했어요", "danger"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -87,6 +114,12 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
     { value: pkgStats?.applied ?? 0, label: "착수대기", colorClass: "text-accent-strong", tab: "wait" },
     { value: pkgStats?.inProgress ?? 0, label: "시공중", colorClass: "text-brand", tab: "ing" },
     { value: pkgStats?.done ?? 0, label: "완료", colorClass: "text-status-success", tab: "done" },
+  ];
+
+  const bidStatItems: BidStatItem[] = [
+    { value: bidStats.newCount, label: "신규요청", colorClass: "text-accent-strong", target: { screen: "bidbox", tab: "new" } },
+    { value: bidStats.activeCount, label: "참여중", colorClass: "text-brand", target: { screen: "bidbox", tab: "active" } },
+    { value: bidStats.waitCount, label: "시공대기", colorClass: "text-[#0E9A96]", target: { screen: "waitlist" } },
   ];
 
   return (
@@ -166,7 +199,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {BID_STATS.map((s) => (
+            {bidStatItems.map((s) => (
               <div
                 key={s.label}
                 onClick={() => onOpenRsvc(s.target)}

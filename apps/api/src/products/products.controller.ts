@@ -1,5 +1,5 @@
-// GET /products/packages/:packageCode — 패키지 상세 조회(로그인 불필요, 신차패키지 상품 정보 열람용)
-import { Controller, Get, Param } from '@nestjs/common';
+// GET /products(상품 카탈로그 조회 — prodCat/prodType 필터), GET /products/packages/:packageCode(패키지 상세 조회) — 로그인 불필요
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 
@@ -7,6 +7,14 @@ import { ProductsService } from './products.service';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: '상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면의 상품 검색용, prodCat/prodType으로 필터',
+  })
+  list(@Query('prodCat') prodCat?: string, @Query('prodType') prodType?: string) {
+    return this.productsService.list({ prodCat, prodType });
+  }
 
   @Get('packages/:packageCode')
   @ApiOperation({

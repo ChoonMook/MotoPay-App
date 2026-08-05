@@ -18,7 +18,7 @@ export default function Textarea({ label, error, helperText, rows = 4, className
       <textarea
         id={id}
         rows={rows}
-        className={`w-full resize-y rounded-lg border px-[14px] py-3 text-base leading-normal text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-gray-100 disabled:text-gray-500 ${
+        className={`w-full resize-y rounded-lg border bg-white px-[14px] py-3 text-base leading-normal text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-gray-100 disabled:text-gray-500 ${
           error ? "border-status-danger" : "border-gray-300"
         } ${className}`}
         {...rest}

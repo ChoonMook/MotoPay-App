@@ -1,10 +1,6 @@
 // 예약시공 선정·결제(CU-RSVC-14/15) 화면이 공유하는 금액 계산 헬퍼
-import { BIDDERS, RECOS, COUPON_DEFS, POINT_BALANCE, type CouponDef } from "./rsvTypes";
+import { COUPON_DEFS, POINT_BALANCE, type Bidder, type CouponDef, type RecoPlan } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
-
-export function isRecoId(selId: string) {
-  return selId.startsWith("r");
-}
 
 export function bidTotal(items: Array<[string, number]>) {
   return items.reduce((s, [, p]) => s + p, 0);
@@ -18,13 +14,16 @@ export function recoRetail(plans: Array<[string, number, number]>) {
   return plans.reduce((s, [, retail]) => s + retail, 0);
 }
 
-export function selectedEntry(selId: string) {
-  const isRec = isRecoId(selId);
-  const bidder = BIDDERS.find((b) => b.id === selId);
-  const reco = RECOS.find((r) => r.id === selId);
-  const name = isRec ? reco?.name ?? "" : bidder?.name ?? "";
-  const total = isRec ? recoTotal(reco?.plans ?? []) : bidTotal(bidder?.items ?? []);
-  return { isRec, bidder, reco, name, total };
+/**
+ * bidders(GENERAL, 실API로 조회한 응찰 목록)/recos(EXPERT, 실API로 조회한 추천안 목록)는 호출부(RsvFlow)가 넘겨줘야 함.
+ * offerNo/planNo가 둘 다 10자리 숫자라 id 접두사로 구분할 수 없어, 어느 흐름인지는 isExpert로 명시적으로 받는다.
+ */
+export function selectedEntry(selId: string, isExpert: boolean, bidders: Bidder[] = [], recos: RecoPlan[] = []) {
+  const bidder = bidders.find((b) => b.id === selId);
+  const reco = recos.find((r) => r.id === selId);
+  const name = isExpert ? reco?.name ?? "" : bidder?.name ?? "";
+  const total = isExpert ? recoTotal(reco?.plans ?? []) : bidTotal(bidder?.items ?? []);
+  return { isRec: isExpert, bidder, reco, name, total };
 }
 
 export function couponDiscountFor(coupon: CouponDef | null, payTotal: number) {
@@ -46,8 +45,15 @@ export interface PayBreakdown {
   payRemain: number;
 }
 
-export function computePayBreakdown(selId: string, couponSel: string | null, pointUse: number): PayBreakdown {
-  const { total: payTotal } = selectedEntry(selId);
+export function computePayBreakdown(
+  selId: string,
+  isExpert: boolean,
+  couponSel: string | null,
+  pointUse: number,
+  bidders: Bidder[] = [],
+  recos: RecoPlan[] = [],
+): PayBreakdown {
+  const { total: payTotal } = selectedEntry(selId, isExpert, bidders, recos);
   const couponUsable = COUPON_DEFS.filter((c) => !c.minAmount || payTotal >= c.minAmount);
   const selCoupon = couponUsable.find((c) => c.id === couponSel) || null;
   const couponDiscount = couponDiscountFor(selCoupon, payTotal);

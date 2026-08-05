@@ -4,19 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Reservation } from '@prisma/client';
+import type { BidRequestItem, BidRequestPosition, Reservation } from '@prisma/client';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
 import { maskPhone } from '../common/mask/mask-phone';
 import { saveReservationPhoto } from '../common/storage/reservation-photo-storage';
+import { saveReviewPhoto } from '../common/storage/review-photo-storage';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
 import type { CompleteReservationDto } from './dto/complete-reservation.dto';
+import type { CreateCallLogDto } from './dto/create-call-log.dto';
+import type { CreateReviewDto } from './dto/create-review.dto';
 import {
   formatDateOnly,
   formatTimeOnly,
   parseDateOnly,
   parseTimeOnly,
   resolveDayType,
+  todayUtcMidnight,
 } from '../common/schedule-date.util';
 
 export interface CreateReservationParams {
@@ -35,14 +39,6 @@ export interface CancelReservationParams {
 export interface RescheduleReservationParams {
   date: string; // "YYYY-MM-DD"
   time: string; // "HH:mm"
-}
-
-/** 오늘(UTC 자정 기준) — 예약 date 컬럼이 @db.Date(UTC 자정 저장)라 동일 기준으로 비교 */
-function todayUtcMidnight(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
 }
 
 export interface ReservationView extends Omit<Reservation, 'date' | 'time'> {
@@ -118,6 +114,20 @@ function summarizeItems(items: PackageJobItem[]): string {
   return `${names.slice(0, 3).join(' · ')} 외 ${names.length - 3}건`;
 }
 
+// PT-RSVC-08~10 예약시공(입찰) 시공관리 — Reservation.requestNo -> BidRequest로 연결된 실제 항목/부위 데이터를 그대로 반환
+// (PKG와 달리 resolveMemberPackage 같은 역추적 근사치가 아니라 요청 시점 데이터를 직접 사용)
+export interface BidJobView {
+  reservationNo: string;
+  requestNo: string;
+  date: string;
+  time: string;
+  customerName: string;
+  car: { carBrandCode: string; carModelCode: string; trimName: string | null } | null;
+  progressStatus: string;
+  items: BidRequestItem[];
+  positions: BidRequestPosition[];
+}
+
 // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 파트너가 완료 등록한 시공 사진·메모와 실제 구매 패키지 항목을 함께 응답
 export interface HandoverDetailView {
   reservationNo: string;
@@ -130,6 +140,22 @@ export interface HandoverDetailView {
   completedAt: string | null;
   handoverConfirmedAt: string | null;
   handoverStatus: 'pending' | 'confirmed';
+}
+
+// CU-RSVC-17 후기 — 예약 1건당 1건만 작성 가능
+export interface ReviewView {
+  rating: number;
+  content: string;
+  photos: string[]; // uploads/ 기준 상대경로
+  createdAt: string;
+}
+
+// PT-RSVC-03 해피콜(고객 확인 전화) 이력 1건
+export interface CallLogView {
+  id: number;
+  result: string; // -> CommonCodeDetail(code='CALL_RESULT')
+  memo: string | null;
+  createdAt: string;
 }
 
 const HANDOVER_AUTO_CONFIRM_DAYS = 3;
@@ -377,6 +403,46 @@ export class ReservationsService {
     });
   }
 
+  /** 해피콜(고객 확인 전화) 이력 등록(PT-RSVC-03) — 소유권 검증은 updateProgress와 동일 */
+  async addCallLog(
+    shopCode: string,
+    reservationNo: string,
+    dto: CreateCallLogDto,
+  ): Promise<void> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (!reservation || reservation.shopCode !== shopCode) {
+      throw new NotFoundException('예약을 찾을 수 없습니다.');
+    }
+    await this.prisma.reservationCallLog.create({
+      data: { reservationNo, result: dto.result, memo: dto.memo },
+    });
+  }
+
+  /** 해피콜 이력 목록(최신순) — 소유권 검증은 updateProgress와 동일 */
+  async listCallLogs(
+    shopCode: string,
+    reservationNo: string,
+  ): Promise<CallLogView[]> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (!reservation || reservation.shopCode !== shopCode) {
+      throw new NotFoundException('예약을 찾을 수 없습니다.');
+    }
+    const logs = await this.prisma.reservationCallLog.findMany({
+      where: { reservationNo },
+      orderBy: { createdAt: 'desc' },
+    });
+    return logs.map((log) => ({
+      id: log.id,
+      result: log.result,
+      memo: log.memo,
+      createdAt: log.createdAt.toISOString(),
+    }));
+  }
+
   /**
    * 시공 완료 등록(PT-NCPK-04) — 시공중 상태에서만 가능. 시공 사진을 저장하고 작업 메모와 함께
    * progressStatus를 DONE으로 전환. 사진은 고객 인수확인 화면에 그대로 노출되는 자료라 3~10장 범위를 서버에서도 검증(DTO).
@@ -461,6 +527,37 @@ export class ReservationsService {
         };
       }),
     );
+  }
+
+  // ── 파트너 예약시공(입찰) 시공관리(PT-RSVC-08~10) ──────────────────
+
+  async listBidJobsForShop(shopCode: string): Promise<BidJobView[]> {
+    const reservations = await this.prisma.reservation.findMany({
+      where: { shopCode, reservationType: 'BID', status: 'CONFIRMED' },
+      include: {
+        member: true,
+        request: {
+          include: {
+            items: true,
+            positions: true,
+            myCar: { select: { carBrandCode: true, carModelCode: true, trimName: true } },
+          },
+        },
+      },
+      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+    });
+
+    return reservations.map((r) => ({
+      reservationNo: r.reservationNo,
+      requestNo: r.requestNo!,
+      date: formatDateOnly(r.date),
+      time: formatTimeOnly(r.time),
+      customerName: r.member.name,
+      car: r.request?.myCar ?? null,
+      progressStatus: r.progressStatus,
+      items: r.request?.items ?? [],
+      positions: r.request?.positions ?? [],
+    }));
   }
 
   async getPackageJobDetail(
@@ -607,6 +704,63 @@ export class ReservationsService {
       where: { id },
       data: { handoverConfirmedAt: new Date() },
     });
+  }
+
+  async getReview(memberId: string, id: number): Promise<ReviewView | null> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    const review = await this.prisma.review.findUnique({
+      where: { reservationNo: reservation.reservationNo },
+      include: { photos: { orderBy: { sortOrder: 'asc' } } },
+    });
+    if (!review) return null;
+    return {
+      rating: review.rating,
+      content: review.content,
+      photos: review.photos.map((p) => p.photoPath),
+      createdAt: review.createdAt.toISOString(),
+    };
+  }
+
+  async createReview(
+    memberId: string,
+    id: number,
+    dto: CreateReviewDto,
+  ): Promise<ReviewView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.progressStatus !== 'DONE') {
+      throw new BadRequestException('시공완료 후에만 후기를 작성할 수 있습니다.');
+    }
+    const existing = await this.prisma.review.findUnique({
+      where: { reservationNo: reservation.reservationNo },
+    });
+    if (existing) {
+      throw new BadRequestException('이미 후기를 작성한 예약입니다.');
+    }
+    const photoPaths = await Promise.all(
+      (dto.photos ?? []).map((p) => saveReviewPhoto(p)),
+    );
+    const review = await this.prisma.review.create({
+      data: {
+        reservationNo: reservation.reservationNo,
+        memberId,
+        shopCode: reservation.shopCode,
+        rating: dto.rating,
+        content: dto.content,
+        photos: {
+          create: photoPaths.map((photoPath, i) => ({
+            photoPath,
+            sortOrder: i,
+          })),
+        },
+      },
+      include: { photos: { orderBy: { sortOrder: 'asc' } } },
+    });
+    return {
+      rating: review.rating,
+      content: review.content,
+      photos: review.photos.map((p) => p.photoPath),
+      createdAt: review.createdAt.toISOString(),
+    };
   }
 
   /**

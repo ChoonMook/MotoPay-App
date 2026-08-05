@@ -1,7 +1,7 @@
-// PT-RSVC-02: 시공 대기 목록 - 착수전·시공중 건 카드 목록. 카드 탭 시 착수전은 시공 착수 등록, 시공중은 완료 처리로 이동
+// PT-RSVC-02: 시공 대기 목록 - 착수전·시공중·완료 상태 탭으로 필터링된 카드 목록. 카드 탭 시 착수전은 시공 착수 등록, 시공중은 완료 처리로 이동
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon } from "../home/homeIcons";
-import { jobStatusChipClass, itemSummary } from "./rsvcData";
-import type { RsvcJob } from "./rsvcTypes";
+import { JOB_TAB_META, jobStatusChipClass, itemSummary } from "./rsvcData";
+import type { JobStatus, RsvcJob } from "./rsvcTypes";
 import { PhoneCallIcon } from "./rsvcIcons";
 
 const NAV_ITEMS = [
@@ -13,6 +13,9 @@ const NAV_ITEMS = [
 
 interface RsvcWaitlistScreenProps {
   jobs: RsvcJob[];
+  tab: JobStatus;
+  onChangeTab: (tab: JobStatus) => void;
+  tabCounts: Record<JobStatus, number>;
   onBack: () => void;
   onOpenJob: (job: RsvcJob) => void;
   onCall: (job: RsvcJob) => void;
@@ -25,6 +28,9 @@ interface RsvcWaitlistScreenProps {
 
 export default function RsvcWaitlistScreen({
   jobs,
+  tab,
+  onChangeTab,
+  tabCounts,
   onBack,
   onOpenJob,
   onCall,
@@ -43,12 +49,25 @@ export default function RsvcWaitlistScreen({
           </span>
           <span className="text-[17px] font-bold text-gray-900">시공 대기 목록</span>
         </div>
+        <div className="mb-1.5 flex gap-1">
+          {JOB_TAB_META.map((t) => (
+            <div
+              key={t.key}
+              onClick={() => onChangeTab(t.key)}
+              className={`flex-1 cursor-pointer border-b-[2.5px] py-[11px] text-center text-[13.5px] font-semibold ${
+                tab === t.key ? "border-brand font-extrabold text-brand" : "border-transparent text-gray-500"
+              }`}
+            >
+              {t.label} <span className="text-xs font-extrabold tabular-nums">{tabCounts[t.key]}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="mp-scroll flex-1 overflow-y-auto px-[18px] py-4">
         {jobs.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 shadow-sm">
-            시공 대기 중인 건이 없어요
+            해당하는 시공 건이 없어요
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">

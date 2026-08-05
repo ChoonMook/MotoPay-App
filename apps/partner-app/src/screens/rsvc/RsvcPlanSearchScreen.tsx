@@ -6,7 +6,7 @@ import { SearchIcon } from "./rsvcIcons";
 interface RsvcPlanSearchScreenProps {
   itemName: string;
   allProducts: RsvcProduct[];
-  selectedProductId: string;
+  selectedProductCode: string;
   search: string;
   onChangeSearch: (v: string) => void;
   brand: string;
@@ -18,7 +18,7 @@ interface RsvcPlanSearchScreenProps {
 export default function RsvcPlanSearchScreen({
   itemName,
   allProducts,
-  selectedProductId,
+  selectedProductCode,
   search,
   onChangeSearch,
   brand,
@@ -28,15 +28,15 @@ export default function RsvcPlanSearchScreen({
 }: RsvcPlanSearchScreenProps) {
   const brandDefs: [string, string][] = [["all", "전체"]];
   for (const p of allProducts) {
-    const key = p.bkey ?? p.brand;
-    if (!brandDefs.some(([k]) => k === key)) brandDefs.push([key, p.brand]);
+    const key = p.brand ?? "ETC";
+    if (!brandDefs.some(([k]) => k === key)) brandDefs.push([key, p.brand ?? "기타"]);
   }
 
   const q = search.trim().toLowerCase();
   const results = allProducts.filter(
     (p) =>
-      (brand === "all" || (p.bkey ?? p.brand) === brand) &&
-      (!q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)),
+      (brand === "all" || (p.brand ?? "ETC") === brand) &&
+      (!q || p.name.toLowerCase().includes(q) || (p.brand ?? "").toLowerCase().includes(q)),
   );
 
   return (
@@ -84,10 +84,10 @@ export default function RsvcPlanSearchScreen({
         ) : (
           <div className="flex flex-col gap-2.5">
             {results.map((p) => {
-              const on = p.id === selectedProductId;
+              const on = p.productCode === selectedProductCode;
               return (
                 <div
-                  key={p.id}
+                  key={p.productCode}
                   onClick={() => onSelect(p)}
                   className={`flex cursor-pointer items-center gap-3 rounded-[14px] border p-3 ${
                     on ? "border-brand bg-brand-subtle" : "border-gray-200 bg-white"

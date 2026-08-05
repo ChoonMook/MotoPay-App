@@ -6,11 +6,12 @@ import type { RsvcItem } from "./rsvcTypes";
 interface RsvcStartSheetProps {
   infoRows: { k: string; v: string }[];
   items: RsvcItem[];
+  confirming: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
 
-export default function RsvcStartSheet({ infoRows, items, onCancel, onConfirm }: RsvcStartSheetProps) {
+export default function RsvcStartSheet({ infoRows, items, confirming, onCancel, onConfirm }: RsvcStartSheetProps) {
   return (
     <BottomSheet onClose={onCancel} maxHeight="none">
       <div className="mb-1 text-xl font-extrabold text-gray-900">시공을 착수할까요?</div>
@@ -41,13 +42,13 @@ export default function RsvcStartSheet({ infoRows, items, onCancel, onConfirm }:
 
       <div className="flex gap-2.5">
         <div className="flex-1">
-          <Button variant="outline" size="lg" onClick={onCancel}>
+          <Button variant="outline" size="lg" disabled={confirming} onClick={onCancel}>
             취소
           </Button>
         </div>
         <div className="flex-[2]">
-          <Button variant="primary" size="lg" onClick={onConfirm}>
-            시공 착수
+          <Button variant="primary" size="lg" disabled={confirming} onClick={onConfirm}>
+            {confirming ? "처리 중..." : "시공 착수"}
           </Button>
         </div>
       </div>

@@ -1,19 +1,26 @@
-// PT-RSVC-07: 추천안 작성 (전문가추천) - 항목별 제품 선택·제안가 입력, 소비자가 합계·추천 총액·할인율 자동 계산
+// PT-RSVC-07: 추천안 작성 (전문가추천) - 항목별 제품 선택·제안가 입력·시공 가능 시간 선택, 소비자가 합계·추천 총액·할인율 자동 계산
+// 시공 가능 시간은 RsvcBidJoinScreen(일반입찰)과 동일하게 고객 희망일(req.desiredDate) 기준 실제 예약 가능 시간대에서 선택
 import Button from "../../components/ui/Button";
 import Textarea from "../../components/ui/Textarea";
-import { POS_NAMES, hasPos, products, searchable, won } from "./rsvcData";
-import type { BidReq, PlanLine } from "./rsvcTypes";
+import type { DailySlot } from "../../api/shopSchedule";
+import { POS_NAMES, formatDesiredDateLabel, hasPos, searchable, won } from "./rsvcData";
+import type { BidReq, PlanLine, RsvcProduct } from "./rsvcTypes";
 import { ChevronDownIcon } from "./rsvcIcons";
 
 interface RsvcPlanWriteScreenProps {
   req: BidReq;
   draft: PlanLine[];
+  productsByInstCode: Record<string, RsvcProduct[]>;
   dropOpenIndex: number | null;
   onToggleDropdown: (index: number) => void;
-  onPickProduct: (index: number, productId: string) => void;
+  onPickProduct: (index: number, productCode: string) => void;
   onOpenSearch: (index: number) => void;
   onOpenPos: (index: number) => void;
   onChangeOffer: (index: number, value: string) => void;
+  daySlots: DailySlot[];
+  loadingSlots: boolean;
+  planTime: string;
+  onChangePlanTime: (v: string) => void;
   planMemo: string;
   onChangePlanMemo: (value: string) => void;
   onBack: () => void;
@@ -30,25 +37,30 @@ function posSummary(line: PlanLine): string {
 export default function RsvcPlanWriteScreen({
   req,
   draft,
+  productsByInstCode,
   dropOpenIndex,
   onToggleDropdown,
   onPickProduct,
   onOpenSearch,
   onOpenPos,
   onChangeOffer,
+  daySlots,
+  loadingSlots,
+  planTime,
+  onChangePlanTime,
   planMemo,
   onChangePlanMemo,
   onBack,
   onSubmit,
 }: RsvcPlanWriteScreenProps) {
   const consumerTotal = draft.reduce((sum, ln) => {
-    const ps = products(ln.name);
-    const sel = ps.find((p) => p.id === ln.productId) ?? ps[0];
+    const ps = productsByInstCode[ln.instCode] ?? [];
+    const sel = ps.find((p) => p.productCode === ln.productCode) ?? { price: ln.retailPrice };
     return sum + sel.price;
   }, 0);
   const offerTotal = draft.reduce((sum, ln) => sum + (Number(ln.offer) || 0), 0);
   const discountRate = consumerTotal ? Math.max(0, Math.round((1 - offerTotal / consumerTotal) * 100)) : 0;
-  const planReady = draft.length > 0 && draft.every((ln) => Number(ln.offer) > 0);
+  const planReady = draft.length > 0 && draft.every((ln) => Number(ln.offer) > 0) && !!planTime;
   const planSubmitLabel = req.status === "active" ? "추천안 수정 제출" : "추천안 제출";
 
   return (
@@ -82,9 +94,9 @@ export default function RsvcPlanWriteScreen({
 
         <div className="mb-5 flex flex-col gap-3">
           {draft.map((ln, i) => {
-            const ps = products(ln.name);
-            const sel = ps.find((p) => p.id === ln.productId) ?? ps[0];
-            const isSearch = searchable(ln.name);
+            const ps = productsByInstCode[ln.instCode] ?? [];
+            const sel = ps.find((p) => p.productCode === ln.productCode) ?? { productCode: ln.productCode, name: ln.productName, brand: null, price: ln.retailPrice };
+            const isSearch = searchable(ps);
             const open = dropOpenIndex === i;
             return (
               <div key={`${ln.name}-${i}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -115,11 +127,11 @@ export default function RsvcPlanWriteScreen({
                     {open && (
                       <div className="mb-2.5 -mt-1 rounded-xl border border-gray-200 bg-white p-[5px] shadow-sm">
                         {ps.map((p) => {
-                          const picked = p.id === sel.id;
+                          const picked = p.productCode === sel.productCode;
                           return (
                             <div
-                              key={p.id}
-                              onClick={() => onPickProduct(i, p.id)}
+                              key={p.productCode}
+                              onClick={() => onPickProduct(i, p.productCode)}
                               className={`flex cursor-pointer items-center justify-between gap-2.5 rounded-lg px-3 py-[11px] ${
                                 picked ? "bg-brand-subtle" : ""
                               }`}
@@ -139,7 +151,7 @@ export default function RsvcPlanWriteScreen({
                   </>
                 )}
 
-                {hasPos(ln.name) && (
+                {hasPos(ln.instCode) && (
                   <div
                     onClick={() => onOpenPos(i)}
                     className="mb-2.5 flex cursor-pointer items-center justify-between rounded-xl bg-gray-100 px-3.5 py-3"
@@ -181,6 +193,42 @@ export default function RsvcPlanWriteScreen({
               <span className="text-[17px] font-extrabold text-brand">{won(offerTotal)}</span>
             </span>
           </div>
+        </div>
+
+        <div className="mb-5">
+          <div className="mb-2 text-[13px] font-bold text-gray-800">
+            시공 가능 시간 · 고객 희망일 {formatDesiredDateLabel(req.desiredDate)}
+          </div>
+          {loadingSlots ? (
+            <div className="py-6 text-center text-[12.5px] text-gray-400">불러오는 중...</div>
+          ) : daySlots.length === 0 ? (
+            <div className="py-6 text-center text-[12.5px] text-gray-400">등록된 예약 가능 시간이 없어요</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {daySlots.map((s) => {
+                const full = s.capacity === null || s.isLocked || s.reservedCount >= s.capacity;
+                const sel = planTime === s.time;
+                return (
+                  <span
+                    key={s.time}
+                    onClick={() => !full && onChangePlanTime(s.time)}
+                    className={`rounded-[10px] py-3 text-center text-[13px] font-semibold tabular-nums ${
+                      full ? "cursor-default" : "cursor-pointer"
+                    } ${
+                      sel
+                        ? "bg-brand font-extrabold text-white"
+                        : full
+                          ? "bg-gray-100 text-gray-300 line-through"
+                          : "border border-gray-400 bg-white text-gray-800"
+                    }`}
+                  >
+                    {s.time}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <div className="mt-2 text-[11.5px] text-gray-500">고객 희망일 기준 우리 업체의 예약 가능 시간이에요</div>
         </div>
 
         <Textarea label="추천 사유" placeholder="이 구성을 추천하는 이유를 적어주세요" value={planMemo} onChange={(e) => onChangePlanMemo(e.target.value)} />

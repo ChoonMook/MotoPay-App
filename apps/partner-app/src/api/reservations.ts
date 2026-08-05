@@ -1,4 +1,9 @@
 // apps/api의 파트너 홈(PT-HOME-01) 예약 관련 엔드포인트(/shops/me/reservations/*) 호출 — 모두 파트너 로그인 전용
+import type {
+  ShopBidRequestCarApi,
+  ShopBidRequestItemApi,
+  ShopBidRequestPositionApi,
+} from "./bidRequests";
 import { authedRequest } from "./http";
 
 export interface TodayReservation {
@@ -52,6 +57,25 @@ export interface PackageJobDetail {
   photos: string[]; // uploads/ 기준 상대경로 — 완료 등록 시 첨부한 시공 사진
 }
 
+export interface BidJob {
+  reservationNo: string;
+  requestNo: string;
+  date: string; // "YYYY-MM-DD"
+  time: string; // "HH:mm"
+  customerName: string;
+  car: ShopBidRequestCarApi | null;
+  progressStatus: string; // APPLIED/IN_PROGRESS/DONE -> CommonCodeDetail(code='RESERVATION_PROGRESS')
+  items: ShopBidRequestItemApi[];
+  positions: ShopBidRequestPositionApi[];
+}
+
+export interface CallLog {
+  id: number;
+  result: string; // CONNECTED/NOANSWER/RETRY -> CommonCodeDetail(code='CALL_RESULT')
+  memo: string | null;
+  createdAt: string; // ISO
+}
+
 /** 내 업체의 오늘 예약 목록(파트너 홈 "오늘의 시공 일정") */
 export function getTodayReservations(): Promise<TodayReservation[]> {
   return authedRequest<TodayReservation[]>("/shops/me/reservations/today");
@@ -72,6 +96,11 @@ export function getPackageJobDetail(reservationNo: string): Promise<PackageJobDe
   return authedRequest<PackageJobDetail>(`/shops/me/reservations/packages/${reservationNo}`);
 }
 
+/** 내 업체의 예약시공(입찰) 시공 건 목록(PT-RSVC-08) — 낙찰 확정된 Reservation(BID) 전체 */
+export function getBidJobs(): Promise<BidJob[]> {
+  return authedRequest<BidJob[]>("/shops/me/reservations/bids");
+}
+
 /** 예약 시공 진행상태 변경(신청/시공중/완료) */
 export function updateReservationProgress(
   reservationNo: string,
@@ -90,6 +119,22 @@ export function completeReservationJob(
 ): Promise<void> {
   return authedRequest<void>(`/shops/me/reservations/${reservationNo}/complete`, {
     method: "PATCH",
+    body: JSON.stringify(params),
+  });
+}
+
+/** 해피콜(고객 확인 전화) 이력 목록(최신순, PT-RSVC-03) */
+export function getCallLogs(reservationNo: string): Promise<CallLog[]> {
+  return authedRequest<CallLog[]>(`/shops/me/reservations/${reservationNo}/call-logs`);
+}
+
+/** 해피콜 이력 등록 */
+export function addCallLog(
+  reservationNo: string,
+  params: { result: "CONNECTED" | "NOANSWER" | "RETRY"; memo?: string },
+): Promise<void> {
+  return authedRequest<void>(`/shops/me/reservations/${reservationNo}/call-logs`, {
+    method: "POST",
     body: JSON.stringify(params),
   });
 }

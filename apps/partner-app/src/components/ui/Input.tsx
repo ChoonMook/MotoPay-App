@@ -38,7 +38,7 @@ export default function Input({ label, error, helperText, className = "", id, ty
         <input
           id={id}
           type={isPassword && showPassword ? "text" : type}
-          className={`h-[52px] w-full rounded-lg border px-[14px] ${isPassword ? "pr-11" : ""} text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-gray-100 disabled:text-gray-500 ${
+          className={`h-[52px] w-full rounded-lg border bg-white px-[14px] ${isPassword ? "pr-11" : ""} text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 disabled:bg-gray-100 disabled:text-gray-500 ${
             error ? "border-status-danger" : "border-gray-300"
           } ${className}`}
           {...rest}

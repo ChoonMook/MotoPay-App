@@ -25,6 +25,11 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'RESERVATION_STATUS', name: '예약상태' },
   { code: 'RESERVATION_PROGRESS', name: '예약 시공 진행상태' },
   { code: 'CANCEL_REASON', name: '예약취소 사유' },
+  { code: 'BID_REQ_TYPE', name: '예약시공 요청유형' },
+  { code: 'BID_REQ_STATUS', name: '예약시공 요청상태' },
+  { code: 'BID_TINT_POSITION', name: '예약시공 틴팅 시공부위' },
+  { code: 'BID_CANCEL_REASON', name: '예약시공 요청 취소사유' },
+  { code: 'CALL_RESULT', name: '해피콜 통화결과' },
 ];
 
 interface DetailRow {
@@ -86,6 +91,9 @@ const DETAILS: DetailRow[] = [
   { code: 'CAR_INST', detailCode: 'BBOX', detailName: '블랙박스' },
   { code: 'CAR_INST', detailCode: 'CLEAN', detailName: '실내크리닝' },
   { code: 'CAR_INST', detailCode: 'UCOAT', detailName: '언더코팅' },
+  // 예약시공(입찰) 카테고리 중 기존 6개와 겹치지 않는 2개 추가(외장수리/휠·타이어)
+  { code: 'CAR_INST', detailCode: 'EXTREP', detailName: '외장수리' },
+  { code: 'CAR_INST', detailCode: 'WHTIRE', detailName: '휠·타이어' },
 
   // PROD_TYPE — 모토페이가 실물상품(쇼핑몰)과 시공서비스(예약시공)를 함께 취급하는 걸 반영해 3종으로 구분(제안값)
   { code: 'PROD_TYPE', detailCode: 'GOODS', detailName: '실물상품' },
@@ -114,6 +122,10 @@ const DETAILS: DetailRow[] = [
   { code: 'PROD_CAT', detailCode: 'PPF', detailName: 'PPF(도장보호필름)' },
   { code: 'PROD_CAT', detailCode: 'WASH', detailName: '세차' },
   { code: 'PROD_CAT', detailCode: 'ETC', detailName: '기타용품' },
+  // 예약시공(입찰) 전문가추천 상품카탈로그 연동을 위해 CAR_INST와 짝을 맞춰 추가(CLEAN/UCOAT/EXTREP는 기존 PROD_CAT에 대응 코드가 없었음)
+  { code: 'PROD_CAT', detailCode: 'CLEAN', detailName: '실내크리닝' },
+  { code: 'PROD_CAT', detailCode: 'UCOAT', detailName: '언더코팅' },
+  { code: 'PROD_CAT', detailCode: 'EXTREP', detailName: '외장수리' },
 
   // CAR_REG_TYPE
   { code: 'CAR_REG_TYPE', detailCode: 'MAP', detailName: '신차매핑' },
@@ -153,6 +165,33 @@ const DETAILS: DetailRow[] = [
   { code: 'CANCEL_REASON', detailCode: 'COST', detailName: '비용이 부담돼요' },
   { code: 'CANCEL_REASON', detailCode: 'CHANGE_MIND', detailName: '단순 변심' },
   { code: 'CANCEL_REASON', detailCode: 'ETC', detailName: '기타' },
+
+  // BID_REQ_TYPE — 예약시공 요청유형
+  { code: 'BID_REQ_TYPE', detailCode: 'GENERAL', detailName: '일반입찰' },
+  { code: 'BID_REQ_TYPE', detailCode: 'EXPERT', detailName: '전문가추천' },
+
+  // BID_REQ_STATUS — 예약시공 요청상태(1단계는 OPEN만 생성되지만 전체 라이프사이클을 미리 등록)
+  { code: 'BID_REQ_STATUS', detailCode: 'OPEN', detailName: '입찰중' },
+  { code: 'BID_REQ_STATUS', detailCode: 'CLOSED', detailName: '입찰마감' },
+  { code: 'BID_REQ_STATUS', detailCode: 'SELECTED', detailName: '선정완료' },
+  { code: 'BID_REQ_STATUS', detailCode: 'CANCELLED', detailName: '취소' },
+
+  // BID_TINT_POSITION — 틴팅 시공 부위(PosLvlSelScreen 공용 5부위)
+  { code: 'BID_TINT_POSITION', detailCode: 'FRONT', detailName: '전면유리' },
+  { code: 'BID_TINT_POSITION', detailCode: 'SIDE_1', detailName: '측면 1열' },
+  { code: 'BID_TINT_POSITION', detailCode: 'SIDE_2', detailName: '측면 2열' },
+  { code: 'BID_TINT_POSITION', detailCode: 'REAR', detailName: '후면유리' },
+  { code: 'BID_TINT_POSITION', detailCode: 'SUNROOF', detailName: '선루프' },
+
+  // BID_CANCEL_REASON — 예약시공 요청 취소사유
+  { code: 'BID_CANCEL_REASON', detailCode: 'SIMPLE', detailName: '단순변심' },
+  { code: 'BID_CANCEL_REASON', detailCode: 'RE_REQUEST', detailName: '추후 재요청' },
+  { code: 'BID_CANCEL_REASON', detailCode: 'ETC', detailName: '기타' },
+
+  // CALL_RESULT — 해피콜(고객 확인 전화) 통화결과(RsvcCallLogSheet.tsx CALL_RESULT_META와 동일)
+  { code: 'CALL_RESULT', detailCode: 'CONNECTED', detailName: '연결됨' },
+  { code: 'CALL_RESULT', detailCode: 'NOANSWER', detailName: '부재중' },
+  { code: 'CALL_RESULT', detailCode: 'RETRY', detailName: '재통화예정' },
 ];
 
 async function main() {

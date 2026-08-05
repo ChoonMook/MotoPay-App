@@ -1,5 +1,6 @@
 // POST /reservations(예약 생성)/GET /reservations/me(내 예약 목록)/PATCH /reservations/:id/cancel(취소)/PATCH /reservations/:id/reschedule(일정변경)
-// /GET /reservations/:id/handover(시공완료·인수확인 상세)/PATCH /reservations/:id/handover-confirm(인수확인) — 로그인 필요
+// /GET /reservations/:id/handover(시공완료·인수확인 상세)/PATCH /reservations/:id/handover-confirm(인수확인)
+// /GET·POST /reservations/:id/review(후기 조회·등록) — 로그인 필요
 import {
   Body,
   Controller,
@@ -15,6 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SafeUser } from '../auth/auth.types';
 import { ReservationsService } from './reservations.service';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 @ApiTags('reservations')
 @ApiBearerAuth()
@@ -96,5 +98,26 @@ export class ReservationsController {
   ) {
     await this.reservationsService.confirmHandover(user.id, id);
     return { success: true };
+  }
+
+  @Get(':id/review')
+  @ApiOperation({ summary: '후기 조회 — 작성한 후기가 없으면 review: null' })
+  async getReview(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return { review: await this.reservationsService.getReview(user.id, id) };
+  }
+
+  @Post(':id/review')
+  @ApiOperation({
+    summary: '후기 등록(CU-RSVC-17) — 시공완료 상태에서 예약당 1회만 가능',
+  })
+  createReview(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateReviewDto,
+  ) {
+    return this.reservationsService.createReview(user.id, id, dto);
   }
 }

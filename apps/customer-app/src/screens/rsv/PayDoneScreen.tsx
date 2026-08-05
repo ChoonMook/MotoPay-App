@@ -3,21 +3,24 @@ import Button from "../../components/ui/Button";
 import { PhoneIcon } from "./rsvIcons";
 import { selectedEntry, computePayBreakdown } from "./rsvCalc";
 import { nfmt } from "./rsvFormat";
-import type { PayMethodKey } from "./rsvTypes";
+import type { Bidder, PayMethodKey, RecoPlan } from "./rsvTypes";
 
 const PAY_LABEL: Record<PayMethodKey, string> = { card: "신용/체크카드", bank: "무통장 입금" };
 
 interface PayDoneScreenProps {
   selId: string;
+  isExpert: boolean;
+  bidders: Bidder[];
+  recos: RecoPlan[];
   payMethod: PayMethodKey;
   couponSel: string | null;
   pointUse: number;
   onConfirm: () => void;
 }
 
-export default function PayDoneScreen({ selId, payMethod, couponSel, pointUse, onConfirm }: PayDoneScreenProps) {
-  const { isRec, name: selName } = selectedEntry(selId);
-  const { payRemain } = computePayBreakdown(selId, couponSel, pointUse);
+export default function PayDoneScreen({ selId, isExpert, bidders, recos, payMethod, couponSel, pointUse, onConfirm }: PayDoneScreenProps) {
+  const { isRec, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
+  const { payRemain } = computePayBreakdown(selId, isExpert, couponSel, pointUse, bidders, recos);
   const rows = [
     { k: "시공 업체", v: selName },
     { k: "결제 금액", v: `${nfmt(payRemain)}원` },

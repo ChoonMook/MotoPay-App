@@ -1,9 +1,10 @@
 // CU-RSVC-12: 추천안 비교(전문가추천) - 업체별 추천상품·추천사유·견적가 비교. 0건 시 일반 입찰과 동일하게 공지 후 취소
+// 평점·거리는 DB에 리뷰/좌표 데이터가 없어 미표시(BidCoCmpGenScreen과 동일 정책)
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import Button from "../../components/ui/Button";
-import { StarIcon, CircleXIcon } from "./rsvIcons";
-import { RECOS } from "./rsvTypes";
+import { CircleXIcon } from "./rsvIcons";
+import type { RecoPlan } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
 
 const RecoStarIcon = () => (
@@ -20,37 +21,39 @@ function recoRetail(plans: Array<[string, number, number]>) {
 }
 
 interface PlanCmpExpertScreenProps {
-  emptyDemo: boolean;
-  onToggleEmpty: () => void;
+  recos: RecoPlan[];
+  loading: boolean;
+  budgetLabel: string;
   onSelectReco: (id: string) => void;
   onReRequest: () => void;
   onBack: () => void;
 }
 
-export default function PlanCmpExpertScreen({ emptyDemo, onToggleEmpty, onSelectReco, onReRequest, onBack }: PlanCmpExpertScreenProps) {
+export default function PlanCmpExpertScreen({
+  recos,
+  loading,
+  budgetLabel,
+  onSelectReco,
+  onReRequest,
+  onBack,
+}: PlanCmpExpertScreenProps) {
+  const showEmpty = !loading && recos.length === 0;
+
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <RsvHeader title="전문가 추천안 비교" onBack={onBack} />
 
       <div className="flex-none border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
-            <RecoStarIcon />
-            예산 30만원 · 추천 {RECOS.length}건
-          </span>
-          <span
-            onClick={onToggleEmpty}
-            className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-[5px] text-[11px] font-extrabold ${
-              emptyDemo ? "bg-accent text-white" : "bg-white text-gray-600 ring-1 ring-gray-400 ring-inset"
-            }`}
-          >
-            {emptyDemo ? "정상 상태로" : "응찰 0건 미리보기"}
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
+          <RecoStarIcon />
+          예산 {budgetLabel} · 추천 {recos.length}건
+        </span>
       </div>
 
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-4 pb-6">
-        {emptyDemo ? (
+        {loading ? (
+          <div className="py-10 text-center text-sm text-gray-400">불러오는 중...</div>
+        ) : showEmpty ? (
           <div className="flex flex-col items-center gap-3 px-6 pt-11 pb-5 text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-subtle text-accent-strong">
               <CircleXIcon />
@@ -72,7 +75,7 @@ export default function PlanCmpExpertScreen({ emptyDemo, onToggleEmpty, onSelect
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {RECOS.map((r) => {
+            {recos.map((r) => {
               const total = recoTotal(r.plans);
               const retail = recoRetail(r.plans);
               return (
@@ -83,15 +86,11 @@ export default function PlanCmpExpertScreen({ emptyDemo, onToggleEmpty, onSelect
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="text-[14.5px] font-extrabold text-gray-900">{r.name}</div>
-                      <div className="mt-[3px] flex items-center gap-1.5 text-[11.5px] text-gray-600">
-                        <StarIcon color="var(--color-accent)" />
-                        <span className="font-bold">{r.rating}</span>
-                        <span className="text-gray-500">· {r.dist}</span>
-                      </div>
+                      <div className="mt-[3px] text-[11.5px] text-gray-500">{r.when}</div>
                     </div>
                   </div>
                   <div className="mt-3 rounded-[11px] bg-brand-subtle px-[13px] py-[11px]">
-                    <div className="text-[12.5px] font-extrabold text-brand">{r.product}</div>
+                    <div className="text-[12.5px] font-extrabold text-brand">{r.itemSummary}</div>
                     <div className="mt-1 text-xs leading-relaxed text-gray-600">{r.reason}</div>
                   </div>
                   <div className="mt-3 flex items-end justify-between">

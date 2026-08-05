@@ -1,22 +1,82 @@
 // CU-RSVC-11: 입찰 내용 상세 - 시공항목별 상품·가격과 합계 확인 후 선택하거나 업체 프로필로 이동
+// 항목명 옆에 고객이 요청한 제품명·부위별 농도(썬팅)를 바로 노출하고, "제품 상세"는 실제 제품 테이블(TINT_PRODUCTS)에서
+// 매칭되는 브랜드·스펙을 읽어와 보여준다(평점은 DB에 리뷰 데이터가 없어 미표시)
 import shopThumb from "../../../assets/images/shop.png";
 import Button from "../../../components/ui/Button";
 import RsvHeader from "../RsvHeader";
-import { StarIcon, ChevronRightIcon, InfoIcon } from "../rsvIcons";
-import { BIDDERS } from "../rsvTypes";
+import { ChevronRightIcon, InfoIcon } from "../rsvIcons";
+import { INST_CODE_LABELS, TINT_POSITION_LABELS, TINT_PRODUCTS, type Bidder } from "../rsvTypes";
+import type { BidRequestItemApi, BidRequestPositionApi } from "../../../api/bidRequests";
+import type { ProdDtlInfo } from "../ProdDtlScreen";
 import { nfmt } from "../rsvFormat";
+
+const EMPTY_BIDDER: Bidder = { id: "", name: "", when: "", items: [] };
+
+function findRequestItem(itemName: string, requestItems: BidRequestItemApi[]) {
+  return requestItems.find((it) => (INST_CODE_LABELS[it.instCode] ?? it.instCode) === itemName);
+}
+
+/** 항목 행 아래에 바로 보여줄 서브텍스트 — 제품명 + (썬팅이면) 부위별 농도 */
+function itemSubtitle(itemName: string, requestItems: BidRequestItemApi[], requestPositions: BidRequestPositionApi[]): string {
+  const reqItem = findRequestItem(itemName, requestItems);
+  const productName = reqItem?.productName ?? null;
+  if (reqItem?.instCode === "TINT" && requestPositions.length) {
+    const posSummary = requestPositions.map((p) => `${TINT_POSITION_LABELS[p.position] ?? p.position} ${p.level}%`).join(" · ");
+    return productName ? `${productName} · ${posSummary}` : posSummary;
+  }
+  return productName ?? "제품 미지정";
+}
+
+/** "제품 상세" 진입 시 넘길 정보 — 썬팅(TINT)이고 제품명이 실제 제품 테이블(TINT_PRODUCTS)에 있으면 브랜드·스펙까지 채워줌 */
+function buildProdDtlInfo(itemName: string, requestItems: BidRequestItemApi[], requestPositions: BidRequestPositionApi[]): ProdDtlInfo {
+  const reqItem = findRequestItem(itemName, requestItems);
+  const isTint = reqItem?.instCode === "TINT";
+  const productName = reqItem?.productName ?? null;
+  const tintProduct = isTint && productName ? TINT_PRODUCTS.find((p) => p.name === productName) : undefined;
+  return {
+    itemLabel: itemName,
+    productName,
+    brand: tintProduct?.brand ?? null,
+    spec: tintProduct?.spec ?? null,
+    positions: isTint ? requestPositions : [],
+  };
+}
 
 interface BidContDtlScreenProps {
   selId: string;
+  bidders: Bidder[];
+  requestItems: BidRequestItemApi[];
+  requestPositions: BidRequestPositionApi[];
+  /** 이미 업체가 선정(SELECTED)됐거나 마감·취소된 요청이면 true — 더 이상 새로 선택할 수 없음 */
+  decided: boolean;
+  /** 고객이 이미 선택한 응찰번호(없으면 null) — decided일 때 이 업체가 선택된 업체인지 구분 */
+  selectedOfferNo: string | null;
   onBack: () => void;
   onOpenProfile: () => void;
-  onOpenProdDtl: () => void;
+  onOpenProdDtl: (info: ProdDtlInfo) => void;
   onPick: () => void;
 }
 
-export default function BidContDtlScreen({ selId, onBack, onOpenProfile, onOpenProdDtl, onPick }: BidContDtlScreenProps) {
-  const bidder = BIDDERS.find((b) => b.id === selId) || BIDDERS[0];
+export default function BidContDtlScreen({
+  selId,
+  bidders,
+  requestItems,
+  requestPositions,
+  decided,
+  selectedOfferNo,
+  onBack,
+  onOpenProfile,
+  onOpenProdDtl,
+  onPick,
+}: BidContDtlScreenProps) {
+  const bidder = bidders.find((b) => b.id === selId) ?? bidders[0] ?? EMPTY_BIDDER;
   const total = bidder.items.reduce((s, [, p]) => s + p, 0);
+  const isSelectedBidder = selectedOfferNo === selId;
+  const ctaLabel = decided
+    ? isSelectedBidder
+      ? "선택 완료된 업체예요"
+      : "다른 업체가 선정되었어요"
+    : `이 업체로 선택 · ${nfmt(total)}원`;
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -29,11 +89,7 @@ export default function BidContDtlScreen({ selId, onBack, onOpenProfile, onOpenP
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[15px] font-extrabold text-gray-900">{bidder.name}</div>
-            <div className="mt-[3px] flex items-center gap-1.5 text-[11.5px] text-gray-600">
-              <StarIcon color="var(--color-accent)" />
-              <span className="font-bold">{bidder.rating}</span>
-              <span className="text-gray-500">· {bidder.when}</span>
-            </div>
+            <div className="mt-[3px] text-[11.5px] text-gray-500">{bidder.when}</div>
           </div>
           <span onClick={onOpenProfile} className="flex-none cursor-pointer text-[11.5px] font-bold text-brand">
             프로필 ›
@@ -43,9 +99,14 @@ export default function BidContDtlScreen({ selId, onBack, onOpenProfile, onOpenP
         <div className="mx-0.5 mt-5 mb-2.5 text-[13px] font-extrabold text-gray-900">시공 항목별 견적</div>
         <div className="rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
           {bidder.items.map(([name, price], i) => (
-            <div key={name} onClick={onOpenProdDtl} className={`flex cursor-pointer items-center justify-between gap-3 py-3.5 ${i < bidder.items.length - 1 ? "border-b border-gray-100" : ""}`}>
+            <div
+              key={name}
+              onClick={() => onOpenProdDtl(buildProdDtlInfo(name, requestItems, requestPositions))}
+              className={`flex cursor-pointer items-center justify-between gap-3 py-3.5 ${i < bidder.items.length - 1 ? "border-b border-gray-100" : ""}`}
+            >
               <div className="min-w-0 flex-1">
                 <div className="text-[13.5px] font-bold text-gray-900">{name}</div>
+                <div className="mt-0.5 text-[11.5px] text-gray-500">{itemSubtitle(name, requestItems, requestPositions)}</div>
                 <div className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] text-brand">
                   제품 상세
                   <ChevronRightIcon color="var(--color-brand)" />
@@ -71,8 +132,8 @@ export default function BidContDtlScreen({ selId, onBack, onOpenProfile, onOpenP
       </div>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-6">
-        <Button size="xl" onClick={onPick}>
-          이 업체로 선택 · {nfmt(total)}원
+        <Button size="xl" variant={decided ? "secondary" : "primary"} disabled={decided} onClick={onPick}>
+          {ctaLabel}
         </Button>
       </div>
     </div>

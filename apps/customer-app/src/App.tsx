@@ -14,6 +14,7 @@ import MypFlow from "./screens/myp/MypFlow";
 import CsFlow from "./screens/cs/CsFlow";
 import type { NcpScreen } from "./screens/ncp/ncpTypes";
 import type { MypScreenId } from "./screens/myp/mypTypes";
+import type { ReqStatusFilter } from "./screens/rsv/BookingScreen";
 
 type View = "home" | "ncpk" | "rsv" | "point" | "shop" | "myp" | "cs";
 
@@ -24,6 +25,7 @@ function App() {
   const [view, setView] = useState<View>("home");
   const [ncpkEntryScreen, setNcpkEntryScreen] = useState<NcpScreen>("main");
   const [mypEntryScreen, setMypEntryScreen] = useState<MypScreenId>("main");
+  const [rsvEntryFilter, setRsvEntryFilter] = useState<ReqStatusFilter>("ALL");
 
   useEffect(() => {
     if (!booting) return;
@@ -39,6 +41,11 @@ function App() {
     setView("myp");
   };
   const openMyPage = () => openMyPageAt("main");
+
+  const openRsv = (filter: ReqStatusFilter = "ALL") => {
+    setRsvEntryFilter(filter);
+    setView("rsv");
+  };
 
   // 하드웨어 백버튼 기본 동작: 각 탭(view)의 루트 화면에서 뒤로가기를 누르면 그 화면의 "나가기" 대상과 동일한 곳으로 이동
   // (CsFlow만 myp로 돌아가고 나머지는 home으로 돌아가는 것도 아래 JSX의 onExit과 동일하게 맞춤)
@@ -76,7 +83,7 @@ function App() {
               setNcpkEntryScreen("bookingdtl");
               setView("ncpk");
             }}
-            onOpenRsv={() => setView("rsv")}
+            onOpenRsv={openRsv}
             onOpenPoint={() => setView("point")}
             onOpenShop={() => setView("shop")}
             onOpenMyPage={openMyPage}
@@ -86,13 +93,20 @@ function App() {
           />
         )}
         {view === "ncpk" && <NcpkFlow initialScreen={ncpkEntryScreen} onExit={() => setView("home")} />}
-        {view === "rsv" && <RsvFlow onExit={() => setView("home")} onOpenShop={() => setView("shop")} onOpenMyPage={openMyPage} />}
+        {view === "rsv" && (
+          <RsvFlow
+            initialFilter={rsvEntryFilter}
+            onExit={() => setView("home")}
+            onOpenShop={() => setView("shop")}
+            onOpenMyPage={openMyPage}
+          />
+        )}
         {view === "point" && <PointFlow onExit={() => setView("home")} onOpenShop={() => setView("shop")} />}
         {view === "shop" && (
           <ShopFlow
             onExit={() => setView("home")}
             onOpenMyPage={openMyPage}
-            onOpenRsv={() => setView("rsv")}
+            onOpenRsv={openRsv}
             onCancelReturnSubmitted={() => openMyPageAt("cancelhist")}
           />
         )}
@@ -102,7 +116,7 @@ function App() {
             initialScreen={mypEntryScreen}
             onExit={() => setView("home")}
             onOpenShop={() => setView("shop")}
-            onOpenRsv={() => setView("rsv")}
+            onOpenRsv={openRsv}
             onOpenCs={() => setView("cs")}
             onUpdateUser={setUser}
             onLogout={() => {

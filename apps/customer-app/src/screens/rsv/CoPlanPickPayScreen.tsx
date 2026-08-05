@@ -4,12 +4,15 @@ import BottomSheet from "../../components/ui/BottomSheet";
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import { CloseIcon, CouponIcon, InfoIcon } from "./rsvIcons";
-import { COUPON_DEFS, POINT_BALANCE, type PayMethodKey } from "./rsvTypes";
+import { COUPON_DEFS, POINT_BALANCE, type Bidder, type PayMethodKey, type RecoPlan } from "./rsvTypes";
 import { nfmt, parseDigits } from "./rsvFormat";
 import { selectedEntry, computePayBreakdown, couponBadge } from "./rsvCalc";
 
 interface CoPlanPickPayScreenProps {
   selId: string;
+  isExpert: boolean;
+  bidders: Bidder[];
+  recos: RecoPlan[];
   payMethod: PayMethodKey;
   pointUse: number;
   couponSel: string | null;
@@ -26,6 +29,9 @@ interface CoPlanPickPayScreenProps {
 
 export default function CoPlanPickPayScreen({
   selId,
+  isExpert,
+  bidders,
+  recos,
   payMethod,
   pointUse,
   couponSel,
@@ -39,9 +45,16 @@ export default function CoPlanPickPayScreen({
   onBack,
   onPay,
 }: CoPlanPickPayScreenProps) {
-  const { isRec, bidder, reco, name: selName } = selectedEntry(selId);
-  const selItemsLabel = isRec ? reco?.product ?? "" : (bidder?.items ?? []).map(([n]) => n.split(" · ")[0]).join(" · ");
-  const { payTotal, selCoupon, couponDiscount, pointMax, pointsUsed, payRemain } = computePayBreakdown(selId, couponSel, pointUse);
+  const { isRec, bidder, reco, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
+  const selItemsLabel = isRec ? reco?.itemSummary ?? "" : (bidder?.items ?? []).map(([n]) => n.split(" · ")[0]).join(" · ");
+  const { payTotal, selCoupon, couponDiscount, pointMax, pointsUsed, payRemain } = computePayBreakdown(
+    selId,
+    isExpert,
+    couponSel,
+    pointUse,
+    bidders,
+    recos,
+  );
   const couponUsable = COUPON_DEFS.filter((c) => !c.minAmount || payTotal >= c.minAmount);
 
   const ctaLabel =

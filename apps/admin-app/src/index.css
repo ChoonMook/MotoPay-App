@@ -1,0 +1,116 @@
+/* 관리자웹 디자인 토큰 - 색상 팔레트·폰트는 apps/customer-app(Cardoc 디자인시스템)과 통일, 토큰 구조(역할별 이름:
+   primary, secondary, surface 계열, on-surface 계열, outline 계열)는 uploads/sample_admin/Site.Master 원본
+   tailwind.config를 유지. Tailwind v4 진입점 */
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Regular.otf") format("opentype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Medium.otf") format("opentype");
+  font-weight: 500;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-SemiBold.otf") format("opentype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("./assets/fonts/Pretendard-Bold.otf") format("opentype");
+  font-weight: 700;
+}
+
+:root {
+  /* ---- Brand (Cardoc Blue로 통일) ------------------------------------------- */
+  --metaonce-primary: #1b64f2;
+  --metaonce-secondary: #16191c;
+  --metaonce-tertiary: #12b76a;
+
+  /* ---- Surface (Cardoc gray 스케일에서 근접값 매핑) --------------------------- */
+  --metaonce-surface: #f7f8fa;
+  --metaonce-surface-dim: #e8ebed;
+  --metaonce-surface-container-lowest: #ffffff;
+  --metaonce-surface-container-low: #f7f8fa;
+  --metaonce-surface-container: #f1f3f5;
+  --metaonce-surface-container-high: #e8ebed;
+  --metaonce-surface-container-highest: #d5dade;
+
+  /* ---- Text / Outline (Cardoc gray 스케일에서 근접값 매핑) --------------------- */
+  --metaonce-on-surface: #454c53;
+  --metaonce-on-surface-variant: #616a72;
+  --metaonce-outline: #b0b8bf;
+  --metaonce-outline-variant: #e8ebed;
+
+  /* ---- Font ------------------------------------------------------------- */
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
+    system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+@theme inline {
+  --color-primary: var(--metaonce-primary);
+  --color-secondary: var(--metaonce-secondary);
+  --color-tertiary: var(--metaonce-tertiary);
+
+  --color-surface: var(--metaonce-surface);
+  --color-surface-dim: var(--metaonce-surface-dim);
+  --color-surface-container-lowest: var(--metaonce-surface-container-lowest);
+  --color-surface-container-low: var(--metaonce-surface-container-low);
+  --color-surface-container: var(--metaonce-surface-container);
+  --color-surface-container-high: var(--metaonce-surface-container-high);
+  --color-surface-container-highest: var(--metaonce-surface-container-highest);
+
+  --color-on-surface: var(--metaonce-on-surface);
+  --color-on-surface-variant: var(--metaonce-on-surface-variant);
+  --color-outline: var(--metaonce-outline);
+  --color-outline-variant: var(--metaonce-outline-variant);
+
+  --font-family-sans: var(--font-sans);
+
+  /* Pretendard가 Malgun Gothic보다 동일 px에서 시각적으로 작게 보여, 글자 크기 스케일만(spacing은 그대로 두고)
+     한 단계씩 살짝 키움 - text-xs~text-2xl 전부 +1px 상당 */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.875rem;
+  --text-2xl: 1.5625rem;
+  --text-2xl--line-height: 2.125rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-on-surface);
+  background: var(--color-surface);
+}
+
+/* apps/customer-app, apps/partner-app와 동일한 스크롤바 숨김 유틸(.mp-scroll) - 탭바처럼 가로 스크롤이지만
+   스크롤바를 보이지 않게 하고 싶을 때 사용. 세로 콘텐츠 영역처럼 스크롤바를 가늘게 "보여줘야" 하는 곳은
+   이 앱 전용인 .custom-scrollbar를 따로 쓴다(데스크톱 그리드 UI 특성상 필요 - 형제 앱엔 대응 유틸이 없음) */
+.mp-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.mp-scroll {
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}

@@ -31,7 +31,7 @@
   --metaonce-tertiary: #12b76a;
 
   /* ---- Surface (Cardoc gray 스케일에서 근접값 매핑) --------------------------- */
-  --metaonce-surface: #f7f8fa;
+  --metaonce-surface: #f5f6fb;
   --metaonce-surface-dim: #e8ebed;
   --metaonce-surface-container-lowest: #ffffff;
   --metaonce-surface-container-low: #f7f8fa;
@@ -88,6 +88,12 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -113,4 +119,30 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.15);
   border-radius: 8px;
+}
+
+/* 관리자웹 표준 목록 그리드(components/DataGrid.tsx) 공통 스타일 - AD-SYS-04(사용자 계정 관리)에서 정립,
+   이후 모든 목록 화면이 DataGrid를 통해 이 클래스를 공유한다.
+   ag-grid 기본 페이징 패널은 페이지 크기 select에 커스텀 라벨("건")을 지원하지 않아, 패널 왼쪽에 DataGrid가
+   자체 select를 겹쳐 넣을 여백을 확보. 배경색은 헤더와 동일 톤으로 맞춤(ag-grid 테마 파라미터에는 페이징 패널
+   전용 배경 옵션이 없어 직접 지정) */
+.mp-admin-grid .ag-paging-panel {
+  padding-left: 96px;
+  background-color: var(--metaonce-surface-container-low);
+}
+
+/* 사이드바 로고 회전(Sidebar.tsx) - 평면 회전(rotate)이 아니라 세로축 기준 좌→우 수평 회전(rotateY, 카드
+   뒤집히듯 얇아졌다 다시 나타나는 형태). 평상시엔 느리게 회전. transform 애니메이션이라 GPU 컴포지팅으로
+   처리되어 리소스 부담은 거의 없음. 트랜잭션(API 요청) 진행 중 빠르게 도는 상태는 실 API 연동 시 전역 로딩
+   상태와 함께 추가할 예정(예: .mp-logo-spin-fast { animation-duration: .6s }) - 지금은 느린 기본 회전만 적용 */
+@keyframes mp-logo-spin {
+  from {
+    transform: perspective(400px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(400px) rotateY(360deg);
+  }
+}
+.mp-logo-spin {
+  animation: mp-logo-spin 6s linear infinite;
 }

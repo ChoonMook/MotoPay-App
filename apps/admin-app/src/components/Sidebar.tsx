@@ -34,7 +34,7 @@ export default function Sidebar({ collapsed, activePath, onNavigate }: SidebarPr
         className="flex h-16 shrink-0 cursor-pointer items-center justify-center gap-3 px-5 transition-colors hover:bg-black/10"
         onClick={() => onNavigate(DEFAULT_MENU_ITEM)}
       >
-        <img src="/icon.png" alt="MotoPay" className="h-8 w-8 rounded-lg object-contain" />
+        <img src="/icon.png" alt="MotoPay" className="mp-logo-spin h-8 w-8 rounded-lg object-contain" />
         {!collapsed && <span className="text-lg font-bold whitespace-nowrap text-[#e9ecef]">MotoPay</span>}
       </div>
 

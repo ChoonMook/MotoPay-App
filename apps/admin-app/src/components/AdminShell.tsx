@@ -71,7 +71,14 @@ export default function AdminShell() {
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         <Header username={session?.username ?? "관리자"} onToggleSidebar={() => setCollapsed((v) => !v)} onLogout={() => setShowLogoutConfirm(true)} />
-        <TabBar tabs={tabs} activeTab={activeTab} onActivate={setActiveTab} onClose={closeTab} onClearAll={() => setShowClearAllConfirm(true)} />
+        <TabBar
+          tabs={tabs}
+          activeTab={activeTab}
+          onActivate={setActiveTab}
+          onClose={closeTab}
+          onClearAll={() => setShowClearAllConfirm(true)}
+          onReorder={setTabs}
+        />
 
         <main className="relative flex-1 overflow-hidden bg-surface">
           {tabs.map((tab) => (

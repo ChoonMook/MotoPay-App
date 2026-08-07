@@ -7,9 +7,11 @@ import AdminShell from "./components/AdminShell";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import UserAcctMgmtPage from "./pages/system/UserAcctMgmtPage";
 
 function ContentSwitch({ path }: { path: string }) {
   if (path === "/main/dash") return <DashboardPage />;
+  if (path === "/system/user-acct-mgmt") return <UserAcctMgmtPage />;
   return <PlaceholderPage path={path} />;
 }
 

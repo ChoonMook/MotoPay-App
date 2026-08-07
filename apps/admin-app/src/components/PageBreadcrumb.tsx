@@ -5,7 +5,7 @@ import { findBreadcrumb } from "../lib/menuConfig";
 export default function PageBreadcrumb({ path }: { path: string }) {
   const { groupLabel, itemLabel } = findBreadcrumb(path);
   return (
-    <div className="flex items-center gap-2 text-[12px] font-bold tracking-widest text-secondary uppercase">
+    <div className="flex items-center gap-2 text-[12px] font-bold tracking-widest text-on-surface-variant uppercase">
       <span>HOME</span>
       <ChevronRight className="h-3.5 w-3.5 text-outline" />
       {groupLabel && (

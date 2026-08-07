@@ -15,6 +15,8 @@ export const ADMIN_GRID_THEME = themeQuartz.withParams({
   // 헤더 배경(연회색)과 같은 무채색 계열로는 hover와 헤더가 눈으로 구분되지 않아, 톤 자체를 다르게(연한 파란빛)
   // 가져가 헤더보다 밝으면서도 흰 배경(행) 위에서 또렷이 보이도록 함
   rowHoverColor: "rgba(27, 100, 242, 0.05)",
+  // Master-Detail 화면(예: AD-SYS-03)처럼 rowSelection으로 선택된 행을 표시할 때 사용 — hover보다 진하게
+  selectedRowBackgroundColor: "rgba(27, 100, 242, 0.1)",
   fontFamily: "var(--font-sans)",
   fontSize: 13,
   spacing: 8,

@@ -7,11 +7,20 @@
 declare global {
   interface Window {
     openTab?: (path: string, label: string) => void;
+    adjustApiBusyCount?: (delta: number) => void;
   }
 }
 
 export function openInParent(path: string, label: string): void {
   if (window.parent !== window && window.parent.openTab) {
     window.parent.openTab(path, label);
+  }
+}
+
+/** apps/api 요청 시작(+1)/종료(-1)를 부모 창(AdminShell)에 알려 사이드바 로고를 트랜잭션 처리 중에는
+ * 빠르게 회전시킨다(lib/http.ts가 요청마다 호출). AdminShell이 카운트를 0보다 큰 동안만 "처리 중"으로 본다. */
+export function notifyApiBusyDelta(delta: 1 | -1): void {
+  if (window.parent !== window && window.parent.adjustApiBusyCount) {
+    window.parent.adjustApiBusyCount(delta);
   }
 }

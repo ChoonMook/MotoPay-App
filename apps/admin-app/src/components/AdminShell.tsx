@@ -2,17 +2,20 @@
 // 원본 Site.Master의 openTab/syncIframes/closeTab/closeAllTabs 로직을 React state + sessionStorage로 이식
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { clearTokens } from "../api/tokenStorage";
 import type { MenuLeaf } from "../lib/menuConfig";
-import { getSession, logout as mockLogout } from "../lib/mockAuth";
 import { clearTabStorage, loadActiveTab, loadTabs, saveTabState, DEFAULT_TAB, type AdminTab } from "../lib/tabStorage";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import TabBar from "./TabBar";
 import ConfirmModal from "./ConfirmModal";
 
-export default function AdminShell() {
+interface AdminShellProps {
+  displayName: string;
+}
+
+export default function AdminShell({ displayName }: AdminShellProps) {
   const navigate = useNavigate();
-  const session = getSession();
 
   const [collapsed, setCollapsed] = useState(false);
   const [tabs, setTabs] = useState<AdminTab[]>(loadTabs);
@@ -22,6 +25,7 @@ export default function AdminShell() {
   });
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [apiBusyCount, setApiBusyCount] = useState(0);
 
   useEffect(() => {
     saveTabState(tabs, activeTab);
@@ -42,6 +46,15 @@ export default function AdminShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // iframe 안의 콘텐츠 페이지가 api/http.ts를 통해 보내는 API 요청 시작/종료 신호를 받아 사이드바 로고
+  // 회전 속도에 반영(lib/parentBridge.ts의 notifyApiBusyDelta와 짝) — 0 아래로 내려가지 않게 방어
+  useEffect(() => {
+    window.adjustApiBusyCount = (delta) => setApiBusyCount((prev) => Math.max(0, prev + delta));
+    return () => {
+      delete window.adjustApiBusyCount;
+    };
+  }, []);
+
   const closeTab = (path: string) => {
     setTabs((prev) => {
       const next = prev.filter((t) => t.path !== path);
@@ -60,17 +73,17 @@ export default function AdminShell() {
   };
 
   const doLogout = () => {
-    mockLogout();
+    clearTokens();
     clearTabStorage();
     navigate("/login", { replace: true });
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
-      <Sidebar collapsed={collapsed} activePath={activeTab} onNavigate={openTab} />
+      <Sidebar collapsed={collapsed} activePath={activeTab} onNavigate={openTab} isBusy={apiBusyCount > 0} />
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-        <Header username={session?.username ?? "관리자"} onToggleSidebar={() => setCollapsed((v) => !v)} onLogout={() => setShowLogoutConfirm(true)} />
+        <Header username={displayName} onToggleSidebar={() => setCollapsed((v) => !v)} onLogout={() => setShowLogoutConfirm(true)} />
         <TabBar
           tabs={tabs}
           activeTab={activeTab}

@@ -1,9 +1,11 @@
 // 관리자웹 로그인 화면 (uploads/sample_admin/Login.aspx, sample_login.png 이식)
-// 이번 작업 범위상 실 서버 인증이 없어 lib/mockAuth의 목업 로그인을 사용
+// AD-SYS-03(공통 코드 관리) API 연계를 위해 apps/api의 /admin-auth/login에 연결한 실 로그인
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { getRememberedId, login, setRememberedId } from "../lib/mockAuth";
+import { login as loginApi } from "../api/adminAuth";
+import { setTokens } from "../api/tokenStorage";
+import { getRememberedId, setRememberedId } from "../lib/rememberedId";
 import { DEFAULT_MENU_ITEM } from "../lib/menuConfig";
 
 export default function LoginPage() {
@@ -12,16 +14,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [rememberId, setRememberIdChecked] = useState(() => !!getRememberedId());
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!login(userId, password)) {
+    if (!userId.trim() || !password.trim()) {
       setError("아이디와 비밀번호를 모두 입력해주세요.");
       return;
     }
-    setRememberedId(rememberId ? userId.trim() : null);
-    navigate(DEFAULT_MENU_ITEM.path, { replace: true });
+    setSubmitting(true);
+    setError("");
+    try {
+      const result = await loginApi(userId.trim(), password);
+      setTokens(result.accessToken, result.refreshToken);
+      setRememberedId(rememberId ? userId.trim() : null);
+      navigate(DEFAULT_MENU_ITEM.path, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -93,9 +106,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="mt-2 w-full cursor-pointer rounded-lg bg-primary py-3 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
+              disabled={submitting}
+              className="mt-2 w-full cursor-pointer rounded-lg bg-primary py-3 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              로그인
+              {submitting ? "로그인 중..." : "로그인"}
             </button>
 
             {error && (

@@ -8,9 +8,11 @@ interface SidebarProps {
   collapsed: boolean;
   activePath: string;
   onNavigate: (item: MenuLeaf) => void;
+  /** 콘텐츠 iframe에서 API 요청이 진행 중이면 true — 로고를 빠르게 회전시켜 트랜잭션 처리 중임을 알림 */
+  isBusy: boolean;
 }
 
-export default function Sidebar({ collapsed, activePath, onNavigate }: SidebarProps) {
+export default function Sidebar({ collapsed, activePath, onNavigate, isBusy }: SidebarProps) {
   const activeGroupKey = MENU_GROUPS.find((g) => g.items.some((i) => i.path === activePath))?.key;
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroupKey ? [activeGroupKey] : []));
 
@@ -34,7 +36,11 @@ export default function Sidebar({ collapsed, activePath, onNavigate }: SidebarPr
         className="flex h-16 shrink-0 cursor-pointer items-center justify-center gap-3 px-5 transition-colors hover:bg-black/10"
         onClick={() => onNavigate(DEFAULT_MENU_ITEM)}
       >
-        <img src="/icon.png" alt="MotoPay" className="mp-logo-spin h-8 w-8 rounded-lg object-contain" />
+        <img
+          src="/icon.png"
+          alt="MotoPay"
+          className={`h-8 w-8 rounded-lg object-contain ${isBusy ? "mp-logo-spin-fast" : "mp-logo-spin"}`}
+        />
         {!collapsed && <span className="text-lg font-bold whitespace-nowrap text-[#e9ecef]">MotoPay</span>}
       </div>
 

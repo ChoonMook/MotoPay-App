@@ -132,9 +132,10 @@ body {
 }
 
 /* 사이드바 로고 회전(Sidebar.tsx) - 평면 회전(rotate)이 아니라 세로축 기준 좌→우 수평 회전(rotateY, 카드
-   뒤집히듯 얇아졌다 다시 나타나는 형태). 평상시엔 느리게 회전. transform 애니메이션이라 GPU 컴포지팅으로
-   처리되어 리소스 부담은 거의 없음. 트랜잭션(API 요청) 진행 중 빠르게 도는 상태는 실 API 연동 시 전역 로딩
-   상태와 함께 추가할 예정(예: .mp-logo-spin-fast { animation-duration: .6s }) - 지금은 느린 기본 회전만 적용 */
+   뒤집히듯 얇아졌다 다시 나타나는 형태). 평상시엔 느리게(.mp-logo-spin), 콘텐츠 iframe에서 API 요청이
+   진행 중일 때는 빠르게(.mp-logo-spin-fast) 회전 — AdminShell.tsx가 lib/parentBridge.ts의
+   notifyApiBusyDelta 신호를 받아 Sidebar에 isBusy로 전달해 클래스를 바꿔 끼운다.
+   transform 애니메이션이라 GPU 컴포지팅으로 처리되어 리소스 부담은 거의 없음 */
 @keyframes mp-logo-spin {
   from {
     transform: perspective(400px) rotateY(0deg);
@@ -145,4 +146,7 @@ body {
 }
 .mp-logo-spin {
   animation: mp-logo-spin 6s linear infinite;
+}
+.mp-logo-spin-fast {
+  animation: mp-logo-spin 2s linear infinite;
 }

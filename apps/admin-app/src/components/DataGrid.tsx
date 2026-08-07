@@ -3,7 +3,14 @@
 // 만들거나 ag-grid를 개별 설정하지 말고 이 컴포넌트를 사용해 그리드 스타일을 통일한다.
 import { forwardRef, useImperativeHandle, useRef, useState, type ForwardedRef } from "react";
 import { AgGridReact } from "ag-grid-react";
-import type { CellClickedEvent, ColDef, GetRowIdParams } from "ag-grid-community";
+import type {
+  CellClickedEvent,
+  CellValueChangedEvent,
+  ColDef,
+  GetRowIdParams,
+  RowClassParams,
+  RowSelectionOptions,
+} from "ag-grid-community";
 import { ADMIN_GRID_DEFAULT_PAGE_SIZE, ADMIN_GRID_LOCALE_KO, ADMIN_GRID_PAGE_SIZE_OPTIONS, ADMIN_GRID_THEME } from "../lib/agGridConfig";
 
 export interface DataGridProps<TData> {
@@ -12,13 +19,30 @@ export interface DataGridProps<TData> {
   getRowId: (params: GetRowIdParams<TData>) => string;
   context?: unknown;
   onCellClicked?: (event: CellClickedEvent<TData>) => void;
+  /** 셀 인라인 편집(columnDefs의 editable) 값이 바뀌었을 때 - 편집 가능한 그리드에서만 사용 */
+  onCellValueChanged?: (event: CellValueChangedEvent<TData>) => void;
+  /** 선택된 행 강조 등 행별 조건부 스타일 클래스 */
+  getRowClass?: (params: RowClassParams<TData>) => string | string[] | undefined;
+  /** Master-Detail 화면처럼 행을 선택해 하이라이트해야 할 때만 지정(테마의 selectedRowBackgroundColor와 짝) */
+  rowSelection?: RowSelectionOptions<TData>;
   rowClass?: string;
   /** 결과가 없을 때 보여줄 안내 문구 */
   emptyMessage?: string;
 }
 
 function DataGridInner<TData>(
-  { columnDefs, rowData, getRowId, context, onCellClicked, rowClass, emptyMessage = "조건에 맞는 항목이 없습니다." }: DataGridProps<TData>,
+  {
+    columnDefs,
+    rowData,
+    getRowId,
+    context,
+    onCellClicked,
+    onCellValueChanged,
+    getRowClass,
+    rowSelection,
+    rowClass,
+    emptyMessage = "조건에 맞는 항목이 없습니다.",
+  }: DataGridProps<TData>,
   ref: ForwardedRef<AgGridReact<TData>>,
 ) {
   const internalRef = useRef<AgGridReact<TData>>(null);
@@ -42,6 +66,9 @@ function DataGridInner<TData>(
         getRowId={getRowId}
         context={context}
         onCellClicked={onCellClicked}
+        onCellValueChanged={onCellValueChanged}
+        getRowClass={getRowClass}
+        rowSelection={rowSelection}
         rowClass={rowClass}
         pagination
         paginationPageSize={pageSize}

@@ -31,3 +31,17 @@ export function login(username: string, password: string): Promise<AdminLoginRes
 export function getMe(): Promise<AdminAccount> {
   return authedRequest<AdminAccount>("/admin-auth/me");
 }
+
+export interface UpdateAdminMeInput {
+  email?: string;
+  phone?: string;
+  newPassword?: string;
+}
+
+/** 내 정보 수정 — 이메일·휴대폰번호·비밀번호(선택) 중 전달된 값만 갱신 */
+export function updateMe(input: UpdateAdminMeInput): Promise<AdminAccount> {
+  return authedRequest<AdminAccount>("/admin-auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}

@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AdminAccountsModule } from './admin-accounts/admin-accounts.module';
 import { AdminAuthModule } from './admin-auth/admin-auth.module';
+import { AdminMembersModule } from './admin-members/admin-members.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BidRequestsModule } from './bid-requests/bid-requests.module';
 import { CarsModule } from './cars/cars.module';
 import { CommonCodesModule } from './common-codes/common-codes.module';
+import { CompaniesModule } from './companies/companies.module';
+import { MenuPermissionsModule } from './menu-permissions/menu-permissions.module';
 import { PartnerAuthModule } from './partner-auth/partner-auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
@@ -21,9 +25,13 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     PartnerAuthModule,
     AdminAuthModule,
+    AdminAccountsModule,
+    AdminMembersModule,
+    MenuPermissionsModule,
     UsersModule,
     CarsModule,
     CommonCodesModule,
+    CompaniesModule,
     ProductsModule,
     ShopsModule,
     ReservationsModule,

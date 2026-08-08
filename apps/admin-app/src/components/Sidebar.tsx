@@ -2,7 +2,7 @@
 // uploads/MotoPay_메뉴구조도_v1_22.xlsx 관리자웹_사이트맵 메뉴 데이터)
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { DEFAULT_MENU_ITEM, MENU_GROUPS, type MenuLeaf } from "../lib/menuConfig";
+import { DEFAULT_MENU_ITEM, type MenuGroup, type MenuLeaf } from "../lib/menuConfig";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -10,10 +10,12 @@ interface SidebarProps {
   onNavigate: (item: MenuLeaf) => void;
   /** 콘텐츠 iframe에서 API 요청이 진행 중이면 true — 로고를 빠르게 회전시켜 트랜잭션 처리 중임을 알림 */
   isBusy: boolean;
+  /** 로그인한 관리자의 권한그룹 기준으로 필터링된 메뉴 트리(lib/menuConfig.ts의 filterMenuGroups 결과) */
+  menuGroups: MenuGroup[];
 }
 
-export default function Sidebar({ collapsed, activePath, onNavigate, isBusy }: SidebarProps) {
-  const activeGroupKey = MENU_GROUPS.find((g) => g.items.some((i) => i.path === activePath))?.key;
+export default function Sidebar({ collapsed, activePath, onNavigate, isBusy, menuGroups }: SidebarProps) {
+  const activeGroupKey = menuGroups.find((g) => g.items.some((i) => i.path === activePath))?.key;
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(activeGroupKey ? [activeGroupKey] : []));
 
   const toggleGroup = (key: string) => {
@@ -45,7 +47,7 @@ export default function Sidebar({ collapsed, activePath, onNavigate, isBusy }: S
       </div>
 
       <nav className="custom-scrollbar flex-1 overflow-y-auto py-2">
-        {MENU_GROUPS.map((group) => {
+        {menuGroups.map((group) => {
           const isOpen = openGroups.has(group.key);
           const Icon = group.icon;
           return (

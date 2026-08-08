@@ -1,10 +1,11 @@
-// POST /admin-auth/login, GET /admin-auth/me, POST /admin-auth/refresh
+// POST /admin-auth/login, GET /admin-auth/me, PATCH /admin-auth/me, POST /admin-auth/refresh
 import {
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { AdminAuthService } from './admin-auth.service';
 import { CurrentAdmin } from './decorators/current-admin.decorator';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRefreshDto } from './dto/admin-refresh.dto';
+import { UpdateAdminMeDto } from './dto/update-admin-me.dto';
 import { JwtAdminAuthGuard } from './guards/jwt-admin-auth.guard';
 import type { SafeAdminAccount } from './admin-auth.types';
 
@@ -40,6 +42,19 @@ export class AdminAuthController {
   })
   me(@CurrentAdmin() adminAccount: SafeAdminAccount) {
     return adminAccount;
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAdminAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '내 정보 수정 — 이메일·휴대폰번호·비밀번호(선택) 변경',
+  })
+  updateMe(
+    @CurrentAdmin() adminAccount: SafeAdminAccount,
+    @Body() dto: UpdateAdminMeDto,
+  ) {
+    return this.adminAuthService.updateMe(adminAccount.id, dto);
   }
 
   @Post('refresh')

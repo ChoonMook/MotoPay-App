@@ -1,10 +1,14 @@
-// 사이드바 메뉴 트리(그룹/아이템/아이콘/경로) - uploads/MotoPay_메뉴구조도_v1_25.xlsx의 "관리자웹_사이트맵" 시트
-// (AD-DASH-01 ~ AD-SYS-04 범위, 로그인/계정설정 AD-AUTH-*는 인증 흐름이라 사이드바 메뉴 대상이 아니라 제외)를
+// 사이드바 메뉴 트리(그룹/아이템/아이콘/경로) - uploads/MotoPay_메뉴구조도_v1_28.xlsx의 "관리자웹_사이트맵" 시트
+// (AD-DASH-01 ~ AD-SYS-05 범위, 로그인/계정설정 AD-AUTH-*는 인증 흐름이라 사이드바 메뉴 대상이 아니라 제외)를
 // 그대로 데이터화. pgId는 시트의 프로그램ID를 그대로 사용 — 추후 메뉴 권한 기능에서 재사용 가능하도록 보존.
 // URL경로가 "-"인 항목(팝업 액션: 포인트 강제 부여/차감 등)과 3 Depth(상세화면 내부 탭) 항목은 독립된
 // 사이드바 목적지가 아니라 이번 메뉴 트리에서 제외.
 // v1_25 변경분: 포인트 관리 + 쿠폰 관리 그룹이 "포인트·쿠폰 관리"로 통합, 후기 관리 그룹이 CS(고객센터) 관리로
 // 편입, 시스템 설정에 사용자 계정 관리(AD-SYS-04) 추가.
+// v1_27 변경분: 업체 관리의 권한 관리(AD-CO-06)가 시스템 설정의 메뉴권한관리(AD-SYS-05)로 이동, 시스템 설정의
+// 자동확정 기간 설정(AD-SYS-02)이 공통 코드 관리(AD-SYS-03)로 통합되어 별도 메뉴 항목에서 제외.
+// v1_28 변경분: 회원 관리의 사업자 회원 목록(AD-MBR-03)이 제거되고, 업체 관리의 업체 사용자 목록(AD-CO-06,
+// 신규 프로그램ID)으로 재설계되어 이동.
 import {
   BookOpen,
   Building2,
@@ -47,21 +51,16 @@ export const MENU_GROUPS: MenuGroup[] = [
     key: "member",
     label: "회원 관리",
     icon: Users,
-    items: [
-      { pgId: "AD-MBR-02", label: "고객 회원 목록", path: "/member/cust-mbr-list" },
-      { pgId: "AD-MBR-03", label: "사업자 회원 목록", path: "/member/mbr-list" },
-    ],
+    items: [{ pgId: "AD-MBR-02", label: "고객 회원 목록", path: "/member/cust-mbr-list" }],
   },
   {
     key: "company",
     label: "업체 관리",
     icon: Building2,
-    items: [
-      { pgId: "AD-CO-02", label: "업체 등록", path: "/company/co-reg" },
-      { pgId: "AD-CO-03", label: "업체 목록", path: "/company/co-list" },
-      { pgId: "AD-CO-04", label: "업체 상세", path: "/company/co-dtl" },
-      { pgId: "AD-CO-06", label: "권한 관리", path: "/company/perm-mgmt" },
-    ],
+    // 업체 등록(AD-CO-02)·업체 상세(AD-CO-04)는 독립된 화면이 아니라 업체 목록(AD-CO-03)에서 여는 팝업이고,
+    // 업체 사용자 목록(AD-CO-06)의 계정 관리 기능도 업체 상세 팝업의 "소속 사용자 계정" 섹션이 대신하고 있어
+    // 사이드바에는 업체 목록만 노출한다(2026-08-08 논의 반영).
+    items: [{ pgId: "AD-CO-03", label: "업체 목록", path: "/company/co-list" }],
   },
   {
     key: "ncpk",
@@ -152,9 +151,9 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "시스템 설정",
     icon: Settings,
     items: [
-      { pgId: "AD-SYS-02", label: "자동확정 기간 설정", path: "/system/auto-cfm-period-cfg" },
       { pgId: "AD-SYS-03", label: "공통 코드 관리", path: "/system/common-code-mgmt" },
       { pgId: "AD-SYS-04", label: "사용자 계정 관리", path: "/system/user-acct-mgmt" },
+      { pgId: "AD-SYS-05", label: "메뉴권한관리", path: "/system/menu-perm-mgmt" },
     ],
   },
 ];
@@ -173,4 +172,20 @@ export function findBreadcrumb(path: string): { groupLabel: string | null; itemL
   const group = MENU_GROUPS.find((g) => g.items.some((i) => i.path === path));
   const item = group?.items.find((i) => i.path === path);
   return { groupLabel: group?.label ?? null, itemLabel: item?.label ?? path };
+}
+
+/** URL 직접 접근 차단(AD-SYS-05)용 — 경로가 메뉴 트리에 속하면 해당 프로그램ID, 메뉴 트리 밖의 경로면 null */
+export function findPgIdByPath(path: string): string | null {
+  return ALL_MENU_ITEMS.find((m) => m.path === path)?.pgId ?? null;
+}
+
+// 로그인한 관리자의 권한그룹이 접근권한(canAccess)을 가진 메뉴만 남기고 사이드바 트리를 필터링(AD-SYS-05
+// 메뉴권한관리와 연동). allowedPgIds가 null이면 필터링 없이 전체 노출(SUPER_ADMIN 등 항상 전체 접근 그룹 전용).
+// 항목이 모두 걸러진 그룹은 사이드바에서 그룹 자체를 표시하지 않는다.
+export function filterMenuGroups(allowedPgIds: Set<string> | null): MenuGroup[] {
+  if (allowedPgIds === null) return MENU_GROUPS;
+  return MENU_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => allowedPgIds.has(item.pgId)),
+  })).filter((group) => group.items.length > 0);
 }

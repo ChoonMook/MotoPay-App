@@ -41,6 +41,7 @@ model User {
   // TIMESTAMP(DATETIME 대신)로 저장 — 이 앱의 DB 커넥션은 세션 타임존을 UTC로 고정해서 쓰고,
   // 다른 DB 클라이언트(서버 기본 세션=한국시간)로 직접 열어봐도 TIMESTAMP는 세션 타임존 기준으로 자동 변환되어 보임
   lastLoginAt DateTime? @db.Timestamp(3) // 최종 로그인 일시
+  withdrawnAt DateTime? @db.Timestamp(3) // 탈퇴일시(AD-MBR-02 고객 회원 목록 전용) — null이면 정상, 값이 있으면 탈퇴 상태
   createdAt   DateTime  @default(now()) @db.Timestamp(3) // 가입일시
   updatedAt   DateTime  @updatedAt @db.Timestamp(3)
 
@@ -101,7 +102,7 @@ model AdminAccount {
   phoneHash      String? // HMAC-SHA256 결정적 해시 — 검색용(User.phoneHash와 동일 정책)
   email          String?
   accountType    AdminAccountType // 사용자유형(플랫폼관리자/파트너사/공급사)
-  permGroup      String // 권한그룹 — 추후 권한 관리(AD-CO-06) 화면에서 그룹 마스터를 관리할 예정, 현재는 자유 텍스트
+  permGroup      String // 권한그룹 -> CommonCodeDetail(code='PERM_GROUP')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음)
   useYn          Boolean          @default(true) // 상태(사용/비활성화)
   createdBy      String? // 이 계정을 생성한 관리자 계정의 username — 최초 시드 계정은 null
   updatedBy      String? // 이 계정을 마지막으로 수정한 관리자 계정의 username
@@ -111,6 +112,25 @@ model AdminAccount {
 
   @@index([phoneHash])
   @@map("admin_accounts")
+}
+
+// 권한그룹별 관리자웹 메뉴 권한(AD-SYS-05 메뉴권한관리) — 메뉴 트리 자체는 admin-app의 menuConfig.ts가
+// 관리하고, 이 테이블은 (권한그룹, 메뉴 프로그램ID) 조합별 접근/읽기/수정/삭제/파일 권한 여부만 저장한다.
+// 화면 구성만 우선 진행 — 실제 사이드바 노출·라우팅 가드 연동은 별도 작업 범위
+model MenuPermission {
+  id         String   @id @default(uuid())
+  permGroup  String // 권한그룹 -> CommonCodeDetail(code='PERM_GROUP')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음)
+  menuPgId   String // 메뉴구조도(uploads/MotoPay_메뉴구조도_v1_27.xlsx)의 프로그램ID, 예: "AD-MBR-02" — menuConfig.ts의 pgId와 매핑, DB FK는 걸지 않음
+  canAccess  Boolean  @default(false) // 접근권한 — 선행조건(false면 아래 4개 권한은 의미 없음)
+  canRead    Boolean  @default(false) // 읽기권한
+  canWrite   Boolean  @default(false) // 수정권한
+  canDelete  Boolean  @default(false) // 삭제권한
+  canFile    Boolean  @default(false) // 파일권한
+  createdAt  DateTime @default(now()) @db.Timestamp(3)
+  updatedAt  DateTime @updatedAt @db.Timestamp(3)
+
+  @@unique([permGroup, menuPgId])
+  @@map("menu_permissions")
 }
 
 // 상품정보 — 쇼핑몰/시공서비스/패키지 등 모토페이가 취급하는 모든 상품의 마스터
@@ -250,8 +270,31 @@ model Shop {
   bidOffers      BidOffer[]
   bidPlans       BidPlan[]
   reviews        Review[]
+  company        Company? // AD-CO 업체 관리에서 이 시공업체에 연결한 업체(사업자) 레코드
 
   @@map("shops")
+}
+
+// 업체 마스터(AD-CO-02/03/04 업체 관리) — 딜러사·시공업체·공급업체를 통합 관리하는 업체 레코드.
+// 시공업체(coType='SHOP')는 기존 Shop 테이블과 shopCode로 연결(운영 데이터는 Shop에 그대로 유지, 이 테이블은
+// 사업자 정보·상태만 관리). 딜러사·공급업체는 아직 별도 운영 테이블이 없어 이 테이블이 유일한 레코드다.
+model Company {
+  id                 Int      @id @default(autoincrement())
+  coType             String // 업체구분 -> CommonCodeDetail(code='CO_TYPE': DEALER/SHOP/SUPPLIER)
+  name               String // 업체명
+  businessRegNo      String // 사업자번호
+  representativeName String? // 대표자명
+  contactName        String? // 담당자명
+  contactPhone       String? // 담당자 연락처
+  shopCode           String?  @unique @db.Char(10) // coType='SHOP'인 경우 Shop.shopCode 연결(1:1), 그 외 타입은 null
+  useYn              Boolean  @default(true) // 상태(정상=true/중지=false)
+  suspendReason      String?  @db.Text // 사용중지 사유(중지 처리 시 필수 입력)
+  createdAt          DateTime @default(now()) @db.Timestamp(3)
+  updatedAt          DateTime @updatedAt @db.Timestamp(3)
+
+  shop Shop? @relation(fields: [shopCode], references: [shopCode])
+
+  @@map("companies")
 }
 
 // 파트너(시공업체) 사용자 — apps/partner-app 로그인 계정. 자체 가입 없이 콜센터 등을 통해 발급되며, 발급 직후에는

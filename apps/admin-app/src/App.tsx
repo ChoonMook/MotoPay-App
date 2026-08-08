@@ -4,18 +4,27 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Routes, Route, useLocation, useSearchParams } from "react-router-dom";
 import { getMe, type AdminAccount } from "./api/adminAuth";
+import { listMenuPermissions } from "./api/menuPermissions";
 import { clearTokens, getAccessToken } from "./api/tokenStorage";
 import AdminShell from "./components/AdminShell";
+import { DEFAULT_MENU_ITEM, findPgIdByPath } from "./lib/menuConfig";
+import AccessDeniedPage from "./pages/AccessDeniedPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import CoListPage from "./pages/company/CoListPage";
+import CustMbrListPage from "./pages/member/CustMbrListPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
+import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
 import UserAcctMgmtPage from "./pages/system/UserAcctMgmtPage";
 
 function ContentSwitch({ path }: { path: string }) {
   if (path === "/main/dash") return <DashboardPage />;
+  if (path === "/member/cust-mbr-list") return <CustMbrListPage />;
+  if (path === "/company/co-list") return <CoListPage />;
   if (path === "/system/user-acct-mgmt") return <UserAcctMgmtPage />;
   if (path === "/system/common-code-mgmt") return <CommonCodeMgmtPage />;
+  if (path === "/system/menu-perm-mgmt") return <MenuPermMgmtPage />;
   return <PlaceholderPage path={path} />;
 }
 
@@ -31,30 +40,60 @@ function RootGate() {
   const location = useLocation();
   const [params] = useSearchParams();
   const [adminAccount, setAdminAccount] = useState<AdminAccount | null>(null);
+  // 로그인한 관리자의 권한그룹이 접근 가능한 메뉴 프로그램ID 집합(AD-SYS-05 메뉴권한관리 연동) — null이면
+  // 필터링 없이 전체 메뉴 노출(SUPER_ADMIN은 메뉴권한 매트릭스가 비어 있어도 잠기지 않도록 항상 전체 노출)
+  const [allowedMenuPgIds, setAllowedMenuPgIds] = useState<Set<string> | null>(null);
   // 저장된 토큰이 있을 때만 세션 복원(/admin-auth/me)을 시도 — 없으면 처음부터 로그인 화면을 바로 보여준다
   const [booting, setBooting] = useState(() => !!getAccessToken());
 
   useEffect(() => {
     if (!booting) return;
     getMe()
-      .then(setAdminAccount)
+      .then(async (account) => {
+        setAdminAccount(account);
+        if (account.permGroup === "SUPER_ADMIN") {
+          setAllowedMenuPgIds(null);
+          return;
+        }
+        try {
+          const rows = await listMenuPermissions(account.permGroup);
+          setAllowedMenuPgIds(new Set(rows.filter((r) => r.canAccess).map((r) => r.menuPgId)));
+        } catch {
+          // 메뉴 권한 조회 실패 시 로그인 자체를 막지는 않되, 안전하게 메뉴를 전부 비노출 처리
+          setAllowedMenuPgIds(new Set());
+        }
+      })
       .catch(() => clearTokens())
       .finally(() => setBooting(false));
   }, [booting]);
 
-  if (params.get("frame") === "Y") {
+  const isFrame = params.get("frame") === "Y";
+
+  if (booting) {
+    return isFrame ? null : <BootingScreen />;
+  }
+
+  if (isFrame) {
+    // 로그인 세션이 없는 상태(예: 별도 탭에 frame=Y URL을 직접 열어 sessionStorage 토큰이 없는 경우)로
+    // 콘텐츠에 접근하면 리다이렉트 없이 안내만 표시 — 어차피 로그인 없이는 기본 화면도 열람 불가
+    if (!adminAccount) {
+      return <AccessDeniedPage message="로그인이 필요합니다." redirectToHome={false} />;
+    }
+    const pgId = findPgIdByPath(location.pathname);
+    const allowed = pgId === null || allowedMenuPgIds === null || allowedMenuPgIds.has(pgId);
+    if (!allowed) {
+      return <AccessDeniedPage redirectToHome={location.pathname !== DEFAULT_MENU_ITEM.path} />;
+    }
     return <ContentSwitch path={location.pathname} />;
   }
-  if (booting) {
-    return <BootingScreen />;
-  }
+
   if (!adminAccount) {
     return <Navigate to="/login" replace />;
   }
   if (location.pathname === "/") {
     return <Navigate to="/main/dash" replace />;
   }
-  return <AdminShell displayName={adminAccount.name} />;
+  return <AdminShell adminAccount={adminAccount} onAdminAccountChange={setAdminAccount} allowedMenuPgIds={allowedMenuPgIds} />;
 }
 
 export default function App() {

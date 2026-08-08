@@ -1,14 +1,14 @@
-// 상단 헤더 - 사이드바 토글, 타이틀, 알림, 사용자 드롭다운(로그아웃) (uploads/sample_admin/Site.Master 헤더 이식)
-// "내 정보 수정" 모달은 백엔드 연동이 없는 이번 작업 범위상 제외
-import { Bell, ChevronDown, LogOut, Menu } from "lucide-react";
+// 상단 헤더 - 사이드바 토글, 타이틀, 알림, 사용자 드롭다운(내 정보 수정/로그아웃) (uploads/sample_admin/Site.Master 헤더 이식)
+import { Bell, ChevronDown, LogOut, Menu, UserCog } from "lucide-react";
 
 interface HeaderProps {
   username: string;
   onToggleSidebar: () => void;
+  onEditProfile: () => void;
   onLogout: () => void;
 }
 
-export default function Header({ username, onToggleSidebar, onLogout }: HeaderProps) {
+export default function Header({ username, onToggleSidebar, onEditProfile, onLogout }: HeaderProps) {
   return (
     <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-outline-variant bg-white px-6 shadow-[0_1px_4px_rgba(0,0,0,.06)]">
       <div className="flex items-center gap-4">
@@ -30,6 +30,14 @@ export default function Header({ username, onToggleSidebar, onLogout }: HeaderPr
           </button>
           <div className="absolute top-full right-0 z-[60] hidden w-44 pt-1 group-hover:block">
             <div className="overflow-hidden rounded-xl border border-outline-variant bg-white py-1 shadow-xl">
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-xs font-bold text-on-surface hover:bg-surface-container"
+              >
+                <UserCog className="h-4 w-4 text-on-surface-variant" /> 내 정보 수정
+              </button>
+              <div className="my-1 h-px bg-outline-variant" />
               <button
                 type="button"
                 onClick={onLogout}

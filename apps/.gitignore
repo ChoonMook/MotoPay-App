@@ -27,6 +27,11 @@ dist-ssr
 # Expo system & cache files 
 .expo/
 
+# env files
+apps/admin-app/.env
+apps/admin-app/.env.*
+!apps/admin-app/.env.example
+
 # android/ios build files
 android/
 ios/

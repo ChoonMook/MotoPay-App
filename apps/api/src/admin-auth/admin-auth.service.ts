@@ -11,6 +11,9 @@ import type {
   SafeAdminAccount,
 } from './admin-auth.types';
 import { toSafeAdminAccount } from './to-safe-admin-account';
+import type { UpdateAdminMeDto } from './dto/update-admin-me.dto';
+
+const SALT_ROUNDS = 10;
 
 @Injectable()
 export class AdminAuthService {
@@ -57,6 +60,38 @@ export class AdminAuthService {
       }),
       adminAccount: toSafeAdminAccount(updated, this.phoneCrypto),
     };
+  }
+
+  /** 내 정보 수정 — 이메일·휴대폰번호·비밀번호(선택) 중 전달된 값만 갱신 */
+  async updateMe(
+    adminId: string,
+    dto: UpdateAdminMeDto,
+  ): Promise<SafeAdminAccount> {
+    let phoneEncrypted: string | undefined;
+    let phoneHash: string | undefined;
+    if (dto.phone) {
+      const normalized = this.phoneCrypto.normalize(dto.phone);
+      phoneEncrypted = this.phoneCrypto.encrypt(
+        this.phoneCrypto.format(normalized),
+      );
+      phoneHash = this.phoneCrypto.hash(normalized);
+    }
+
+    const passwordHash = dto.newPassword
+      ? await bcrypt.hash(dto.newPassword, SALT_ROUNDS)
+      : undefined;
+
+    const updated = await this.prisma.adminAccount.update({
+      where: { id: adminId },
+      data: {
+        email: dto.email,
+        phoneEncrypted,
+        phoneHash,
+        passwordHash,
+      },
+    });
+
+    return toSafeAdminAccount(updated, this.phoneCrypto);
   }
 
   async findSafeAdminAccountById(id: string): Promise<SafeAdminAccount | null> {

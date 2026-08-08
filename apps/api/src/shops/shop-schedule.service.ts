@@ -223,22 +223,28 @@ export class ShopScheduleService {
       }
     }
 
-    await this.prisma.shopDailySlot.upsert({
-      where: {
-        shopCode_date_time: { shopCode, date: targetDate, time: targetTime },
-      },
-      update: {
-        ...(capacity !== undefined ? { capacity } : {}),
-        ...(isLocked !== undefined ? { isLocked } : {}),
-      },
-      create: {
-        shopCode,
-        date: targetDate,
-        time: targetTime,
-        capacity: capacity ?? null,
-        isLocked: isLocked ?? false,
-      },
+    // 주의: Prisma 7 + @prisma/adapter-mariadb 조합에서 DateTime을 포함한 3필드 복합키(@@id)에 대한
+    // update()/upsert()가 아무 에러 없이 반영되지 않는 버그가 실측 확인됨(re-read해도 값이 그대로임).
+    // 같은 파일의 다른 메서드들이 이미 쓰고 있는 updateMany(필터 기반) 방식으로 우회 — 대상 행이 없으면 새로 생성.
+    const updateData = {
+      ...(capacity !== undefined ? { capacity } : {}),
+      ...(isLocked !== undefined ? { isLocked } : {}),
+    };
+    const { count } = await this.prisma.shopDailySlot.updateMany({
+      where: { shopCode, date: targetDate, time: targetTime },
+      data: updateData,
     });
+    if (count === 0) {
+      await this.prisma.shopDailySlot.create({
+        data: {
+          shopCode,
+          date: targetDate,
+          time: targetTime,
+          capacity: capacity ?? null,
+          isLocked: isLocked ?? false,
+        },
+      });
+    }
   }
 
   // ── 월간 요약(화면1 캘린더의 일자별 배지) ──────────────────────

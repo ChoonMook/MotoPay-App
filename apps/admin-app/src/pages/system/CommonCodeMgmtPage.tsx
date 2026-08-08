@@ -555,7 +555,8 @@ export default function CommonCodeMgmtPage() {
                 onCellValueChanged={onGroupCellValueChanged}
                 rowClass="cursor-pointer"
                 rowSelection={{ mode: "singleRow", checkboxes: false, enableClickSelection: true }}
-                emptyMessage={groupsLoading ? "불러오는 중..." : "등록된 코드그룹이 없습니다."}
+                loading={groupsLoading}
+                emptyMessage="등록된 코드그룹이 없습니다."
               />
             )}
           </div>
@@ -580,9 +581,8 @@ export default function CommonCodeMgmtPage() {
                 getRowId={(p) => p.data.detailCode}
                 context={detailContext}
                 onCellValueChanged={onDetailCellValueChanged}
-                emptyMessage={
-                  detailsLoading ? "불러오는 중..." : !selectedCode ? "코드그룹을 선택하세요." : "조건에 맞는 코드가 없습니다."
-                }
+                loading={detailsLoading}
+                emptyMessage={!selectedCode ? "코드그룹을 선택하세요." : "조건에 맞는 코드가 없습니다."}
               />
             )}
           </div>

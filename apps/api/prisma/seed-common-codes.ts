@@ -30,6 +30,8 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'BID_TINT_POSITION', name: '예약시공 틴팅 시공부위' },
   { code: 'BID_CANCEL_REASON', name: '예약시공 요청 취소사유' },
   { code: 'CALL_RESULT', name: '해피콜 통화결과' },
+  { code: 'PERM_GROUP', name: '권한그룹' },
+  { code: 'CO_TYPE', name: '업체구분' },
 ];
 
 interface DetailRow {
@@ -192,6 +194,17 @@ const DETAILS: DetailRow[] = [
   { code: 'CALL_RESULT', detailCode: 'CONNECTED', detailName: '연결됨' },
   { code: 'CALL_RESULT', detailCode: 'NOANSWER', detailName: '부재중' },
   { code: 'CALL_RESULT', detailCode: 'RETRY', detailName: '재통화예정' },
+
+  // PERM_GROUP — 관리자 계정(AdminAccount)의 권한그룹(AD-SYS-04 사용자 계정 관리 화면에서 선택)
+  { code: 'PERM_GROUP', detailCode: 'SUPER_ADMIN', detailName: '슈퍼관리자' },
+  { code: 'PERM_GROUP', detailCode: 'OPS_MD', detailName: '운영 MD' },
+  { code: 'PERM_GROUP', detailCode: 'CS_OPERATOR', detailName: 'CS 운영자' },
+  { code: 'PERM_GROUP', detailCode: 'SETTLEMENT', detailName: '정산 담당자' },
+
+  // CO_TYPE — 업체(Company)의 업체구분(AD-CO-02/03/04 업체 관리 화면에서 사용)
+  { code: 'CO_TYPE', detailCode: 'DEALER', detailName: '딜러사' },
+  { code: 'CO_TYPE', detailCode: 'SHOP', detailName: '시공업체' },
+  { code: 'CO_TYPE', detailCode: 'SUPPLIER', detailName: '공급업체' },
 ];
 
 async function main() {

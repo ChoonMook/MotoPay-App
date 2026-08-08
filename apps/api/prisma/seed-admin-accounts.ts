@@ -24,7 +24,7 @@ async function main() {
       phoneEncrypted,
       phoneHash,
       accountType: 'ADMIN',
-      permGroup: '슈퍼관리자',
+      permGroup: 'SUPER_ADMIN', // -> CommonCodeDetail(code='PERM_GROUP', detailCode='SUPER_ADMIN') = "슈퍼관리자"
     },
     create: {
       username: 'admin',
@@ -34,7 +34,7 @@ async function main() {
       phoneEncrypted,
       phoneHash,
       accountType: 'ADMIN',
-      permGroup: '슈퍼관리자',
+      permGroup: 'SUPER_ADMIN', // -> CommonCodeDetail(code='PERM_GROUP', detailCode='SUPER_ADMIN') = "슈퍼관리자"
     },
   });
 

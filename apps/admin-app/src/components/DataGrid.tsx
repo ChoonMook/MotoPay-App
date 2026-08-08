@@ -26,8 +26,10 @@ export interface DataGridProps<TData> {
   /** Master-Detail 화면처럼 행을 선택해 하이라이트해야 할 때만 지정(테마의 selectedRowBackgroundColor와 짝) */
   rowSelection?: RowSelectionOptions<TData>;
   rowClass?: string;
-  /** 결과가 없을 때 보여줄 안내 문구 */
+  /** 결과가 없을 때 보여줄 안내 문구(로딩 중 문구는 loading prop이 별도로 처리 — 여기 섞지 않는다) */
   emptyMessage?: string;
+  /** true인 동안 ag-grid 자체 로딩 오버레이를 표시 — rowData가 빈 배열이어도 "결과 없음" 문구로 잘못 표시되지 않도록 분리 */
+  loading?: boolean;
 }
 
 function DataGridInner<TData>(
@@ -42,6 +44,7 @@ function DataGridInner<TData>(
     rowSelection,
     rowClass,
     emptyMessage = "조건에 맞는 항목이 없습니다.",
+    loading = false,
   }: DataGridProps<TData>,
   ref: ForwardedRef<AgGridReact<TData>>,
 ) {
@@ -62,6 +65,7 @@ function DataGridInner<TData>(
         className="mp-admin-grid"
         theme={ADMIN_GRID_THEME}
         rowData={rowData}
+        loading={loading}
         columnDefs={columnDefs}
         getRowId={getRowId}
         context={context}

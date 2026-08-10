@@ -32,6 +32,9 @@ apps/admin-app/.env
 apps/admin-app/.env.*
 !apps/admin-app/.env.example
 
+# api upload files
+apps/api/uploads/*
+
 # android/ios build files
 android/
 ios/

@@ -12,6 +12,10 @@ import AccessDeniedPage from "./pages/AccessDeniedPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import BrandMgmtPage from "./pages/catalog/BrandMgmtPage";
+import CarModelMstPage from "./pages/catalog/CarModelMstPage";
+import CstItemMgmtPage from "./pages/catalog/CstItemMgmtPage";
+import ProductMgmtPage from "./pages/catalog/ProductMgmtPage";
 import CoListPage from "./pages/company/CoListPage";
 import CustMbrListPage from "./pages/member/CustMbrListPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
@@ -25,6 +29,10 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/system/user-acct-mgmt") return <UserAcctMgmtPage />;
   if (path === "/system/common-code-mgmt") return <CommonCodeMgmtPage />;
   if (path === "/system/menu-perm-mgmt") return <MenuPermMgmtPage />;
+  if (path === "/catalog/car-model-mst") return <CarModelMstPage />;
+  if (path === "/catalog/cst-item-mgmt") return <CstItemMgmtPage />;
+  if (path === "/catalog/brand-mgmt") return <BrandMgmtPage />;
+  if (path === "/catalog/prod-mgmt") return <ProductMgmtPage />;
   return <PlaceholderPage path={path} />;
 }
 

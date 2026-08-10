@@ -16,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { ShopsModule } from './shops/shops.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     ShopsModule,
     ReservationsModule,
     BidRequestsModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

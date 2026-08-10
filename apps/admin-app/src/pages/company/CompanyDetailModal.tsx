@@ -1,5 +1,5 @@
 // 업체 상세 팝업(AD-CO-04) — 전체화면 크기 + 탭 구조로 업체 기본정보/매장정보(사진·주소·카테고리 포함)/
-// 예약가능시간/휴무일/일별슬롯/소속 사용자 계정을 한 곳에서 관리한다. 매장 관련 탭은 시공업체(coType=SHOP)
+// 예약가능시간/휴무일/일별슬롯/앱 사용자 계정을 한 곳에서 관리한다. 매장 관련 탭은 시공업체(coType=SHOP)
 // 업체에만 노출되며, 화면 구성·상호작용은 apps/partner-app의 자기 업체 관리 화면(BizBasicInfoScreen 등)을
 // 그대로 참고해 관리자용으로 옮겼다.
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -59,6 +59,11 @@ const disabledInputClass = `${inputClass} cursor-not-allowed bg-surface-containe
 
 function statusText(active: boolean, activeLabel = "정상", inactiveLabel = "중지"): string {
   return active ? activeLabel : inactiveLabel;
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return "-";
+  return value.replace("T", " ").slice(0, 16);
 }
 
 // 필수 입력 항목 라벨 앞에 붙는 빨간 별표(*) — 업체구분/업체명/사업자번호처럼 DB에서 NOT NULL인 필드에만 사용
@@ -1492,7 +1497,7 @@ function DailySlotsTab({ companyId }: { companyId: number }) {
   );
 }
 
-// ───────────────────────── 소속 사용자 계정 탭 ─────────────────────────
+// ───────────────────────── 앱 사용자 계정 탭 ─────────────────────────
 
 function PartnerUserFormModal({
   companyId,
@@ -1691,7 +1696,7 @@ function PartnerUsersTab({ companyId }: { companyId: number }) {
     setLoading(true);
     listPartnerUsers(companyId)
       .then(setUsers)
-      .catch((err) => setError(err instanceof Error ? err.message : "소속 사용자 목록을 불러오지 못했습니다."))
+      .catch((err) => setError(err instanceof Error ? err.message : "앱 사용자 목록을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
   };
 
@@ -1712,7 +1717,7 @@ function PartnerUsersTab({ companyId }: { companyId: number }) {
   return (
     <div className="mx-auto max-w-[640px] space-y-2">
       <div className="flex items-center justify-between">
-        <p className={labelClass}>소속 사용자 계정</p>
+        <p className={labelClass}>앱 사용자 계정</p>
         <button
           type="button"
           onClick={() => setFormTarget({ mode: "add" })}
@@ -1737,6 +1742,7 @@ function PartnerUsersTab({ companyId }: { companyId: number }) {
                 <th className="px-3 py-2 text-left font-bold text-on-surface-variant">아이디</th>
                 <th className="px-3 py-2 text-left font-bold text-on-surface-variant">이름</th>
                 <th className="px-3 py-2 text-left font-bold text-on-surface-variant">상태</th>
+                <th className="px-3 py-2 text-left font-bold text-on-surface-variant">최근 로그인일시</th>
                 <th className="px-3 py-2 text-center font-bold text-on-surface-variant">관리</th>
               </tr>
             </thead>
@@ -1746,6 +1752,7 @@ function PartnerUsersTab({ companyId }: { companyId: number }) {
                   <td className="px-3 py-2 text-on-surface">{u.username}</td>
                   <td className="px-3 py-2 text-on-surface">{u.name}</td>
                   <td className="px-3 py-2 text-on-surface">{statusText(u.useYn, "활성", "비활성")}</td>
+                  <td className="px-3 py-2 text-on-surface">{formatDateTime(u.lastLoginAt)}</td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-2">
                       <button type="button" onClick={() => setFormTarget({ mode: "edit", user: u })} className="text-outline hover:text-primary">
@@ -1824,7 +1831,7 @@ export default function CompanyDetailModal({
         { key: "timeSlots", label: "예약가능시간" },
         { key: "holidays", label: "휴무일" },
         { key: "dailySlots", label: "일별슬롯" },
-        { key: "users", label: "소속 사용자 계정" },
+        { key: "users", label: "앱 사용자 계정" },
       );
     }
     return base;

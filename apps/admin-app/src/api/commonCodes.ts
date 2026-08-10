@@ -94,3 +94,16 @@ export function updateDetail(
 export function deleteDetail(code: string, detailCode: string): Promise<void> {
   return authedRequest<void>(`/admin/common-codes/${code}/details/${detailCode}`, { method: "DELETE" });
 }
+
+export function uploadDetailPhoto(code: string, detailCode: string, imageBase64: string): Promise<CommonCodeDetailApi> {
+  return authedRequest<CommonCodeDetailApi>(`/admin/common-codes/${code}/details/${detailCode}/photo`, {
+    method: "POST",
+    body: JSON.stringify({ imageBase64 }),
+  });
+}
+
+export function deleteDetailPhoto(code: string, detailCode: string): Promise<CommonCodeDetailApi> {
+  return authedRequest<CommonCodeDetailApi>(`/admin/common-codes/${code}/details/${detailCode}/photo`, {
+    method: "DELETE",
+  });
+}

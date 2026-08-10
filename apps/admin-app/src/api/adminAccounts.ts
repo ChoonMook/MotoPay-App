@@ -8,6 +8,8 @@ export interface AdminAccountListItem {
   email: string | null;
   phone: string | null;
   accountType: string; // -> CommonCodeDetail(code='CO_TYPE': ADMIN/DEALER/SUPPLIER)
+  companyId: number | null; // -> Company.id — accountType이 DEALER·SUPPLIER인 계정만 값 있음
+  companyName: string | null;
   permGroup: string;
   useYn: boolean;
   createdBy: string | null;
@@ -31,6 +33,7 @@ export interface CreateAdminAccountInput {
   email?: string;
   phone?: string;
   accountType: string;
+  companyId?: number;
   permGroup: string;
 }
 
@@ -48,6 +51,7 @@ export interface UpdateAdminAccountInput {
   email?: string;
   phone?: string;
   accountType?: string;
+  companyId?: number | null;
   permGroup?: string;
   useYn?: boolean;
 }

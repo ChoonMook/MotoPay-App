@@ -1,4 +1,4 @@
-// 사용자 계정 관리 (uploads/MotoPay_프로그램목록표_v1_43.xlsx "관리자웹_프로그램" 시트 AD-SYS-04 스펙 이식)
+// 사용자 계정 관리 (uploads/MotoPay_프로그램목록표_v1_48.xlsx "관리자웹_프로그램" 시트 AD-SYS-04 스펙 이식)
 // [구성요소] 상단 필터 바(이름·아이디 검색/권한그룹/상태) + 하단 목록 테이블(페이징) — 대상은 업체에 속하지 않는
 // 운영사 자체 직원 계정만(업체 소속 계정은 AD-CO-05에서 별도 관리)
 // [인터랙션] 계정 추가 시 임시비밀번호 발급 후 안내 / 행 클릭 시 계정 상세 수정 팝업(권한그룹 변경 포함) /
@@ -16,6 +16,7 @@ import {
   updateAccount,
   type AdminAccountListItem,
 } from "../../api/adminAccounts";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
 import DataGrid from "../../components/DataGrid";
 import ExcelActionButton from "../../components/ExcelActionButton";
@@ -25,6 +26,11 @@ import PageBreadcrumb from "../../components/PageBreadcrumb";
 const inputClass =
   "w-full rounded-lg border border-[#ced4da] bg-white px-3 py-2 text-xs font-normal outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/5";
 const labelClass = "ml-0.5 text-[11px] font-bold tracking-widest text-secondary uppercase";
+
+// 필수 입력 항목 라벨 앞에 붙는 빨간 별표(*) — 계정 추가 시 반드시 입력해야 하는 필드에만 사용
+function RequiredMark() {
+  return <span className="mr-0.5 text-red-500">*</span>;
+}
 
 function formatDateTime(value: string | null): string {
   if (!value) return "-";
@@ -60,18 +66,26 @@ interface AccountFormValue {
   email: string;
   phone: string;
   accountType: string;
+  companyId: number | null;
   permGroup: string;
   useYn: boolean;
+}
+
+// accountType='ADMIN'(운영사)은 소속업체가 없고, 그 외(DEALER/SUPPLIER)는 같은 업체구분의 업체만 선택 가능
+function companyOptionsFor(accountType: string, companies: CompanyListItem[]): CompanyListItem[] {
+  return companies.filter((c) => c.coType === accountType);
 }
 
 function AddAccountModal({
   permGroups,
   coTypes,
+  companies,
   onCancel,
   onSubmit,
 }: {
   permGroups: CommonCodeDetailApi[];
   coTypes: CommonCodeDetailApi[];
+  companies: CompanyListItem[];
   onCancel: () => void;
   onSubmit: (v: {
     name: string;
@@ -79,6 +93,7 @@ function AddAccountModal({
     email: string;
     phone: string;
     accountType: string;
+    companyId: number | null;
     permGroup: string;
   }) => Promise<void>;
 }) {
@@ -89,9 +104,17 @@ function AddAccountModal({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [accountType, setAccountType] = useState(coTypes[0]?.detailCode ?? "");
+  const [companyId, setCompanyId] = useState<number | "">("");
   const [permGroup, setPermGroup] = useState(permGroups[0]?.detailCode ?? "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const companyOptions = companyOptionsFor(accountType, companies);
+
+  const handleAccountTypeChange = (v: string) => {
+    setAccountType(v);
+    setCompanyId(""); // 사용자유형이 바뀌면 소속업체 선택지도 바뀌므로 항상 재선택하도록 초기화
+  };
 
   const handleUsernameChange = (v: string) => {
     setUsername(v);
@@ -126,6 +149,10 @@ function AddAccountModal({
       setError("아이디 중복확인을 완료해주세요.");
       return;
     }
+    if (accountType !== "ADMIN" && !companyId) {
+      setError("딜러사·공급업체 소속 계정은 소속업체를 선택해주세요.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -135,6 +162,7 @@ function AddAccountModal({
         email: email.trim(),
         phone: phone.trim(),
         accountType,
+        companyId: accountType === "ADMIN" ? null : (companyId as number),
         permGroup,
       });
     } catch (err) {
@@ -155,11 +183,15 @@ function AddAccountModal({
 
         <div className="flex flex-col gap-4">
           <div className="space-y-1.5">
-            <label className={labelClass}>이름</label>
+            <label className={labelClass}>
+              <RequiredMark />이름
+            </label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="이름을 입력하세요" className={inputClass} />
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>아이디</label>
+            <label className={labelClass}>
+              <RequiredMark />아이디
+            </label>
             <div className="flex gap-2">
               <input
                 value={username}
@@ -184,7 +216,9 @@ function AddAccountModal({
             )}
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>이메일</label>
+            <label className={labelClass}>
+              <RequiredMark />이메일
+            </label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@motopay.co.kr" className={inputClass} />
           </div>
           <div className="space-y-1.5">
@@ -192,8 +226,10 @@ function AddAccountModal({
             <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" className={inputClass} />
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>사용자유형</label>
-            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputClass}>
+            <label className={labelClass}>
+              <RequiredMark />사용자유형
+            </label>
+            <select value={accountType} onChange={(e) => handleAccountTypeChange(e.target.value)} className={inputClass}>
               {coTypes.map((t) => (
                 <option key={t.detailCode} value={t.detailCode}>
                   {t.detailName}
@@ -201,8 +237,34 @@ function AddAccountModal({
               ))}
             </select>
           </div>
+          {accountType !== "ADMIN" && (
+            <div className="space-y-1.5">
+              <label className={labelClass}>
+                <RequiredMark />소속업체
+              </label>
+              <select
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value ? Number(e.target.value) : "")}
+                className={inputClass}
+              >
+                <option value="">선택해주세요</option>
+                {companyOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {companyOptions.length === 0 && (
+                <p className="text-[11px] font-semibold text-red-600">
+                  해당 업체구분으로 등록된 업체가 없습니다. 업체 관리에서 먼저 등록해주세요.
+                </p>
+              )}
+            </div>
+          )}
           <div className="space-y-1.5">
-            <label className={labelClass}>권한그룹</label>
+            <label className={labelClass}>
+              <RequiredMark />권한그룹
+            </label>
             <select value={permGroup} onChange={(e) => setPermGroup(e.target.value)} className={inputClass}>
               {permGroups.map((g) => (
                 <option key={g.detailCode} value={g.detailCode}>
@@ -236,12 +298,14 @@ function EditAccountModal({
   account,
   permGroups,
   coTypes,
+  companies,
   onCancel,
   onSave,
 }: {
   account: AdminAccountListItem;
   permGroups: CommonCodeDetailApi[];
   coTypes: CommonCodeDetailApi[];
+  companies: CompanyListItem[];
   onCancel: () => void;
   onSave: (v: AccountFormValue) => Promise<void>;
 }) {
@@ -249,17 +313,42 @@ function EditAccountModal({
   const [email, setEmail] = useState(account.email ?? "");
   const [phone, setPhone] = useState(account.phone ?? "");
   const [accountType, setAccountType] = useState(account.accountType);
+  const [companyId, setCompanyId] = useState<number | "">(account.companyId ?? "");
   const [permGroup, setPermGroup] = useState(account.permGroup);
   const [useYn, setUseYn] = useState(account.useYn);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const companyOptions = companyOptionsFor(accountType, companies);
+
+  const handleAccountTypeChange = (v: string) => {
+    setAccountType(v);
+    // 기존 소속업체가 새 사용자유형에서도 여전히 유효하면(업체구분이 같으면) 유지, 아니면 재선택하도록 초기화
+    setCompanyId((prev) => (prev !== "" && companyOptionsFor(v, companies).some((c) => c.id === prev) ? prev : ""));
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !email.trim() || !permGroup) {
+      setError("이름·이메일·권한그룹을 모두 입력해주세요.");
+      return;
+    }
+    if (accountType !== "ADMIN" && !companyId) {
+      setError("딜러사·공급업체 소속 계정은 소속업체를 선택해주세요.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
-      await onSave({ name: name.trim(), email: email.trim(), phone: phone.trim(), accountType, permGroup, useYn });
+      await onSave({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        accountType,
+        companyId: accountType === "ADMIN" ? null : (companyId as number),
+        permGroup,
+        useYn,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "계정 저장에 실패했습니다.");
       setSubmitting(false);
@@ -278,15 +367,21 @@ function EditAccountModal({
 
         <div className="flex flex-col gap-4">
           <div className="space-y-1.5">
-            <label className={labelClass}>아이디</label>
+            <label className={labelClass}>
+              <RequiredMark />아이디
+            </label>
             <input value={account.username} disabled className={`${inputClass} cursor-not-allowed bg-surface-container-low text-on-surface-variant`} />
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>이름</label>
+            <label className={labelClass}>
+              <RequiredMark />이름
+            </label>
             <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>이메일</label>
+            <label className={labelClass}>
+              <RequiredMark />이메일
+            </label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
           </div>
           <div className="space-y-1.5">
@@ -294,8 +389,10 @@ function EditAccountModal({
             <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" className={inputClass} />
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>사용자유형</label>
-            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputClass}>
+            <label className={labelClass}>
+              <RequiredMark />사용자유형
+            </label>
+            <select value={accountType} onChange={(e) => handleAccountTypeChange(e.target.value)} className={inputClass}>
               {coTypes.map((t) => (
                 <option key={t.detailCode} value={t.detailCode}>
                   {t.detailName}
@@ -303,8 +400,34 @@ function EditAccountModal({
               ))}
             </select>
           </div>
+          {accountType !== "ADMIN" && (
+            <div className="space-y-1.5">
+              <label className={labelClass}>
+                <RequiredMark />소속업체
+              </label>
+              <select
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value ? Number(e.target.value) : "")}
+                className={inputClass}
+              >
+                <option value="">선택해주세요</option>
+                {companyOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {companyOptions.length === 0 && (
+                <p className="text-[11px] font-semibold text-red-600">
+                  해당 업체구분으로 등록된 업체가 없습니다. 업체 관리에서 먼저 등록해주세요.
+                </p>
+              )}
+            </div>
+          )}
           <div className="space-y-1.5">
-            <label className={labelClass}>권한그룹</label>
+            <label className={labelClass}>
+              <RequiredMark />권한그룹
+            </label>
             <select value={permGroup} onChange={(e) => setPermGroup(e.target.value)} className={inputClass}>
               {permGroups.map((g) => (
                 <option key={g.detailCode} value={g.detailCode}>
@@ -381,6 +504,7 @@ export default function UserAcctMgmtPage() {
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [permGroups, setPermGroups] = useState<CommonCodeDetailApi[]>([]);
   const [coTypes, setCoTypes] = useState<CommonCodeDetailApi[]>([]);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
 
   const [keyword, setKeyword] = useState("");
   const [accountTypeFilter, setAccountTypeFilter] = useState("all");
@@ -410,6 +534,9 @@ export default function UserAcctMgmtPage() {
     getGroup("CO_TYPE")
       .then((group) => setCoTypes(group.details.filter((d) => d.useYn)))
       .catch((err) => setGlobalError(err instanceof Error ? err.message : "사용자유형 목록을 불러오지 못했습니다."));
+    listCompanies()
+      .then(setCompanies)
+      .catch((err) => setGlobalError(err instanceof Error ? err.message : "업체 목록을 불러오지 못했습니다."));
   }, []);
 
   useEffect(() => {
@@ -482,6 +609,13 @@ export default function UserAcctMgmtPage() {
         valueFormatter: (p) => coTypeLabelMap(p.value),
       },
       {
+        headerName: "소속업체",
+        field: "companyName",
+        flex: 1,
+        minWidth: 140,
+        valueFormatter: (p) => p.value ?? "-",
+      },
+      {
         headerName: "권한그룹",
         field: "permGroup",
         flex: 1,
@@ -529,9 +663,14 @@ export default function UserAcctMgmtPage() {
     email: string;
     phone: string;
     accountType: string;
+    companyId: number | null;
     permGroup: string;
   }) => {
-    const { account, tempPassword } = await createAccount({ ...v, phone: v.phone || undefined });
+    const { account, tempPassword } = await createAccount({
+      ...v,
+      phone: v.phone || undefined,
+      companyId: v.companyId ?? undefined,
+    });
     setAccounts((prev) => [account, ...prev]);
     setShowAddModal(false);
     setIssued({ username: account.username, tempPassword });
@@ -555,6 +694,7 @@ export default function UserAcctMgmtPage() {
         { header: "이메일", key: "email", width: 28 },
         { header: "휴대폰번호", key: "phone", width: 16 },
         { header: "사용자유형", key: "accountType", width: 12 },
+        { header: "소속업체", key: "companyName", width: 18 },
         { header: "권한그룹", key: "permGroup", width: 14 },
         { header: "상태", key: "status", width: 10 },
         { header: "최근 로그인 일시", key: "lastLoginAt", width: 20 },
@@ -565,6 +705,7 @@ export default function UserAcctMgmtPage() {
         email: a.email ?? "-",
         phone: a.phone ?? "-",
         accountType: coTypeLabelMap(a.accountType),
+        companyName: a.companyName ?? "-",
         permGroup: permGroupLabelMap(a.permGroup),
         status: a.useYn ? "활성" : "비활성",
         lastLoginAt: formatDateTime(a.lastLoginAt),
@@ -656,6 +797,7 @@ export default function UserAcctMgmtPage() {
         <AddAccountModal
           permGroups={permGroups}
           coTypes={accountTypeOptions}
+          companies={companies}
           onCancel={() => setShowAddModal(false)}
           onSubmit={handleAdd}
         />
@@ -665,6 +807,7 @@ export default function UserAcctMgmtPage() {
           account={editingAccount}
           permGroups={permGroups}
           coTypes={accountTypeOptions}
+          companies={companies}
           onCancel={() => setEditingAccount(null)}
           onSave={handleSaveEdit}
         />

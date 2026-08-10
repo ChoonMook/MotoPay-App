@@ -16,6 +16,8 @@ import type { UpdateAdminAccountDto } from './dto/update-admin-account.dto';
 
 const SALT_ROUNDS = 10;
 
+type AdminAccountWithCompany = AdminAccount & { company: { name: string } | null };
+
 export interface AdminAccountListItem {
   id: string;
   username: string;
@@ -23,6 +25,8 @@ export interface AdminAccountListItem {
   email: string | null;
   phone: string | null;
   accountType: AdminAccount['accountType'];
+  companyId: number | null;
+  companyName: string | null;
   permGroup: string;
   useYn: boolean;
   createdBy: string | null;
@@ -47,7 +51,7 @@ export class AdminAccountsService {
     private readonly phoneCrypto: PhoneCryptoService,
   ) {}
 
-  private toListItem(account: AdminAccount): AdminAccountListItem {
+  private toListItem(account: AdminAccountWithCompany): AdminAccountListItem {
     return {
       id: account.id,
       username: account.username,
@@ -57,6 +61,8 @@ export class AdminAccountsService {
         ? this.phoneCrypto.decrypt(account.phoneEncrypted)
         : null,
       accountType: account.accountType,
+      companyId: account.companyId,
+      companyName: account.company?.name ?? null,
       permGroup: account.permGroup,
       useYn: account.useYn,
       createdBy: account.createdBy,
@@ -67,9 +73,34 @@ export class AdminAccountsService {
     };
   }
 
+  /**
+   * accountType='ADMIN'(운영사 직원)은 소속업체가 없어야 하고, DEALER·SUPPLIER는 반드시 같은 업체구분(coType)의
+   * Company에 매핑돼야 한다 — AD-SYS-04 계정 추가/수정 양쪽에서 공통으로 검증
+   */
+  private async resolveCompanyId(
+    accountType: string,
+    companyId: number | null | undefined,
+  ): Promise<number | null> {
+    if (accountType === 'ADMIN') {
+      return null;
+    }
+    if (!companyId) {
+      throw new BadRequestException('딜러사·공급업체 소속 계정은 소속업체를 선택해야 합니다.');
+    }
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+      throw new BadRequestException('선택한 소속업체를 찾을 수 없습니다.');
+    }
+    if (company.coType !== accountType) {
+      throw new BadRequestException('선택한 소속업체의 업체구분이 사용자유형과 일치하지 않습니다.');
+    }
+    return companyId;
+  }
+
   async list(): Promise<AdminAccountListItem[]> {
     const accounts = await this.prisma.adminAccount.findMany({
       orderBy: { createdAt: 'asc' },
+      include: { company: { select: { name: true } } },
     });
     return accounts.map((a) => this.toListItem(a));
   }
@@ -98,6 +129,8 @@ export class AdminAccountsService {
       throw new ConflictException('이미 존재하는 아이디입니다.');
     }
 
+    const companyId = await this.resolveCompanyId(dto.accountType, dto.companyId);
+
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
 
@@ -120,9 +153,11 @@ export class AdminAccountsService {
         phoneEncrypted,
         phoneHash,
         accountType: dto.accountType,
+        companyId,
         permGroup: dto.permGroup,
         createdBy: actingUsername,
       },
+      include: { company: { select: { name: true } } },
     });
 
     return { account: this.toListItem(created), tempPassword };
@@ -136,6 +171,14 @@ export class AdminAccountsService {
     const exists = await this.prisma.adminAccount.findUnique({ where: { id } });
     if (!exists) {
       throw new NotFoundException('관리자 계정을 찾을 수 없습니다.');
+    }
+
+    // 사용자유형 또는 소속업체 중 하나라도 이번 요청에서 바뀌면 둘의 조합을 다시 검증(그 외엔 기존 매핑 유지)
+    let companyId: number | null | undefined;
+    if (dto.accountType !== undefined || dto.companyId !== undefined) {
+      const effectiveAccountType = dto.accountType ?? exists.accountType;
+      const effectiveCompanyId = dto.companyId !== undefined ? dto.companyId : exists.companyId;
+      companyId = await this.resolveCompanyId(effectiveAccountType, effectiveCompanyId);
     }
 
     let phoneEncrypted: string | undefined;
@@ -156,10 +199,12 @@ export class AdminAccountsService {
         phoneEncrypted,
         phoneHash,
         accountType: dto.accountType,
+        companyId,
         permGroup: dto.permGroup,
         useYn: dto.useYn,
         updatedBy: actingUsername,
       },
+      include: { company: { select: { name: true } } },
     });
 
     return this.toListItem(updated);

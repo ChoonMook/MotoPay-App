@@ -10,6 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tiptap/extension-highlight": "^3.29.2",
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-link": "^3.29.2",
+    "@tiptap/extension-text-align": "^3.29.2",
+    "@tiptap/extension-underline": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
     "ag-grid-community": "^36.1.0",
     "ag-grid-react": "^36.1.0",
     "exceljs": "^4.4.0",

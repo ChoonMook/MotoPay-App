@@ -8,6 +8,10 @@ import {
 } from '@nestjs/common';
 import type { CommonCode, CommonCodeDetail } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  deleteCommonCodePhoto,
+  saveCommonCodePhoto,
+} from '../common/storage/common-code-photo-storage';
 import type { CreateCommonCodeDetailDto } from './dto/create-common-code-detail.dto';
 import type { CreateCommonCodeDto } from './dto/create-common-code.dto';
 import type { UpdateCommonCodeDetailDto } from './dto/update-common-code-detail.dto';
@@ -145,5 +149,50 @@ export class CommonCodesService {
     await this.prisma.commonCodeDetail.delete({
       where: { code_detailCode: { code, detailCode } },
     });
+  }
+
+  /** 상세 코드값의 대표사진(ref2에 상대경로 저장) 업로드 — 기존 파일이 있으면 교체 */
+  async uploadDetailPhoto(
+    code: string,
+    detailCode: string,
+    imageBase64: string,
+  ): Promise<CommonCodeDetail> {
+    const exists = await this.prisma.commonCodeDetail.findUnique({
+      where: { code_detailCode: { code, detailCode } },
+    });
+    if (!exists) {
+      throw new NotFoundException('공통코드 상세를 찾을 수 없습니다.');
+    }
+
+    const relativePath = await saveCommonCodePhoto(imageBase64);
+    const updated = await this.prisma.commonCodeDetail.update({
+      where: { code_detailCode: { code, detailCode } },
+      data: { ref2: relativePath },
+    });
+    if (exists.ref2) {
+      await deleteCommonCodePhoto(exists.ref2);
+    }
+    return updated;
+  }
+
+  async deleteDetailPhoto(
+    code: string,
+    detailCode: string,
+  ): Promise<CommonCodeDetail> {
+    const exists = await this.prisma.commonCodeDetail.findUnique({
+      where: { code_detailCode: { code, detailCode } },
+    });
+    if (!exists) {
+      throw new NotFoundException('공통코드 상세를 찾을 수 없습니다.');
+    }
+
+    const updated = await this.prisma.commonCodeDetail.update({
+      where: { code_detailCode: { code, detailCode } },
+      data: { ref2: null },
+    });
+    if (exists.ref2) {
+      await deleteCommonCodePhoto(exists.ref2);
+    }
+    return updated;
   }
 }

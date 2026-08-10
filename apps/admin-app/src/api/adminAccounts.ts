@@ -1,6 +1,5 @@
 // apps/api의 관리자 계정 관리 엔드포인트(/admin/accounts/*) 호출 — AD-SYS-04 사용자 계정 관리 화면 전용
 import { authedRequest } from "./http";
-import type { AdminAccountType } from "./adminAuth";
 
 export interface AdminAccountListItem {
   id: string;
@@ -8,7 +7,7 @@ export interface AdminAccountListItem {
   name: string;
   email: string | null;
   phone: string | null;
-  accountType: AdminAccountType;
+  accountType: string; // -> CommonCodeDetail(code='CO_TYPE': ADMIN/DEALER/SUPPLIER)
   permGroup: string;
   useYn: boolean;
   createdBy: string | null;
@@ -31,7 +30,7 @@ export interface CreateAdminAccountInput {
   name: string;
   email?: string;
   phone?: string;
-  accountType: AdminAccountType;
+  accountType: string;
   permGroup: string;
 }
 
@@ -48,7 +47,7 @@ export interface UpdateAdminAccountInput {
   name?: string;
   email?: string;
   phone?: string;
-  accountType?: AdminAccountType;
+  accountType?: string;
   permGroup?: string;
   useYn?: boolean;
 }

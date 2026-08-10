@@ -1,10 +1,8 @@
 // PATCH /admin/accounts/:id 요청 바디 검증
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AdminAccountType } from '@prisma/client';
 import {
   IsBoolean,
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   Matches,
@@ -31,10 +29,14 @@ export class UpdateAdminAccountDto {
   })
   phone?: string;
 
-  @ApiPropertyOptional({ enum: AdminAccountType })
+  @ApiPropertyOptional({
+    description:
+      "사용자유형 - CommonCodeDetail(code='CO_TYPE')의 detailCode 값(ADMIN/DEALER/SUPPLIER — SHOP 제외)",
+  })
   @IsOptional()
-  @IsEnum(AdminAccountType)
-  accountType?: AdminAccountType;
+  @IsString()
+  @MinLength(1)
+  accountType?: string;
 
   @ApiPropertyOptional({
     description:

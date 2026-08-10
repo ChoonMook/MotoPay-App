@@ -1,15 +1,13 @@
 // apps/api의 관리자 인증 엔드포인트(/admin-auth/*) 호출
 import { apiRequest, authedRequest } from "./http";
 
-export type AdminAccountType = "ADMIN" | "PARTNER" | "SUPPLIER";
-
 export interface AdminAccount {
   id: string;
   username: string;
   name: string;
   email: string | null;
   phone: string | null;
-  accountType: AdminAccountType;
+  accountType: string; // -> CommonCodeDetail(code='CO_TYPE': ADMIN/DEALER/SUPPLIER)
   permGroup: string;
   lastLoginAt: string | null;
 }

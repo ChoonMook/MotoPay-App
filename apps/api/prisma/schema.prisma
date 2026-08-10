@@ -85,30 +85,24 @@ model CommonCodeDetail {
   @@map("common_code_details")
 }
 
-// 관리자앱(admin-app) 로그인 계정 — 운영사(플랫폼관리자)/딜러사(파트너사)/공급업체(공급사) 소속으로 관리자웹에
-// 로그인하는 계정. 일반고객(User)·시공업체(PartnerUser)와는 별도 인증 realm(admin-auth 모듈)을 사용한다.
-enum AdminAccountType {
-  ADMIN // 플랫폼관리자(운영사 직원)
-  PARTNER // 파트너사(딜러) 소속
-  SUPPLIER // 공급사 소속
-}
-
+// 관리자앱(admin-app) 로그인 계정 — 운영사/딜러사/공급업체 소속으로 관리자웹에 로그인하는 계정. 일반고객(User)·
+// 시공업체(PartnerUser)와는 별도 인증 realm(admin-auth 모듈)을 사용한다.
 model AdminAccount {
-  id             String           @id @default(uuid())
-  username       String           @unique
+  id             String    @id @default(uuid())
+  username       String    @unique
   passwordHash   String
   name           String
   phoneEncrypted String? // AES-256-GCM으로 암호화된 휴대폰번호(평문 저장 안 함) — User.phoneEncrypted와 동일 정책
   phoneHash      String? // HMAC-SHA256 결정적 해시 — 검색용(User.phoneHash와 동일 정책)
   email          String?
-  accountType    AdminAccountType // 사용자유형(플랫폼관리자/파트너사/공급사)
+  accountType    String // 사용자유형 -> CommonCodeDetail(code='CO_TYPE': ADMIN/DEALER/SUPPLIER) — SHOP(시공업체)은 PartnerUser 전용이라 관리자 계정에는 사용하지 않음
   permGroup      String // 권한그룹 -> CommonCodeDetail(code='PERM_GROUP')의 상세코드값을 참조(고정 그룹 참조라 DB FK는 걸지 않음)
-  useYn          Boolean          @default(true) // 상태(사용/비활성화)
+  useYn          Boolean   @default(true) // 상태(사용/비활성화)
   createdBy      String? // 이 계정을 생성한 관리자 계정의 username — 최초 시드 계정은 null
   updatedBy      String? // 이 계정을 마지막으로 수정한 관리자 계정의 username
-  lastLoginAt    DateTime?        @db.Timestamp(3)
-  createdAt      DateTime         @default(now()) @db.Timestamp(3)
-  updatedAt      DateTime         @updatedAt @db.Timestamp(3)
+  lastLoginAt    DateTime? @db.Timestamp(3)
+  createdAt      DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamp(3)
 
   @@index([phoneHash])
   @@map("admin_accounts")
@@ -279,18 +273,33 @@ model Shop {
 // 시공업체(coType='SHOP')는 기존 Shop 테이블과 shopCode로 연결(운영 데이터는 Shop에 그대로 유지, 이 테이블은
 // 사업자 정보·상태만 관리). 딜러사·공급업체는 아직 별도 운영 테이블이 없어 이 테이블이 유일한 레코드다.
 model Company {
-  id                 Int      @id @default(autoincrement())
-  coType             String // 업체구분 -> CommonCodeDetail(code='CO_TYPE': DEALER/SHOP/SUPPLIER)
-  name               String // 업체명
-  businessRegNo      String // 사업자번호
-  representativeName String? // 대표자명
-  contactName        String? // 담당자명
-  contactPhone       String? // 담당자 연락처
-  shopCode           String?  @unique @db.Char(10) // coType='SHOP'인 경우 Shop.shopCode 연결(1:1), 그 외 타입은 null
-  useYn              Boolean  @default(true) // 상태(정상=true/중지=false)
-  suspendReason      String?  @db.Text // 사용중지 사유(중지 처리 시 필수 입력)
-  createdAt          DateTime @default(now()) @db.Timestamp(3)
-  updatedAt          DateTime @updatedAt @db.Timestamp(3)
+  id                   Int       @id @default(autoincrement())
+  coType               String // 업체구분 -> CommonCodeDetail(code='CO_TYPE': DEALER/SHOP/SUPPLIER)
+  name                 String // 업체명
+  businessRegNo        String // 사업자번호
+  representativeName   String? // 대표자명
+  contactName          String? // 담당자명
+  contactPhone         String? // 담당자 연락처
+  shopCode             String?   @unique @db.Char(10) // coType='SHOP'인 경우 Shop.shopCode 연결(1:1), 그 외 타입은 null
+  useYn                Boolean   @default(true) // 상태(정상=true/중지=false)
+  suspendReason        String?   @db.Text // 사용중지 사유(중지 처리 시 필수 입력)
+  companyZipCode       String? // 회사주소(사업자 등록 주소) 우편번호
+  companyAddress       String? // 회사주소
+  companyAddressDetail String? // 회사주소 상세
+  businessType         String? // 업태
+  businessItem         String? // 종목
+  bizDivision          String? // 사업자구분 -> CommonCodeDetail(code='BIZ_DIV': INDIVIDUAL/CORP)
+  repPhone             String? // 대표전화번호
+  faxNo                String? // 팩스번호
+  bankName             String? // 정산 입금 은행명
+  accountNo            String? // 정산 입금 계좌번호
+  bizRegCertPath       String? // 사업자 등록증 첨부 파일 경로(uploadsRoot 기준 상대경로, 이미지 또는 PDF)
+  bankbookCopyPath     String? // 통장사본 첨부 파일 경로(uploadsRoot 기준 상대경로, 이미지 또는 PDF)
+  approved             Boolean   @default(false) // 승인여부 — true여야 소속 로그인 계정(PartnerUser 등)이 정상 로그인 가능
+  approvedAt           DateTime? @db.Timestamp(3) // 승인일시
+  approvedBy           String? // 승인 처리한 관리자 계정의 username
+  createdAt            DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamp(3)
 
   shop Shop? @relation(fields: [shopCode], references: [shopCode])
 

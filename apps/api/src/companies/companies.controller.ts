@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAdminAuthGuard } from '../admin-auth/guards/jwt-admin-auth.guard';
+import { CurrentAdmin } from '../admin-auth/decorators/current-admin.decorator';
+import type { SafeAdminAccount } from '../admin-auth/admin-auth.types';
 import { UpdateShopDto } from '../shops/dto/update-shop.dto';
 import { UploadShopPhotoDto } from '../shops/dto/upload-shop-photo.dto';
 import { CompaniesService } from './companies.service';
@@ -24,6 +26,7 @@ import { UpdatePartnerUserDto } from './dto/update-partner-user.dto';
 import { AddCompanyHolidaysDto } from './dto/add-company-holidays.dto';
 import { ReplaceCompanyTimeSlotsDto } from './dto/replace-company-time-slots.dto';
 import { UpsertCompanyDailySlotDto } from './dto/upsert-company-daily-slot.dto';
+import { UploadCompanyDocumentDto } from './dto/upload-company-document.dto';
 
 @ApiTags('companies')
 @ApiBearerAuth()
@@ -160,5 +163,32 @@ export class CompaniesController {
   async upsertDailySlot(@Param('id', ParseIntPipe) id: number, @Body() dto: UpsertCompanyDailySlotDto) {
     await this.companiesService.upsertDailySlot(id, dto);
     return { success: true };
+  }
+
+  @Post(':id/documents')
+  @ApiOperation({ summary: '사업자 등록증/통장사본 첨부 업로드(이미지 또는 PDF) — 기존 파일은 교체' })
+  uploadDocument(@Param('id', ParseIntPipe) id: number, @Body() dto: UploadCompanyDocumentDto) {
+    return this.companiesService.uploadCompanyDocument(id, dto);
+  }
+
+  @Delete(':id/documents/:docType')
+  @ApiOperation({ summary: '사업자 등록증/통장사본 첨부 삭제' })
+  deleteDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('docType') docType: 'BIZ_REG_CERT' | 'BANKBOOK_COPY',
+  ) {
+    return this.companiesService.deleteCompanyDocument(id, docType);
+  }
+
+  @Post(':id/approve')
+  @ApiOperation({ summary: '업체 승인 — 승인되어야 소속 로그인 계정이 정상 로그인 가능' })
+  approve(@Param('id', ParseIntPipe) id: number, @CurrentAdmin() me: SafeAdminAccount) {
+    return this.companiesService.approveCompany(id, me.username);
+  }
+
+  @Post(':id/revoke-approval')
+  @ApiOperation({ summary: '업체 승인 취소' })
+  revokeApproval(@Param('id', ParseIntPipe) id: number) {
+    return this.companiesService.revokeCompanyApproval(id);
   }
 }

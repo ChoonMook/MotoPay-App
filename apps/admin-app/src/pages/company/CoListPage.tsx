@@ -1,20 +1,21 @@
 // 업체 목록 (uploads/MotoPay_프로그램목록표_v1_47.xlsx "관리자웹_프로그램" 시트 AD-CO-03 스펙 이식)
 // [구성요소] 상단 필터 바(업체명 검색/업체구분/상태) + 하단 목록 테이블(페이징)
-// [인터랙션] 검색 버튼 클릭 시에만 필터 적용 / 신규 등록 버튼 클릭 시 업체 등록 팝업(AD-CO-02, 시공업체는 신규
-// Shop 레코드까지 함께 생성) / 행 클릭 시 업체 상세 팝업(AD-CO-04, 전체화면 크기의 탭 구조 — 기본정보/매장정보
-// (사진·주소·카테고리 포함)/예약가능시간/휴무일/일별슬롯/소속 사용자 계정 — 자세한 내용은 CompanyDetailModal.tsx)
+// [인터랙션] 검색 버튼 클릭 시에만 필터 적용 / 신규 등록·행 클릭 모두 동일한 CompanyDetailModal(AD-CO-04)을
+// 재사용한다 — 신규 등록은 company=null로 열어 기본정보 탭만 노출(기본정보 탭에 해당하는 항목을 전부 등록할 수
+// 있어야 하므로 업체 상세 수정 팝업을 그대로 재사용), 시공업체는 기본정보 저장 시 신규 Shop 레코드까지 함께
+// 생성해 shopCode로 연결한다. 자세한 내용은 CompanyDetailModal.tsx 참고.
 // apps/api(/admin/companies/*)와 연동된 실 데이터 화면. 업체(딜러사/시공업체/공급업체)를 나타내는 DB 테이블이
-// 기존에 없어 이번 작업에서 Company 모델을 신설 — 시공업체(coType=SHOP)는 업체 등록 시 신규 Shop 레코드를
-// 함께 생성해 shopCode로 연결하고, 딜러사·공급업체는 아직 별도 운영 테이블이 없어 이 화면이 유일한 관리
-// 지점이다. 사업자등록증 파일 업로드는 이번 범위에서 제외
+// 기존에 없어 이번 작업에서 Company 모델을 신설 — 딜러사·공급업체는 아직 별도 운영 테이블이 없어 이 화면이
+// 유일한 관리 지점이다.
 import { useEffect, useMemo, useState } from "react";
 import type { CellClickedEvent, ColDef } from "ag-grid-community";
-import { Download, Plus, Search, X } from "lucide-react";
-import { createCompany, listCompanies, type CompanyListItem } from "../../api/companies";
+import { Download, Plus, Search } from "lucide-react";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
 import DataGrid from "../../components/DataGrid";
 import ExcelActionButton from "../../components/ExcelActionButton";
 import { exportRowsAsXlsx } from "../../lib/exportXlsx";
+import { formatBusinessRegNo } from "../../lib/format";
 import PageBreadcrumb from "../../components/PageBreadcrumb";
 import CompanyDetailModal from "./CompanyDetailModal";
 
@@ -36,120 +37,6 @@ function statusText(active: boolean, activeLabel = "정상", inactiveLabel = "�
   return active ? activeLabel : inactiveLabel;
 }
 
-function AddCompanyModal({
-  coTypes,
-  onCancel,
-  onSubmit,
-}: {
-  coTypes: CommonCodeDetailApi[];
-  onCancel: () => void;
-  onSubmit: (v: {
-    coType: string;
-    name: string;
-    businessRegNo: string;
-    representativeName: string;
-    contactName: string;
-    contactPhone: string;
-  }) => Promise<void>;
-}) {
-  const [coType, setCoType] = useState(coTypes[0]?.detailCode ?? "");
-  const [name, setName] = useState("");
-  const [businessRegNo, setBusinessRegNo] = useState("");
-  const [representativeName, setRepresentativeName] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coType || !name.trim() || !businessRegNo.trim()) {
-      setError("업체구분·업체명·사업자번호를 모두 입력해주세요.");
-      return;
-    }
-    setSubmitting(true);
-    setError("");
-    try {
-      await onSubmit({
-        coType,
-        name: name.trim(),
-        businessRegNo: businessRegNo.trim(),
-        representativeName: representativeName.trim(),
-        contactName: contactName.trim(),
-        contactPhone: contactPhone.trim(),
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "업체 등록에 실패했습니다.");
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-secondary/40 p-4 backdrop-blur-sm">
-      <form onSubmit={submit} className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-2xl">
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-base font-bold text-secondary">업체 등록</h3>
-          <button type="button" onClick={onCancel} className="text-outline hover:text-on-surface">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="space-y-1.5">
-            <label className={labelClass}>업체구분</label>
-            <select value={coType} onChange={(e) => setCoType(e.target.value)} className={inputClass}>
-              {coTypes.map((t) => (
-                <option key={t.detailCode} value={t.detailCode}>
-                  {t.detailName}
-                </option>
-              ))}
-            </select>
-            {coType === "SHOP" && (
-              <p className="ml-0.5 text-[11px] text-on-surface-variant">시공업체로 등록하면 매장(Shop) 레코드가 함께 생성됩니다.</p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <label className={labelClass}>업체명</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="업체명을 입력하세요" className={inputClass} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={labelClass}>사업자번호</label>
-            <input value={businessRegNo} onChange={(e) => setBusinessRegNo(e.target.value)} placeholder="000-00-00000" className={inputClass} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={labelClass}>대표자명</label>
-            <input value={representativeName} onChange={(e) => setRepresentativeName(e.target.value)} className={inputClass} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={labelClass}>담당자명</label>
-            <input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} />
-          </div>
-          <div className="space-y-1.5">
-            <label className={labelClass}>담당자 연락처</label>
-            <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="010-1234-5678" className={inputClass} />
-          </div>
-
-          {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
-        </div>
-
-        <div className="mt-6 flex justify-end gap-2">
-          <button type="button" onClick={onCancel} className="rounded-lg bg-surface-container-high px-4 py-2 text-xs font-bold text-on-surface transition-all hover:bg-surface-dim">
-            취소
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:opacity-60"
-          >
-            {submitting ? "등록 중..." : "등록"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 export default function CoListPage() {
   const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(true);
@@ -160,8 +47,8 @@ export default function CoListPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [appliedFilters, setAppliedFilters] = useState({ keyword: "", coTypeFilter: "all", statusFilter: "all" });
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<CompanyListItem | null>(null);
+  // "new"면 신규 등록(빈 CompanyDetailModal), CompanyListItem이면 해당 업체 상세, null이면 닫힘
+  const [modalTarget, setModalTarget] = useState<CompanyListItem | "new" | null>(null);
   const [toast, setToast] = useState("");
   const [globalError, setGlobalError] = useState("");
 
@@ -214,7 +101,13 @@ export default function CoListPage() {
     () => [
       { headerName: "업체명", field: "name", flex: 1.2, minWidth: 160 },
       { headerName: "업체구분", field: "coType", flex: 0.8, minWidth: 100, valueFormatter: (p) => coTypeLabel(p.value) },
-      { headerName: "사업자번호", field: "businessRegNo", flex: 1, minWidth: 130 },
+      {
+        headerName: "사업자번호",
+        field: "businessRegNo",
+        flex: 1,
+        minWidth: 130,
+        valueFormatter: (p) => formatBusinessRegNo(p.value),
+      },
       { headerName: "담당자", field: "contactName", flex: 0.9, minWidth: 100, valueFormatter: (p) => p.value ?? "-" },
       { headerName: "등록일", field: "createdAt", flex: 0.8, minWidth: 110, valueFormatter: (p) => formatDate(p.value) },
       {
@@ -232,33 +125,19 @@ export default function CoListPage() {
 
   const onCellClicked = (e: CellClickedEvent<CompanyListItem>) => {
     if (!e.data) return;
-    setSelectedCompany(e.data);
+    setModalTarget(e.data);
   };
 
-  const handleAdd = async (v: {
-    coType: string;
-    name: string;
-    businessRegNo: string;
-    representativeName: string;
-    contactName: string;
-    contactPhone: string;
-  }) => {
-    const created = await createCompany({
-      coType: v.coType,
-      name: v.name,
-      businessRegNo: v.businessRegNo,
-      representativeName: v.representativeName || undefined,
-      contactName: v.contactName || undefined,
-      contactPhone: v.contactPhone || undefined,
-    });
+  const handleCreated = (created: CompanyListItem, warning?: string) => {
     setCompanies((prev) => [created, ...prev]);
-    setShowAddModal(false);
-    setToast("업체를 등록했습니다.");
+    setModalTarget(null);
+    if (warning) setGlobalError(warning);
+    else setToast("업체를 등록했습니다.");
   };
 
   const handleSaved = (updated: CompanyListItem) => {
     setCompanies((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-    setSelectedCompany(updated);
+    setModalTarget(updated);
     setToast("업체 정보를 저장했습니다.");
   };
 
@@ -277,7 +156,7 @@ export default function CoListPage() {
       rows: filtered.map((c) => ({
         name: c.name,
         coType: coTypeLabel(c.coType),
-        businessRegNo: c.businessRegNo,
+        businessRegNo: formatBusinessRegNo(c.businessRegNo),
         contactName: c.contactName ?? "-",
         createdAt: formatDate(c.createdAt),
         status: c.useYn ? "정상" : "중지",
@@ -333,7 +212,7 @@ export default function CoListPage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setModalTarget("new")}
             disabled={coTypes.length === 0}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -355,13 +234,14 @@ export default function CoListPage() {
         emptyMessage="조건에 맞는 업체가 없습니다."
       />
 
-      {showAddModal && <AddCompanyModal coTypes={coTypes} onCancel={() => setShowAddModal(false)} onSubmit={handleAdd} />}
-      {selectedCompany && (
+      {modalTarget && (
         <CompanyDetailModal
-          company={selectedCompany}
+          company={modalTarget === "new" ? null : modalTarget}
+          coTypes={coTypes}
           coTypeLabel={coTypeLabel}
-          onCancel={() => setSelectedCompany(null)}
+          onCancel={() => setModalTarget(null)}
           onSaved={handleSaved}
+          onCreated={handleCreated}
         />
       )}
 

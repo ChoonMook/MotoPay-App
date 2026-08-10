@@ -39,4 +39,54 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsString()
   suspendReason?: string;
+
+  @ApiPropertyOptional({ example: '06134' })
+  @IsOptional()
+  @IsString()
+  companyZipCode?: string;
+
+  @ApiPropertyOptional({ example: '서울 강남구 테헤란로 152' })
+  @IsOptional()
+  @IsString()
+  companyAddress?: string;
+
+  @ApiPropertyOptional({ example: '10층' })
+  @IsOptional()
+  @IsString()
+  companyAddressDetail?: string;
+
+  @ApiPropertyOptional({ example: '도소매업' })
+  @IsOptional()
+  @IsString()
+  businessType?: string;
+
+  @ApiPropertyOptional({ example: '자동차용품' })
+  @IsOptional()
+  @IsString()
+  businessItem?: string;
+
+  @ApiPropertyOptional({ description: '사업자구분 -> CommonCodeDetail(code=BIZ_DIV: INDIVIDUAL/CORP)', example: 'CORP' })
+  @IsOptional()
+  @IsString()
+  bizDivision?: string;
+
+  @ApiPropertyOptional({ example: '02-1234-5678' })
+  @IsOptional()
+  @IsString()
+  repPhone?: string;
+
+  @ApiPropertyOptional({ example: '02-1234-5679' })
+  @IsOptional()
+  @IsString()
+  faxNo?: string;
+
+  @ApiPropertyOptional({ example: '국민은행' })
+  @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @ApiPropertyOptional({ example: '123456-78-901234' })
+  @IsOptional()
+  @IsString()
+  accountNo?: string;
 }

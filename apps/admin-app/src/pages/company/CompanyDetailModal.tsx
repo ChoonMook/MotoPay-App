@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  FileText,
   Image as ImageIcon,
   Lock,
   Pencil,
@@ -18,8 +19,11 @@ import {
 import { API_BASE_URL } from "../../api/config";
 import {
   addCompanyHolidays,
+  approveCompany,
   checkPartnerUsernameAvailable,
+  createCompany,
   createPartnerUser,
+  deleteCompanyDocument,
   deleteCompanyShopPhoto,
   deletePartnerUser,
   getCompanyDailySchedule,
@@ -29,11 +33,14 @@ import {
   listPartnerUsers,
   removeCompanyHoliday,
   replaceCompanyTimeSlots,
+  revokeCompanyApproval,
   updateCompany,
   updateCompanyShop,
   updatePartnerUser,
+  uploadCompanyDocument,
   uploadCompanyShopPhoto,
   upsertCompanyDailySlot,
+  type CompanyDocType,
   type CompanyListItem,
   type CompanyShopDetail,
   type DailySchedule,
@@ -42,6 +49,7 @@ import {
 } from "../../api/companies";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { useDaumPostcode } from "../../hooks/useDaumPostcode";
+import { formatBusinessRegNo } from "../../lib/format";
 import ConfirmModal from "../../components/ConfirmModal";
 
 const inputClass =
@@ -51,6 +59,11 @@ const disabledInputClass = `${inputClass} cursor-not-allowed bg-surface-containe
 
 function statusText(active: boolean, activeLabel = "정상", inactiveLabel = "중지"): string {
   return active ? activeLabel : inactiveLabel;
+}
+
+// 필수 입력 항목 라벨 앞에 붙는 빨간 별표(*) — 업체구분/업체명/사업자번호처럼 DB에서 NOT NULL인 필드에만 사용
+function RequiredMark() {
+  return <span className="mr-0.5 text-red-500">*</span>;
 }
 
 const MAX_CASE_PHOTOS = 10;
@@ -87,6 +100,16 @@ function resizeImageToDataUri(file: File): Promise<string> {
   });
 }
 
+// PDF 등 이미지가 아닌 파일은 리사이즈 없이 그대로 base64 data URI로 변환
+function fileToDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("파일을 읽지 못했습니다"));
+    reader.readAsDataURL(file);
+  });
+}
+
 const FIXED_TIME_OPTIONS = Array.from({ length: 12 }, (_, i) => `${String(8 + i).padStart(2, "0")}:00`);
 const DAY_TYPE_ORDER = ["WEEKDAY", "SAT", "SUN", "HOLIDAY"];
 
@@ -107,31 +130,268 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
   );
 }
 
+// 사업자 등록증/통장사본 첨부 — 이미지 또는 PDF, 클릭 시 새 탭에서 원본 열기
+// companyId가 없으면(신규 등록 중) 아직 업로드할 대상 레코드가 없으므로 staged/onStagedChange로 파일만 로컬 보관했다가
+// 업체 생성 성공 직후 부모(CompanyBasicInfoTab)가 일괄 업로드한다
+function CompanyDocumentField({
+  companyId,
+  docType,
+  label,
+  path,
+  onUpdated,
+  staged,
+  onStagedChange,
+}: {
+  companyId: number | null;
+  docType: CompanyDocType;
+  label: string;
+  path: string | null;
+  onUpdated?: (updated: CompanyListItem) => void;
+  staged?: File | null;
+  onStagedChange?: (file: File | null) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [stagedPreviewUrl, setStagedPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!staged || staged.type === "application/pdf") {
+      setStagedPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(staged);
+    setStagedPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [staged]);
+
+  const isImage = staged ? staged.type !== "application/pdf" : path ? /\.(jpe?g|png|webp)$/i.test(path) : false;
+  const isPdf = staged ? staged.type === "application/pdf" : path ? /\.pdf$/i.test(path) : false;
+  const fileUrl = staged ? stagedPreviewUrl : path ? `${API_BASE_URL}/uploads/${path}` : null;
+  const hasFile = staged ? true : !!path;
+
+  const onFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (companyId === null) {
+      onStagedChange?.(file);
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+    try {
+      const dataUri = file.type === "application/pdf" ? await fileToDataUri(file) : await resizeImageToDataUri(file);
+      onUpdated?.(await uploadCompanyDocument(companyId, dataUri, docType));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "업로드에 실패했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (companyId === null) {
+      onStagedChange?.(null);
+      return;
+    }
+    setError("");
+    try {
+      onUpdated?.(await deleteCompanyDocument(companyId, docType));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "삭제에 실패했습니다.");
+    }
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label className={labelClass}>{label}</label>
+      <div className="flex items-center gap-3">
+        {fileUrl ? (
+          staged ? (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-outline-variant/60 bg-surface-container-low">
+              {isImage ? <img src={fileUrl} alt={label} className="h-full w-full object-cover" /> : <FileText className="h-6 w-6 text-outline" />}
+            </div>
+          ) : (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-outline-variant/60 bg-surface-container-low"
+            >
+              {isImage ? <img src={fileUrl} alt={label} className="h-full w-full object-cover" /> : <FileText className="h-6 w-6 text-outline" />}
+            </a>
+          )
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-outline-variant bg-surface-container-low">
+            <FileText className="h-6 w-6 text-outline" />
+          </div>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="shrink-0 rounded-lg bg-surface-container-high px-3 py-1.5 text-[11px] font-bold whitespace-nowrap text-on-surface hover:bg-surface-dim disabled:opacity-60"
+            >
+              {uploading ? "업로드 중..." : hasFile ? "파일 변경" : "파일 첨부"}
+            </button>
+            {hasFile && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-bold whitespace-nowrap text-red-600 hover:bg-red-100"
+              >
+                삭제
+              </button>
+            )}
+          </div>
+          {staged ? (
+            <span className="max-w-[220px] truncate text-[11px] text-on-surface-variant">{staged.name}(업체 등록 후 업로드됩니다)</span>
+          ) : (
+            isPdf && <span className="text-[11px] text-on-surface-variant">PDF 파일(클릭 시 새 탭에서 열기)</span>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          className="hidden"
+          onChange={onFileSelected}
+        />
+      </div>
+      {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 // ───────────────────────── 기본정보 탭 ─────────────────────────
 
 function CompanyBasicInfoTab({
   company,
+  coTypes,
   coTypeLabel,
   onSaved,
+  onCreated,
 }: {
-  company: CompanyListItem;
+  company: CompanyListItem | null;
+  coTypes: CommonCodeDetailApi[];
   coTypeLabel: (code: string) => string;
   onSaved: (updated: CompanyListItem) => void;
+  onCreated?: (created: CompanyListItem, warning?: string) => void;
 }) {
-  const [name, setName] = useState(company.name);
-  const [businessRegNo, setBusinessRegNo] = useState(company.businessRegNo);
-  const [representativeName, setRepresentativeName] = useState(company.representativeName ?? "");
-  const [contactName, setContactName] = useState(company.contactName ?? "");
-  const [contactPhone, setContactPhone] = useState(company.contactPhone ?? "");
+  const isCreate = company === null;
+  const [coType, setCoType] = useState(company?.coType ?? coTypes[0]?.detailCode ?? "");
+  const [name, setName] = useState(company?.name ?? "");
+  const [businessRegNo, setBusinessRegNo] = useState(formatBusinessRegNo(company?.businessRegNo ?? ""));
+  const [representativeName, setRepresentativeName] = useState(company?.representativeName ?? "");
+  const [contactName, setContactName] = useState(company?.contactName ?? "");
+  const [contactPhone, setContactPhone] = useState(company?.contactPhone ?? "");
+  const [bizDivision, setBizDivision] = useState(company?.bizDivision ?? "");
+  const [businessType, setBusinessType] = useState(company?.businessType ?? "");
+  const [businessItem, setBusinessItem] = useState(company?.businessItem ?? "");
+  const [repPhone, setRepPhone] = useState(company?.repPhone ?? "");
+  const [faxNo, setFaxNo] = useState(company?.faxNo ?? "");
+  const [bankName, setBankName] = useState(company?.bankName ?? "");
+  const [accountNo, setAccountNo] = useState(company?.accountNo ?? "");
+  const [companyZipCode, setCompanyZipCode] = useState(company?.companyZipCode ?? "");
+  const [companyAddress, setCompanyAddress] = useState(company?.companyAddress ?? "");
+  const [companyAddressDetail, setCompanyAddressDetail] = useState(company?.companyAddressDetail ?? "");
+  const [stagedBizRegCert, setStagedBizRegCert] = useState<File | null>(null);
+  const [stagedBankbookCopy, setStagedBankbookCopy] = useState<File | null>(null);
+  const [bizDivisions, setBizDivisions] = useState<CommonCodeDetailApi[]>([]);
+  const [banks, setBanks] = useState<CommonCodeDetailApi[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const [showSuspendForm, setShowSuspendForm] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [pendingResume, setPendingResume] = useState(false);
+  const [pendingApprove, setPendingApprove] = useState(false);
+  const [pendingRevoke, setPendingRevoke] = useState(false);
+
+  const { open: openCompanyAddressSearch, modal: companyAddressSearchModal } = useDaumPostcode();
+
+  useEffect(() => {
+    getGroup("BIZ_DIV")
+      .then((g) => setBizDivisions(g.details.filter((d) => d.useYn)))
+      .catch((err) => setError(err instanceof Error ? err.message : "사업자구분 목록을 불러오지 못했습니다."));
+    getGroup("BANK")
+      .then((g) => setBanks(g.details.filter((d) => d.useYn)))
+      .catch((err) => setError(err instanceof Error ? err.message : "은행 목록을 불러오지 못했습니다."));
+  }, []);
+
+  const handleSearchCompanyAddress = () => {
+    openCompanyAddressSearch(
+      (result) => {
+        setCompanyZipCode(result.zonecode);
+        setCompanyAddress(result.address);
+      },
+      (message) => setError(message),
+    );
+  };
+
+  const submitCreate = async () => {
+    if (!coType || !name.trim() || !businessRegNo.trim()) {
+      setError("업체구분·업체명·사업자번호를 모두 입력해주세요.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const created = await createCompany({
+        coType,
+        name: name.trim(),
+        businessRegNo: businessRegNo.trim(),
+        representativeName: representativeName.trim(),
+        contactName: contactName.trim(),
+        contactPhone: contactPhone.trim(),
+        bizDivision: bizDivision || undefined,
+        businessType: businessType.trim(),
+        businessItem: businessItem.trim(),
+        repPhone: repPhone.trim(),
+        faxNo: faxNo.trim(),
+        bankName: bankName.trim(),
+        accountNo: accountNo.trim(),
+        companyZipCode: companyZipCode.trim(),
+        companyAddress: companyAddress.trim(),
+        companyAddressDetail: companyAddressDetail.trim(),
+      });
+
+      let result = created;
+      let warning: string | undefined;
+      try {
+        if (stagedBizRegCert) {
+          const dataUri =
+            stagedBizRegCert.type === "application/pdf" ? await fileToDataUri(stagedBizRegCert) : await resizeImageToDataUri(stagedBizRegCert);
+          result = await uploadCompanyDocument(result.id, dataUri, "BIZ_REG_CERT");
+        }
+        if (stagedBankbookCopy) {
+          const dataUri =
+            stagedBankbookCopy.type === "application/pdf" ? await fileToDataUri(stagedBankbookCopy) : await resizeImageToDataUri(stagedBankbookCopy);
+          result = await uploadCompanyDocument(result.id, dataUri, "BANKBOOK_COPY");
+        }
+      } catch (err) {
+        warning = `업체는 등록되었으나 첨부파일 업로드에 실패했습니다(${err instanceof Error ? err.message : "알 수 없는 오류"}). 업체 상세에서 다시 첨부해주세요.`;
+      }
+
+      onCreated?.(result, warning);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "업체 등록에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreate) {
+      await submitCreate();
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -141,6 +401,16 @@ function CompanyBasicInfoTab({
         representativeName: representativeName.trim(),
         contactName: contactName.trim(),
         contactPhone: contactPhone.trim(),
+        bizDivision: bizDivision || undefined,
+        businessType: businessType.trim(),
+        businessItem: businessItem.trim(),
+        repPhone: repPhone.trim(),
+        faxNo: faxNo.trim(),
+        bankName: bankName.trim(),
+        accountNo: accountNo.trim(),
+        companyZipCode: companyZipCode.trim(),
+        companyAddress: companyAddress.trim(),
+        companyAddressDetail: companyAddressDetail.trim(),
       });
       onSaved(updated);
     } catch (err) {
@@ -151,6 +421,7 @@ function CompanyBasicInfoTab({
   };
 
   const confirmSuspend = async () => {
+    if (!company) return;
     if (!suspendReason.trim()) {
       setError("중지 사유를 입력해주세요.");
       return;
@@ -169,6 +440,7 @@ function CompanyBasicInfoTab({
   };
 
   const confirmResume = async () => {
+    if (!company) return;
     setSubmitting(true);
     try {
       const updated = await updateCompany(company.id, { useYn: true });
@@ -181,26 +453,157 @@ function CompanyBasicInfoTab({
     }
   };
 
+  const confirmApprove = async () => {
+    if (!company) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      onSaved(await approveCompany(company.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "승인 처리에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+      setPendingApprove(false);
+    }
+  };
+
+  const confirmRevoke = async () => {
+    if (!company) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      onSaved(await revokeCompanyApproval(company.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "승인취소 처리에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+      setPendingRevoke(false);
+    }
+  };
+
   return (
-    <div className="mx-auto max-w-[560px]">
+    <div className="mx-auto max-w-[680px]">
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className={labelClass}>업체구분</label>
-            <input value={coTypeLabel(company.coType)} disabled className={disabledInputClass} />
+            <label className={labelClass}>
+              <RequiredMark />업체구분
+            </label>
+            {isCreate ? (
+              <select value={coType} onChange={(e) => setCoType(e.target.value)} className={inputClass}>
+                {coTypes.map((t) => (
+                  <option key={t.detailCode} value={t.detailCode}>
+                    {t.detailName}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input value={coTypeLabel(company.coType)} disabled className={disabledInputClass} />
+            )}
+            {isCreate && coType === "SHOP" && (
+              <p className="text-[11px] text-on-surface-variant">시공업체로 등록하면 매장(Shop) 레코드가 함께 생성됩니다.</p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <label className={labelClass}>사업자번호</label>
-            <input value={businessRegNo} onChange={(e) => setBusinessRegNo(e.target.value)} className={inputClass} />
+            <label className={labelClass}>사업자구분</label>
+            <select value={bizDivision} onChange={(e) => setBizDivision(e.target.value)} className={inputClass}>
+              <option value="">선택 안 함</option>
+              {bizDivisions.map((d) => (
+                <option key={d.detailCode} value={d.detailCode}>
+                  {d.detailName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className={labelClass}>
+              <RequiredMark />사업자번호
+            </label>
+            <input
+              value={businessRegNo}
+              onChange={(e) => setBusinessRegNo(formatBusinessRegNo(e.target.value))}
+              placeholder="000-00-00000"
+              maxLength={12}
+              inputMode="numeric"
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>업태</label>
+            <input value={businessType} onChange={(e) => setBusinessType(e.target.value)} placeholder="도소매업" className={inputClass} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className={labelClass}>종목</label>
+            <input value={businessItem} onChange={(e) => setBusinessItem(e.target.value)} placeholder="자동차용품" className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>대표전화번호</label>
+            <input value={repPhone} onChange={(e) => setRepPhone(e.target.value)} placeholder="02-1234-5678" className={inputClass} />
           </div>
         </div>
         <div className="space-y-1.5">
-          <label className={labelClass}>업체명</label>
+          <label className={labelClass}>
+            <RequiredMark />업체명
+          </label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </div>
+
         <div className="space-y-1.5">
-          <label className={labelClass}>대표자명</label>
-          <input value={representativeName} onChange={(e) => setRepresentativeName(e.target.value)} className={inputClass} />
+          <label className={labelClass}>회사주소</label>
+          <div className="flex gap-2">
+            <input value={companyZipCode} disabled placeholder="우편번호" style={{ width: "96px" }} className={`${disabledInputClass} shrink-0`} />
+            <button
+              type="button"
+              onClick={handleSearchCompanyAddress}
+              className="shrink-0 rounded-lg border border-primary px-3 py-2 text-[11px] font-bold whitespace-nowrap text-primary hover:bg-primary/5"
+            >
+              주소 검색
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1">
+              <input value={companyAddress} disabled className={disabledInputClass} />
+            </div>
+            <input
+              value={companyAddressDetail}
+              onChange={(e) => setCompanyAddressDetail(e.target.value)}
+              placeholder="상세주소"
+              style={{ width: "180px" }}
+              className={`${inputClass} shrink-0`}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className={labelClass}>대표자명</label>
+            <input value={representativeName} onChange={(e) => setRepresentativeName(e.target.value)} className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>팩스번호</label>
+            <input value={faxNo} onChange={(e) => setFaxNo(e.target.value)} placeholder="02-1234-5679" className={inputClass} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className={labelClass}>은행</label>
+            <select value={bankName} onChange={(e) => setBankName(e.target.value)} className={inputClass}>
+              <option value="">선택 안 함</option>
+              {banks.map((b) => (
+                <option key={b.detailCode} value={b.detailCode}>
+                  {b.detailName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>계좌번호</label>
+            <input value={accountNo} onChange={(e) => setAccountNo(e.target.value)} placeholder="123456-78-901234" className={inputClass} />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -218,7 +621,65 @@ function CompanyBasicInfoTab({
           </div>
         </div>
 
-        {company.suspendReason && !showSuspendForm && (
+        <div className="grid grid-cols-2 gap-4">
+          <CompanyDocumentField
+            companyId={company?.id ?? null}
+            docType="BIZ_REG_CERT"
+            label="사업자 등록증 첨부"
+            path={company?.bizRegCertPath ?? null}
+            onUpdated={onSaved}
+            staged={stagedBizRegCert}
+            onStagedChange={setStagedBizRegCert}
+          />
+          <CompanyDocumentField
+            companyId={company?.id ?? null}
+            docType="BANKBOOK_COPY"
+            label="통장사본 첨부"
+            path={company?.bankbookCopyPath ?? null}
+            onUpdated={onSaved}
+            staged={stagedBankbookCopy}
+            onStagedChange={setStagedBankbookCopy}
+          />
+        </div>
+
+        {company && (
+          <div className="space-y-1.5">
+            <label className={labelClass}>승인 정보</label>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant/60 bg-surface-container-low px-3 py-2.5">
+              <p className="text-[11px] text-on-surface-variant">
+                <span className={`font-bold ${company.approved ? "text-emerald-600" : "text-red-500"}`}>
+                  {company.approved ? "승인됨" : "미승인"}
+                </span>
+                {company.approved && company.approvedAt ? (
+                  <span className="ml-2">
+                    {new Date(company.approvedAt).toLocaleString("ko-KR")} · {company.approvedBy}
+                  </span>
+                ) : (
+                  <span className="ml-2">승인 전에는 소속 계정이 로그인할 수 없습니다.</span>
+                )}
+              </p>
+              {company.approved ? (
+                <button
+                  type="button"
+                  onClick={() => setPendingRevoke(true)}
+                  className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-[11px] font-bold whitespace-nowrap text-red-600 hover:bg-red-100"
+                >
+                  승인취소
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPendingApprove(true)}
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold whitespace-nowrap text-white hover:bg-primary/90"
+                >
+                  승인
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {company?.suspendReason && !showSuspendForm && (
           <div className="space-y-1.5">
             <label className={labelClass}>중지 사유</label>
             <p className="rounded-lg border border-outline-variant/60 bg-surface-container-low px-3 py-2.5 text-[11px] text-on-surface-variant">{company.suspendReason}</p>
@@ -254,19 +715,23 @@ function CompanyBasicInfoTab({
         {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
 
         <div className="flex items-center justify-between gap-2 border-t border-outline-variant/60 pt-4">
-          {company.useYn ? (
-            <button
-              type="button"
-              onClick={() => setShowSuspendForm(true)}
-              disabled={showSuspendForm}
-              className="rounded-lg bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all hover:bg-red-100 disabled:opacity-50"
-            >
-              사용중지
-            </button>
+          {company ? (
+            company.useYn ? (
+              <button
+                type="button"
+                onClick={() => setShowSuspendForm(true)}
+                disabled={showSuspendForm}
+                className="rounded-lg bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all hover:bg-red-100 disabled:opacity-50"
+              >
+                사용중지
+              </button>
+            ) : (
+              <button type="button" onClick={() => setPendingResume(true)} className="rounded-lg bg-primary/10 px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-primary/20">
+                재개
+              </button>
+            )
           ) : (
-            <button type="button" onClick={() => setPendingResume(true)} className="rounded-lg bg-primary/10 px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-primary/20">
-              재개
-            </button>
+            <span />
           )}
 
           <button
@@ -274,7 +739,7 @@ function CompanyBasicInfoTab({
             disabled={submitting}
             className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:opacity-60"
           >
-            {submitting ? "저장 중..." : "저장"}
+            {submitting ? (isCreate ? "등록 중..." : "저장 중...") : isCreate ? "등록" : "저장"}
           </button>
         </div>
       </form>
@@ -288,6 +753,25 @@ function CompanyBasicInfoTab({
           onConfirm={confirmResume}
         />
       )}
+      {pendingApprove && (
+        <ConfirmModal
+          title="업체 승인"
+          message="이 업체를 승인하시겠습니까? 승인 후 소속 계정이 정상 로그인할 수 있습니다."
+          confirmLabel="승인"
+          onCancel={() => setPendingApprove(false)}
+          onConfirm={confirmApprove}
+        />
+      )}
+      {pendingRevoke && (
+        <ConfirmModal
+          title="업체 승인취소"
+          message="이 업체의 승인을 취소하시겠습니까? 취소 즉시 소속 계정의 로그인이 차단됩니다."
+          confirmLabel="승인취소"
+          onCancel={() => setPendingRevoke(false)}
+          onConfirm={confirmRevoke}
+        />
+      )}
+      {companyAddressSearchModal}
     </div>
   );
 }
@@ -1313,23 +1797,28 @@ function PartnerUsersTab({ companyId }: { companyId: number }) {
 
 export default function CompanyDetailModal({
   company,
+  coTypes,
   coTypeLabel,
   onCancel,
   onSaved,
+  onCreated,
 }: {
-  company: CompanyListItem;
+  company: CompanyListItem | null;
+  coTypes: CommonCodeDetailApi[];
   coTypeLabel: (code: string) => string;
   onCancel: () => void;
   onSaved: (updated: CompanyListItem) => void;
+  onCreated?: (created: CompanyListItem, warning?: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>("basic");
   const [globalError, setGlobalError] = useState("");
 
-  const isShop = company.coType === "SHOP";
+  const isShop = company?.coType === "SHOP";
 
   const tabs = useMemo(() => {
     const base: { key: DetailTab; label: string }[] = [{ key: "basic", label: "기본정보" }];
-    if (isShop) {
+    // 신규 등록 중에는 아직 업체 id가 없어 매장정보 등 나머지 탭이 의미가 없으므로 기본정보만 노출
+    if (company && isShop) {
       base.push(
         { key: "shop", label: "매장정보" },
         { key: "timeSlots", label: "예약가능시간" },
@@ -1339,7 +1828,7 @@ export default function CompanyDetailModal({
       );
     }
     return base;
-  }, [isShop]);
+  }, [company, isShop]);
 
   useEffect(() => {
     if (!globalError) return;
@@ -1352,8 +1841,8 @@ export default function CompanyDetailModal({
       <div className="flex h-full max-h-[92vh] w-full max-w-[1100px] flex-col rounded-2xl bg-white shadow-2xl">
         <div className="flex shrink-0 items-center justify-between border-b border-outline-variant/60 px-6 py-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-secondary">{company.name}</h3>
-            <span className="text-xs font-bold text-on-surface-variant">{statusText(company.useYn)}</span>
+            <h3 className="text-base font-bold text-secondary">{company ? company.name : "신규 업체 등록"}</h3>
+            {company && <span className="text-xs font-bold text-on-surface-variant">{statusText(company.useYn)}</span>}
           </div>
           <button type="button" onClick={onCancel} className="text-outline hover:text-on-surface">
             <X className="h-5 w-5" />
@@ -1376,12 +1865,18 @@ export default function CompanyDetailModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {activeTab === "basic" && <CompanyBasicInfoTab company={company} coTypeLabel={coTypeLabel} onSaved={onSaved} />}
-          {activeTab === "shop" && isShop && <ShopInfoTab companyId={company.id} onError={setGlobalError} />}
-          {activeTab === "timeSlots" && isShop && <TimeSlotsTab companyId={company.id} />}
-          {activeTab === "holidays" && isShop && <HolidaysTab companyId={company.id} />}
-          {activeTab === "dailySlots" && isShop && <DailySlotsTab companyId={company.id} />}
-          {activeTab === "users" && isShop && <PartnerUsersTab companyId={company.id} />}
+          {activeTab === "basic" && (
+            <CompanyBasicInfoTab company={company} coTypes={coTypes} coTypeLabel={coTypeLabel} onSaved={onSaved} onCreated={onCreated} />
+          )}
+          {company && (
+            <>
+              {activeTab === "shop" && isShop && <ShopInfoTab companyId={company.id} onError={setGlobalError} />}
+              {activeTab === "timeSlots" && isShop && <TimeSlotsTab companyId={company.id} />}
+              {activeTab === "holidays" && isShop && <HolidaysTab companyId={company.id} />}
+              {activeTab === "dailySlots" && isShop && <DailySlotsTab companyId={company.id} />}
+              {activeTab === "users" && isShop && <PartnerUsersTab companyId={company.id} />}
+            </>
+          )}
         </div>
       </div>
 

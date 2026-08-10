@@ -12,6 +12,21 @@ export interface CompanyListItem {
   shopCode: string | null;
   useYn: boolean;
   suspendReason: string | null;
+  companyZipCode: string | null;
+  companyAddress: string | null;
+  companyAddressDetail: string | null;
+  businessType: string | null;
+  businessItem: string | null;
+  bizDivision: string | null;
+  repPhone: string | null;
+  faxNo: string | null;
+  bankName: string | null;
+  accountNo: string | null;
+  bizRegCertPath: string | null;
+  bankbookCopyPath: string | null;
+  approved: boolean;
+  approvedAt: string | null;
+  approvedBy: string | null;
   createdAt: string;
 }
 
@@ -26,6 +41,16 @@ export interface CreateCompanyInput {
   representativeName?: string;
   contactName?: string;
   contactPhone?: string;
+  companyZipCode?: string;
+  companyAddress?: string;
+  companyAddressDetail?: string;
+  businessType?: string;
+  businessItem?: string;
+  bizDivision?: string;
+  repPhone?: string;
+  faxNo?: string;
+  bankName?: string;
+  accountNo?: string;
 }
 
 export function createCompany(input: CreateCompanyInput): Promise<CompanyListItem> {
@@ -43,6 +68,16 @@ export interface UpdateCompanyInput {
   contactPhone?: string;
   useYn?: boolean;
   suspendReason?: string;
+  companyZipCode?: string;
+  companyAddress?: string;
+  companyAddressDetail?: string;
+  businessType?: string;
+  businessItem?: string;
+  bizDivision?: string;
+  repPhone?: string;
+  faxNo?: string;
+  bankName?: string;
+  accountNo?: string;
 }
 
 export function updateCompany(id: number, input: UpdateCompanyInput): Promise<CompanyListItem> {
@@ -50,6 +85,27 @@ export function updateCompany(id: number, input: UpdateCompanyInput): Promise<Co
     method: "PATCH",
     body: JSON.stringify(input),
   });
+}
+
+export type CompanyDocType = "BIZ_REG_CERT" | "BANKBOOK_COPY";
+
+export function uploadCompanyDocument(id: number, fileBase64: string, docType: CompanyDocType): Promise<CompanyListItem> {
+  return authedRequest<CompanyListItem>(`/admin/companies/${id}/documents`, {
+    method: "POST",
+    body: JSON.stringify({ fileBase64, docType }),
+  });
+}
+
+export function deleteCompanyDocument(id: number, docType: CompanyDocType): Promise<CompanyListItem> {
+  return authedRequest<CompanyListItem>(`/admin/companies/${id}/documents/${docType}`, { method: "DELETE" });
+}
+
+export function approveCompany(id: number): Promise<CompanyListItem> {
+  return authedRequest<CompanyListItem>(`/admin/companies/${id}/approve`, { method: "POST" });
+}
+
+export function revokeCompanyApproval(id: number): Promise<CompanyListItem> {
+  return authedRequest<CompanyListItem>(`/admin/companies/${id}/revoke-approval`, { method: "POST" });
 }
 
 export interface ShopPhoto {

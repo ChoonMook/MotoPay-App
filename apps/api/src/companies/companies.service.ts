@@ -27,6 +27,8 @@ import type { CreatePartnerUserDto } from './dto/create-partner-user.dto';
 import type { UpdatePartnerUserDto } from './dto/update-partner-user.dto';
 import type { TimeSlotInputDto } from './dto/replace-company-time-slots.dto';
 import type { UpsertCompanyDailySlotDto } from './dto/upsert-company-daily-slot.dto';
+import type { UploadCompanyDocumentDto } from './dto/upload-company-document.dto';
+import { saveCompanyDocument, deleteCompanyDocument } from '../common/storage/company-document-storage';
 
 const SALT_ROUNDS = 10;
 
@@ -41,6 +43,21 @@ export interface CompanyListItem {
   shopCode: string | null;
   useYn: boolean;
   suspendReason: string | null;
+  companyZipCode: string | null;
+  companyAddress: string | null;
+  companyAddressDetail: string | null;
+  businessType: string | null;
+  businessItem: string | null;
+  bizDivision: string | null;
+  repPhone: string | null;
+  faxNo: string | null;
+  bankName: string | null;
+  accountNo: string | null;
+  bizRegCertPath: string | null;
+  bankbookCopyPath: string | null;
+  approved: boolean;
+  approvedAt: Date | null;
+  approvedBy: string | null;
   createdAt: Date;
 }
 
@@ -85,6 +102,21 @@ export class CompaniesService {
       shopCode: company.shopCode,
       useYn: company.useYn,
       suspendReason: company.suspendReason,
+      companyZipCode: company.companyZipCode,
+      companyAddress: company.companyAddress,
+      companyAddressDetail: company.companyAddressDetail,
+      businessType: company.businessType,
+      businessItem: company.businessItem,
+      bizDivision: company.bizDivision,
+      repPhone: company.repPhone,
+      faxNo: company.faxNo,
+      bankName: company.bankName,
+      accountNo: company.accountNo,
+      bizRegCertPath: company.bizRegCertPath,
+      bankbookCopyPath: company.bankbookCopyPath,
+      approved: company.approved,
+      approvedAt: company.approvedAt,
+      approvedBy: company.approvedBy,
       createdAt: company.createdAt,
     };
   }
@@ -112,6 +144,25 @@ export class CompaniesService {
 
   /** 신규 업체 등록 — coType='SHOP'이면 새 Shop 레코드까지 함께 생성해 shopCode로 연결한다 */
   async create(dto: CreateCompanyDto): Promise<CompanyListItem> {
+    const baseData = {
+      coType: dto.coType,
+      name: dto.name,
+      businessRegNo: dto.businessRegNo,
+      representativeName: dto.representativeName,
+      contactName: dto.contactName,
+      contactPhone: dto.contactPhone,
+      companyZipCode: dto.companyZipCode,
+      companyAddress: dto.companyAddress,
+      companyAddressDetail: dto.companyAddressDetail,
+      businessType: dto.businessType,
+      businessItem: dto.businessItem,
+      bizDivision: dto.bizDivision,
+      repPhone: dto.repPhone,
+      faxNo: dto.faxNo,
+      bankName: dto.bankName,
+      accountNo: dto.accountNo,
+    };
+
     if (dto.coType === 'SHOP') {
       const created = await this.prisma.$transaction(async (tx) => {
         // Shop.shopCode(pk 성격의 unique)는 자동 채번(id 기반) 전까지 임시값이 필요 — Product.productCode와
@@ -122,30 +173,13 @@ export class CompaniesService {
           data: { shopCode: String(placeholder.id).padStart(10, '0') },
         });
         return tx.company.create({
-          data: {
-            coType: dto.coType,
-            name: dto.name,
-            businessRegNo: dto.businessRegNo,
-            representativeName: dto.representativeName,
-            contactName: dto.contactName,
-            contactPhone: dto.contactPhone,
-            shopCode: shop.shopCode,
-          },
+          data: { ...baseData, shopCode: shop.shopCode },
         });
       });
       return this.toListItem(created);
     }
 
-    const created = await this.prisma.company.create({
-      data: {
-        coType: dto.coType,
-        name: dto.name,
-        businessRegNo: dto.businessRegNo,
-        representativeName: dto.representativeName,
-        contactName: dto.contactName,
-        contactPhone: dto.contactPhone,
-      },
-    });
+    const created = await this.prisma.company.create({ data: baseData });
     return this.toListItem(created);
   }
 
@@ -168,7 +202,83 @@ export class CompaniesService {
         contactPhone: dto.contactPhone,
         useYn: dto.useYn,
         suspendReason: dto.useYn === true ? null : dto.suspendReason,
+        companyZipCode: dto.companyZipCode,
+        companyAddress: dto.companyAddress,
+        companyAddressDetail: dto.companyAddressDetail,
+        businessType: dto.businessType,
+        businessItem: dto.businessItem,
+        bizDivision: dto.bizDivision,
+        repPhone: dto.repPhone,
+        faxNo: dto.faxNo,
+        bankName: dto.bankName,
+        accountNo: dto.accountNo,
       },
+    });
+    return this.toListItem(updated);
+  }
+
+  // ── 사업자 등록증 / 통장사본 첨부 ──────────────────────────────
+
+  async uploadCompanyDocument(id: number, dto: UploadCompanyDocumentDto): Promise<CompanyListItem> {
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) {
+      throw new NotFoundException('업체를 찾을 수 없습니다.');
+    }
+    const relativePath = await saveCompanyDocument(dto.fileBase64);
+    const field = dto.docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
+    const previousPath = dto.docType === 'BIZ_REG_CERT' ? company.bizRegCertPath : company.bankbookCopyPath;
+
+    const updated = await this.prisma.company.update({
+      where: { id },
+      data: { [field]: relativePath },
+    });
+    if (previousPath) {
+      await deleteCompanyDocument(previousPath);
+    }
+    return this.toListItem(updated);
+  }
+
+  async deleteCompanyDocument(id: number, docType: 'BIZ_REG_CERT' | 'BANKBOOK_COPY'): Promise<CompanyListItem> {
+    const company = await this.prisma.company.findUnique({ where: { id } });
+    if (!company) {
+      throw new NotFoundException('업체를 찾을 수 없습니다.');
+    }
+    const field = docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
+    const previousPath = docType === 'BIZ_REG_CERT' ? company.bizRegCertPath : company.bankbookCopyPath;
+
+    const updated = await this.prisma.company.update({
+      where: { id },
+      data: { [field]: null },
+    });
+    if (previousPath) {
+      await deleteCompanyDocument(previousPath);
+    }
+    return this.toListItem(updated);
+  }
+
+  // ── 승인 처리 ────────────────────────────────────────────────
+  // 승인(approved=true)이 되어야 소속 로그인 계정이 정상 로그인 가능(PartnerAuthService.login 참고)
+
+  async approveCompany(id: number, adminUsername: string): Promise<CompanyListItem> {
+    const exists = await this.prisma.company.findUnique({ where: { id } });
+    if (!exists) {
+      throw new NotFoundException('업체를 찾을 수 없습니다.');
+    }
+    const updated = await this.prisma.company.update({
+      where: { id },
+      data: { approved: true, approvedAt: new Date(), approvedBy: adminUsername },
+    });
+    return this.toListItem(updated);
+  }
+
+  async revokeCompanyApproval(id: number): Promise<CompanyListItem> {
+    const exists = await this.prisma.company.findUnique({ where: { id } });
+    if (!exists) {
+      throw new NotFoundException('업체를 찾을 수 없습니다.');
+    }
+    const updated = await this.prisma.company.update({
+      where: { id },
+      data: { approved: false, approvedAt: null, approvedBy: null },
     });
     return this.toListItem(updated);
   }

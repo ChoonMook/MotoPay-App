@@ -16,7 +16,6 @@ import {
   updateAccount,
   type AdminAccountListItem,
 } from "../../api/adminAccounts";
-import type { AdminAccountType } from "../../api/adminAuth";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
 import DataGrid from "../../components/DataGrid";
 import ExcelActionButton from "../../components/ExcelActionButton";
@@ -31,14 +30,6 @@ function formatDateTime(value: string | null): string {
   if (!value) return "-";
   return value.replace("T", " ").slice(0, 16);
 }
-
-// 사용자유형 - AdminAccount.accountType(schema.prisma) 값과 1:1 대응
-const ACCOUNT_TYPE_LABELS: Record<AdminAccountType, string> = {
-  ADMIN: "플랫폼관리자",
-  PARTNER: "파트너사",
-  SUPPLIER: "공급사",
-};
-const ACCOUNT_TYPES = Object.keys(ACCOUNT_TYPE_LABELS) as AdminAccountType[];
 
 interface GridContext {
   onToggleStatus: (target: AdminAccountListItem) => void;
@@ -68,24 +59,26 @@ interface AccountFormValue {
   name: string;
   email: string;
   phone: string;
-  accountType: AdminAccountType;
+  accountType: string;
   permGroup: string;
   useYn: boolean;
 }
 
 function AddAccountModal({
   permGroups,
+  coTypes,
   onCancel,
   onSubmit,
 }: {
   permGroups: CommonCodeDetailApi[];
+  coTypes: CommonCodeDetailApi[];
   onCancel: () => void;
   onSubmit: (v: {
     name: string;
     username: string;
     email: string;
     phone: string;
-    accountType: AdminAccountType;
+    accountType: string;
     permGroup: string;
   }) => Promise<void>;
 }) {
@@ -95,7 +88,7 @@ function AddAccountModal({
   const [checkedUsername, setCheckedUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [accountType, setAccountType] = useState<AdminAccountType>("ADMIN");
+  const [accountType, setAccountType] = useState(coTypes[0]?.detailCode ?? "");
   const [permGroup, setPermGroup] = useState(permGroups[0]?.detailCode ?? "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -200,10 +193,10 @@ function AddAccountModal({
           </div>
           <div className="space-y-1.5">
             <label className={labelClass}>사용자유형</label>
-            <select value={accountType} onChange={(e) => setAccountType(e.target.value as AdminAccountType)} className={inputClass}>
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {ACCOUNT_TYPE_LABELS[t]}
+            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputClass}>
+              {coTypes.map((t) => (
+                <option key={t.detailCode} value={t.detailCode}>
+                  {t.detailName}
                 </option>
               ))}
             </select>
@@ -242,18 +235,20 @@ function AddAccountModal({
 function EditAccountModal({
   account,
   permGroups,
+  coTypes,
   onCancel,
   onSave,
 }: {
   account: AdminAccountListItem;
   permGroups: CommonCodeDetailApi[];
+  coTypes: CommonCodeDetailApi[];
   onCancel: () => void;
   onSave: (v: AccountFormValue) => Promise<void>;
 }) {
   const [name, setName] = useState(account.name);
   const [email, setEmail] = useState(account.email ?? "");
   const [phone, setPhone] = useState(account.phone ?? "");
-  const [accountType, setAccountType] = useState<AdminAccountType>(account.accountType);
+  const [accountType, setAccountType] = useState(account.accountType);
   const [permGroup, setPermGroup] = useState(account.permGroup);
   const [useYn, setUseYn] = useState(account.useYn);
   const [error, setError] = useState("");
@@ -300,10 +295,10 @@ function EditAccountModal({
           </div>
           <div className="space-y-1.5">
             <label className={labelClass}>사용자유형</label>
-            <select value={accountType} onChange={(e) => setAccountType(e.target.value as AdminAccountType)} className={inputClass}>
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {ACCOUNT_TYPE_LABELS[t]}
+            <select value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputClass}>
+              {coTypes.map((t) => (
+                <option key={t.detailCode} value={t.detailCode}>
+                  {t.detailName}
                 </option>
               ))}
             </select>
@@ -385,9 +380,10 @@ export default function UserAcctMgmtPage() {
   const [accounts, setAccounts] = useState<AdminAccountListItem[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [permGroups, setPermGroups] = useState<CommonCodeDetailApi[]>([]);
+  const [coTypes, setCoTypes] = useState<CommonCodeDetailApi[]>([]);
 
   const [keyword, setKeyword] = useState("");
-  const [accountTypeFilter, setAccountTypeFilter] = useState<"all" | AdminAccountType>("all");
+  const [accountTypeFilter, setAccountTypeFilter] = useState("all");
   const [permFilter, setPermFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -411,6 +407,9 @@ export default function UserAcctMgmtPage() {
     getGroup("PERM_GROUP")
       .then((group) => setPermGroups(group.details.filter((d) => d.useYn)))
       .catch((err) => setGlobalError(err instanceof Error ? err.message : "권한그룹 목록을 불러오지 못했습니다."));
+    getGroup("CO_TYPE")
+      .then((group) => setCoTypes(group.details.filter((d) => d.useYn)))
+      .catch((err) => setGlobalError(err instanceof Error ? err.message : "사용자유형 목록을 불러오지 못했습니다."));
   }, []);
 
   useEffect(() => {
@@ -429,6 +428,14 @@ export default function UserAcctMgmtPage() {
     const map = new Map(permGroups.map((g) => [g.detailCode, g.detailName]));
     return (code: string) => map.get(code) ?? code;
   }, [permGroups]);
+
+  const coTypeLabelMap = useMemo(() => {
+    const map = new Map(coTypes.map((t) => [t.detailCode, t.detailName]));
+    return (code: string) => map.get(code) ?? code;
+  }, [coTypes]);
+
+  // SHOP(시공업체)은 PartnerUser 전용 계정이라 관리자 계정의 사용자유형 선택지에서는 제외
+  const accountTypeOptions = useMemo(() => coTypes.filter((t) => t.detailCode !== "SHOP"), [coTypes]);
 
   const filtered = useMemo(() => {
     const kw = keyword.trim();
@@ -472,7 +479,7 @@ export default function UserAcctMgmtPage() {
         field: "accountType",
         flex: 0.9,
         minWidth: 110,
-        valueFormatter: (p) => ACCOUNT_TYPE_LABELS[p.value as AdminAccountType],
+        valueFormatter: (p) => coTypeLabelMap(p.value),
       },
       {
         headerName: "권한그룹",
@@ -508,7 +515,7 @@ export default function UserAcctMgmtPage() {
         cellClass: "flex items-center justify-end",
       },
     ],
-    [permGroupLabelMap],
+    [permGroupLabelMap, coTypeLabelMap],
   );
 
   const onCellClicked = (e: CellClickedEvent<AdminAccountListItem>) => {
@@ -521,7 +528,7 @@ export default function UserAcctMgmtPage() {
     username: string;
     email: string;
     phone: string;
-    accountType: AdminAccountType;
+    accountType: string;
     permGroup: string;
   }) => {
     const { account, tempPassword } = await createAccount({ ...v, phone: v.phone || undefined });
@@ -557,7 +564,7 @@ export default function UserAcctMgmtPage() {
         username: a.username,
         email: a.email ?? "-",
         phone: a.phone ?? "-",
-        accountType: ACCOUNT_TYPE_LABELS[a.accountType],
+        accountType: coTypeLabelMap(a.accountType),
         permGroup: permGroupLabelMap(a.permGroup),
         status: a.useYn ? "활성" : "비활성",
         lastLoginAt: formatDateTime(a.lastLoginAt),
@@ -587,13 +594,13 @@ export default function UserAcctMgmtPage() {
             <label className={labelClass}>사용자유형</label>
             <select
               value={accountTypeFilter}
-              onChange={(e) => setAccountTypeFilter(e.target.value as "all" | AdminAccountType)}
+              onChange={(e) => setAccountTypeFilter(e.target.value)}
               className={`${inputClass} w-32`}
             >
               <option value="all">전체</option>
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {ACCOUNT_TYPE_LABELS[t]}
+              {accountTypeOptions.map((t) => (
+                <option key={t.detailCode} value={t.detailCode}>
+                  {t.detailName}
                 </option>
               ))}
             </select>
@@ -624,7 +631,7 @@ export default function UserAcctMgmtPage() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            disabled={permGroups.length === 0}
+            disabled={permGroups.length === 0 || accountTypeOptions.length === 0}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -646,12 +653,18 @@ export default function UserAcctMgmtPage() {
       />
 
       {showAddModal && (
-        <AddAccountModal permGroups={permGroups} onCancel={() => setShowAddModal(false)} onSubmit={handleAdd} />
+        <AddAccountModal
+          permGroups={permGroups}
+          coTypes={accountTypeOptions}
+          onCancel={() => setShowAddModal(false)}
+          onSubmit={handleAdd}
+        />
       )}
       {editingAccount && (
         <EditAccountModal
           account={editingAccount}
           permGroups={permGroups}
+          coTypes={accountTypeOptions}
           onCancel={() => setEditingAccount(null)}
           onSave={handleSaveEdit}
         />

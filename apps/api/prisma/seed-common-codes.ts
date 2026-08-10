@@ -32,6 +32,8 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'CALL_RESULT', name: '해피콜 통화결과' },
   { code: 'PERM_GROUP', name: '권한그룹' },
   { code: 'CO_TYPE', name: '업체구분' },
+  { code: 'BIZ_DIV', name: '사업자구분' },
+  { code: 'BANK', name: '은행' },
 ];
 
 interface DetailRow {
@@ -205,6 +207,31 @@ const DETAILS: DetailRow[] = [
   { code: 'CO_TYPE', detailCode: 'DEALER', detailName: '딜러사' },
   { code: 'CO_TYPE', detailCode: 'SHOP', detailName: '시공업체' },
   { code: 'CO_TYPE', detailCode: 'SUPPLIER', detailName: '공급업체' },
+
+  // BIZ_DIV — 업체(Company)의 사업자구분(업체 상세 기본정보 탭에서 사용)
+  { code: 'BIZ_DIV', detailCode: 'INDIVIDUAL', detailName: '개인' },
+  { code: 'BIZ_DIV', detailCode: 'CORP', detailName: '법인' },
+
+  // BANK — 업체(Company)의 정산 입금 은행(업체 상세 기본정보 탭에서 사용)
+  { code: 'BANK', detailCode: 'KB', detailName: '국민은행' },
+  { code: 'BANK', detailCode: 'SHINHAN', detailName: '신한은행' },
+  { code: 'BANK', detailCode: 'WOORI', detailName: '우리은행' },
+  { code: 'BANK', detailCode: 'HANA', detailName: '하나은행' },
+  { code: 'BANK', detailCode: 'IBK', detailName: 'IBK기업은행' },
+  { code: 'BANK', detailCode: 'NH', detailName: 'NH농협은행' },
+  { code: 'BANK', detailCode: 'SC', detailName: 'SC제일은행' },
+  { code: 'BANK', detailCode: 'KEB', detailName: '케이뱅크' },
+  { code: 'BANK', detailCode: 'KAKAO', detailName: '카카오뱅크' },
+  { code: 'BANK', detailCode: 'TOSS', detailName: '토스뱅크' },
+  { code: 'BANK', detailCode: 'SUHYUP', detailName: 'Sh수협은행' },
+  { code: 'BANK', detailCode: 'MG', detailName: 'MG새마을금고' },
+  { code: 'BANK', detailCode: 'SHINHYUP', detailName: '신협' },
+  { code: 'BANK', detailCode: 'POST', detailName: '우체국' },
+  { code: 'BANK', detailCode: 'BUSAN', detailName: '부산은행' },
+  { code: 'BANK', detailCode: 'DAEGU', detailName: '대구은행' },
+  { code: 'BANK', detailCode: 'GWANGJU', detailName: '광주은행' },
+  { code: 'BANK', detailCode: 'JEONBUK', detailName: '전북은행' },
+  { code: 'BANK', detailCode: 'JEJU', detailName: '제주은행' },
 ];
 
 async function main() {

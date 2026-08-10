@@ -56,6 +56,17 @@ export class PartnerAuthService {
       );
     }
 
+    // 소속 업체(Company)가 관리자 승인을 받아야 정상 로그인 가능 — 미승인이면 계정 자체는 유효해도 로그인 차단
+    const company = await this.prisma.company.findUnique({
+      where: { shopCode: partnerUser.shopCode },
+      select: { approved: true },
+    });
+    if (!company || !company.approved) {
+      throw new UnauthorizedException(
+        '소속 업체가 아직 승인되지 않았습니다. 관리자에게 문의해주세요.',
+      );
+    }
+
     const updated = await this.prisma.partnerUser.update({
       where: { id: partnerUser.id },
       data: { lastLoginAt: new Date() },

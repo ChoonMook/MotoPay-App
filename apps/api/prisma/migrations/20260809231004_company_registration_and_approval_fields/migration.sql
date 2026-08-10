@@ -1,0 +1,16 @@
+-- AlterTable
+ALTER TABLE `companies` ADD COLUMN `accountNo` VARCHAR(191) NULL,
+    ADD COLUMN `approved` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `approvedAt` TIMESTAMP(3) NULL,
+    ADD COLUMN `approvedBy` VARCHAR(191) NULL,
+    ADD COLUMN `bankName` VARCHAR(191) NULL,
+    ADD COLUMN `bankbookCopyPath` VARCHAR(191) NULL,
+    ADD COLUMN `bizDivision` VARCHAR(191) NULL,
+    ADD COLUMN `bizRegCertPath` VARCHAR(191) NULL,
+    ADD COLUMN `businessItem` VARCHAR(191) NULL,
+    ADD COLUMN `businessType` VARCHAR(191) NULL,
+    ADD COLUMN `companyAddress` VARCHAR(191) NULL,
+    ADD COLUMN `companyAddressDetail` VARCHAR(191) NULL,
+    ADD COLUMN `companyZipCode` VARCHAR(191) NULL,
+    ADD COLUMN `faxNo` VARCHAR(191) NULL,
+    ADD COLUMN `repPhone` VARCHAR(191) NULL;

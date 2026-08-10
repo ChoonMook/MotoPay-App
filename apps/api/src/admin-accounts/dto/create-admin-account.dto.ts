@@ -1,9 +1,7 @@
 // POST /admin/accounts 요청 바디 검증
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AdminAccountType } from '@prisma/client';
 import {
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   Matches,
@@ -34,9 +32,14 @@ export class CreateAdminAccountDto {
   })
   phone?: string;
 
-  @ApiProperty({ enum: AdminAccountType, example: 'ADMIN' })
-  @IsEnum(AdminAccountType)
-  accountType: AdminAccountType;
+  @ApiProperty({
+    description:
+      "사용자유형 - CommonCodeDetail(code='CO_TYPE')의 detailCode 값(ADMIN/DEALER/SUPPLIER — SHOP 제외)",
+    example: 'ADMIN',
+  })
+  @IsString()
+  @MinLength(1)
+  accountType: string;
 
   @ApiProperty({
     description:

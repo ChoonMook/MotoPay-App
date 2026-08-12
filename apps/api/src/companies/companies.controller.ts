@@ -19,6 +19,7 @@ import type { SafeAdminAccount } from '../admin-auth/admin-auth.types';
 import { UpdateShopDto } from '../shops/dto/update-shop.dto';
 import { UploadShopPhotoDto } from '../shops/dto/upload-shop-photo.dto';
 import { CompaniesService } from './companies.service';
+import { DealerShopMappingService } from './dealer-shop-mapping.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CreatePartnerUserDto } from './dto/create-partner-user.dto';
@@ -27,13 +28,17 @@ import { AddCompanyHolidaysDto } from './dto/add-company-holidays.dto';
 import { ReplaceCompanyTimeSlotsDto } from './dto/replace-company-time-slots.dto';
 import { UpsertCompanyDailySlotDto } from './dto/upsert-company-daily-slot.dto';
 import { UploadCompanyDocumentDto } from './dto/upload-company-document.dto';
+import { SetDealerShopMappingsDto } from './dto/set-dealer-shop-mappings.dto';
 
 @ApiTags('companies')
 @ApiBearerAuth()
 @UseGuards(JwtAdminAuthGuard)
 @Controller('admin/companies')
 export class CompaniesController {
-  constructor(private readonly companiesService: CompaniesService) {}
+  constructor(
+    private readonly companiesService: CompaniesService,
+    private readonly dealerShopMappingService: DealerShopMappingService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '업체 목록 조회' })
@@ -190,5 +195,17 @@ export class CompaniesController {
   @ApiOperation({ summary: '업체 승인 취소' })
   revokeApproval(@Param('id', ParseIntPipe) id: number) {
     return this.companiesService.revokeCompanyApproval(id);
+  }
+
+  @Get(':id/shop-mappings')
+  @ApiOperation({ summary: '딜러사-시공업체 매핑 현황 조회(AD-NCPK-04) — 딜러사 타입 업체 전용' })
+  getShopMappings(@Param('id', ParseIntPipe) id: number) {
+    return this.dealerShopMappingService.getMappedShopCodes(id);
+  }
+
+  @Put(':id/shop-mappings')
+  @ApiOperation({ summary: '딜러사-시공업체 매핑 체크리스트 전체 교체 저장(AD-NCPK-04)' })
+  setShopMappings(@Param('id', ParseIntPipe) id: number, @Body() dto: SetDealerShopMappingsDto) {
+    return this.dealerShopMappingService.setMappedShopCodes(id, dto);
   }
 }

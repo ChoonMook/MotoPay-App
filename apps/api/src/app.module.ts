@@ -11,6 +11,7 @@ import { CarsModule } from './cars/cars.module';
 import { CommonCodesModule } from './common-codes/common-codes.module';
 import { CompaniesModule } from './companies/companies.module';
 import { MenuPermissionsModule } from './menu-permissions/menu-permissions.module';
+import { NewCarPurchasesModule } from './new-car-purchases/new-car-purchases.module';
 import { PartnerAuthModule } from './partner-auth/partner-auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     ReservationsModule,
     BidRequestsModule,
     UploadsModule,
+    NewCarPurchasesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,10 +4,11 @@ import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
 import { ShopsModule } from '../shops/shops.module';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
+import { DealerShopMappingService } from './dealer-shop-mapping.service';
 
 @Module({
   imports: [ShopsModule],
   controllers: [CompaniesController],
-  providers: [CompaniesService, PhoneCryptoService],
+  providers: [CompaniesService, PhoneCryptoService, DealerShopMappingService],
 })
 export class CompaniesModule {}

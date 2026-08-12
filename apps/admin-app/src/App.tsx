@@ -15,9 +15,15 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import BrandMgmtPage from "./pages/catalog/BrandMgmtPage";
 import CarModelMstPage from "./pages/catalog/CarModelMstPage";
 import CstItemMgmtPage from "./pages/catalog/CstItemMgmtPage";
+import CarModelMapMgmtPage from "./pages/catalog/CarModelMapMgmtPage";
+import DealerMapMgmtPage from "./pages/catalog/DealerMapMgmtPage";
+import PkgCompMgmtPage from "./pages/catalog/PkgCompMgmtPage";
+import ProdOptMgmtPage from "./pages/catalog/ProdOptMgmtPage";
 import ProductMgmtPage from "./pages/catalog/ProductMgmtPage";
 import CoListPage from "./pages/company/CoListPage";
 import CustMbrListPage from "./pages/member/CustMbrListPage";
+import DealerPtnMapPage from "./pages/ncp/DealerPtnMapPage";
+import NewCarPurchaseInputPage from "./pages/ncp/NewCarPurchaseInputPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
 import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
 import UserAcctMgmtPage from "./pages/system/UserAcctMgmtPage";
@@ -33,6 +39,12 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/catalog/cst-item-mgmt") return <CstItemMgmtPage />;
   if (path === "/catalog/brand-mgmt") return <BrandMgmtPage />;
   if (path === "/catalog/prod-mgmt") return <ProductMgmtPage />;
+  if (path === "/catalog/prod-opt-mgmt") return <ProdOptMgmtPage />;
+  if (path === "/catalog/dealer-map-mgmt") return <DealerMapMgmtPage />;
+  if (path === "/catalog/car-model-map-mgmt") return <CarModelMapMgmtPage />;
+  if (path === "/catalog/pkg-comp-mgmt") return <PkgCompMgmtPage />;
+  if (path === "/ncp/dealer-ptn-map") return <DealerPtnMapPage />;
+  if (path === "/ncp/purchase") return <NewCarPurchaseInputPage />;
   return <PlaceholderPage path={path} />;
 }
 

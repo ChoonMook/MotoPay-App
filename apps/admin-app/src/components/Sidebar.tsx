@@ -72,7 +72,7 @@ export default function Sidebar({ collapsed, activePath, onNavigate, isBusy, men
                       key={item.path}
                       type="button"
                       onClick={() => onNavigate(item)}
-                      className={`flex w-full items-center gap-3 px-10 py-3 text-left text-xs tracking-tight text-[#adb5bd] transition-all hover:text-[#e9ecef] ${
+                      className={`flex w-full items-center gap-3 px-10 py-2 text-left text-xs tracking-tight text-[#adb5bd] transition-all hover:text-[#e9ecef] ${
                         activePath === item.path ? "bg-[#1a232e] font-semibold text-white" : ""
                       }`}
                     >

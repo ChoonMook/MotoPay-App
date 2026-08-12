@@ -108,6 +108,17 @@ export function revokeCompanyApproval(id: number): Promise<CompanyListItem> {
   return authedRequest<CompanyListItem>(`/admin/companies/${id}/revoke-approval`, { method: "POST" });
 }
 
+export function getDealerShopMappings(id: number): Promise<string[]> {
+  return authedRequest<string[]>(`/admin/companies/${id}/shop-mappings`);
+}
+
+export function setDealerShopMappings(id: number, shopCodes: string[]): Promise<string[]> {
+  return authedRequest<string[]>(`/admin/companies/${id}/shop-mappings`, {
+    method: "PUT",
+    body: JSON.stringify({ shopCodes }),
+  });
+}
+
 export interface ShopPhoto {
   id: number;
   shopCode: string;

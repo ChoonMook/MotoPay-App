@@ -1,4 +1,4 @@
-// 사이드바 메뉴 트리(그룹/아이템/아이콘/경로) - uploads/MotoPay_메뉴구조도_v1_29.xlsx의 "관리자웹_사이트맵" 시트
+// 사이드바 메뉴 트리(그룹/아이템/아이콘/경로) - uploads/MotoPay_메뉴구조도_v1_30.xlsx의 "관리자웹_사이트맵" 시트
 // (AD-DASH-01 ~ AD-SYS-05 범위, 로그인/계정설정 AD-AUTH-*는 인증 흐름이라 사이드바 메뉴 대상이 아니라 제외)를
 // 그대로 데이터화. pgId는 시트의 프로그램ID를 그대로 사용 — 추후 메뉴 권한 기능에서 재사용 가능하도록 보존.
 // URL경로가 "-"인 항목(팝업 액션: 포인트 강제 부여/차감 등)과 3 Depth(상세화면 내부 탭) 항목은 독립된
@@ -12,6 +12,9 @@
 // v1_29 변경분(2026-08-10): 업체 등록(AD-CO-02)·업체 상세(AD-CO-04)·업체 사용자 목록(AD-CO-06)이 독립 URL을
 // 잃고 팝업/탭으로 통합되어("-") 사이트맵상 독립 목적지가 아니게 됨 — 아래 MENU_GROUPS의 "업체 관리"에는
 // 이미 반영되어 있던 상태(2026-08-08 논의)를 문서에 사후 반영.
+// v1_30 변경분(2026-08-11): 신차패키지 관리의 패키지 상품 등록(AD-NCPK-02)·항목별 업그레이드 가능 품목 설정
+// (AD-NCPK-03)·패키지 상품 목록(AD-NCPK-05)이 AD-CTLG-05(상품 관리)·AD-CTLG-10(신차패키지 구성 관리)과 기능이
+// 중복돼 독립 URL을 잃고("-") 사이트맵상 독립 목적지가 아니게 됨.
 import {
   BookOpen,
   Building2,
@@ -69,11 +72,13 @@ export const MENU_GROUPS: MenuGroup[] = [
     key: "ncpk",
     label: "신차패키지 관리",
     icon: Car,
+    // 패키지 상품 등록(AD-NCPK-02)·항목별 업그레이드 가능 품목 설정(AD-NCPK-03)·패키지 상품 목록(AD-NCPK-05)은
+    // AD-CTLG-05(상품 관리)·AD-CTLG-10(신차패키지 구성 관리)과 기능이 중복돼 제외(2026-08-11 논의).
+    // DL-NCPK-01(신차 구매내역 입력, 원래 딜러사웹_프로그램 시트 소속)은 딜러 직원도 시공업체 직원과 동일하게
+    // AdminAccount(accountType=DEALER)로 admin-app에 로그인한다는 점에 착안해 이 그룹으로 편입(2026-08-11 확정).
     items: [
-      { pgId: "AD-NCPK-02", label: "패키지 상품 등록", path: "/ncp/pkg-prod-reg" },
-      { pgId: "AD-NCPK-03", label: "항목별 업그레이드 가능 품목 설정", path: "/ncp/item-upg-avail-cfg" },
+      { pgId: "DL-NCPK-01", label: "신차 구매내역", path: "/ncp/purchase" },
       { pgId: "AD-NCPK-04", label: "딜러사-시공업체 매핑", path: "/ncp/dealer-ptn-map" },
-      { pgId: "AD-NCPK-05", label: "패키지 상품 목록", path: "/ncp/pkg-prod-list" },
       { pgId: "AD-NCPK-06", label: "발급 현황", path: "/ncp/issue-stat" },
     ],
   },

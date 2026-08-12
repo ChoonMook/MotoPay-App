@@ -149,14 +149,48 @@ model Product {
   useYn       Boolean  @default(true) // 판매여부
   ncpApplicable Boolean @default(true) // 신차패키지 적용여부 — 신차패키지 구성상품 후보로 노출할지 여부
   bidApplicable Boolean @default(true) // 예약시공 적용여부 — 예약시공 신청 화면에 노출할지 여부
+  positionOptionYn Boolean @default(false) // 부위옵션 사용여부(AD-CTLG-07) — 틴팅 등 시공 부위별로 옵션(농도)을 다르게 제공하는 상품인지
   createdAt   DateTime @default(now()) @db.Timestamp(3)
   updatedAt   DateTime @updatedAt @db.Timestamp(3)
 
   purchases NewCarPurchaseCustomer[] // 이 패키지로 매핑된 신차 구매 고객 정보
   images    ProductImage[] // 상품 이미지 갤러리(최대 10장)
+  positionOptions ProductPositionOption[] // 부위별 농도 옵션(AD-CTLG-07)
+  dealerMappings  ProductDealerMapping[] // 딜러사 매핑(AD-CTLG-08, PKG 상품 전용)
+  carModelMappings ProductCarModelMapping[] // 적용 가능 차종 매핑(AD-CTLG-09, PKG 상품 전용)
 
   @@index([dealerCode])
   @@map("products")
+}
+
+// 신차패키지(PKG) 상품의 딜러사 매핑(AD-CTLG-08) — 다대다. 기존 Product.dealerCode(패키지당 딜러사 1곳,
+// 신차구매 정산 흐름이 참조)는 그대로 두고, 이 테이블은 "이 패키지를 어느 딜러사들에서도 판매할 수 있다"는
+// 별도의 다대다 관계를 추가로 표현한다. price는 매핑(체크) 시점의 Product.price 스냅샷 — 이후 상품가가
+// 바뀌어도 자동 갱신되지 않는다(사용자 확정 사항)
+model ProductDealerMapping {
+  productCode String // -> Product.productCode (prodType='PKG')
+  dealerCode  String // -> CommonCodeDetail(code='DEALER')
+  price       Int // 매핑 시점의 디폴트 판매가 스냅샷(원)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+
+  product Product @relation(fields: [productCode], references: [productCode])
+
+  @@id([productCode, dealerCode])
+  @@map("product_dealer_mappings")
+}
+
+// 신차패키지(PKG) 상품의 적용 가능 차종 매핑(AD-CTLG-09) — 다대다. CAR_MODEL 상세코드(AD-CTLG-02에서 정한
+// 메이커>차종 2단계 트리의 리프)를 그대로 참조한다 — 기획서 문구의 "모델"은 "차종"과 항상 함께만 등장하고
+// 별도 코드·예시가 없어 중복 표현으로 판단, 3번째 계층은 만들지 않기로 함(사용자 확정 사항)
+model ProductCarModelMapping {
+  productCode  String // -> Product.productCode (prodType='PKG')
+  carModelCode String // -> CommonCodeDetail(code='CAR_MODEL')
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+
+  product Product @relation(fields: [productCode], references: [productCode])
+
+  @@id([productCode, carModelCode])
+  @@map("product_car_model_mappings")
 }
 
 // 상품 이미지 갤러리 — 상품 하나당 최대 10장까지 등록(ShopPhoto의 CASE 사진과 동일한 append-only 패턴, 순서 변경 없음)
@@ -171,6 +205,20 @@ model ProductImage {
 
   @@index([productCode])
   @@map("product_images")
+}
+
+// 상품별 시공 부위 옵션(AD-CTLG-07 상품 옵션 관리) — "이 상품은 이 부위에서 이 농도들을 선택할 수 있다"를
+// 부위×농도 조합 행으로 저장. BidRequestPosition/BidPlanPosition과 동일 코드체계(BID_TINT_POSITION/VLT)를
+// 카탈로그 쪽에서 재사용 — 실제 예약시공 요청 시 부위별 선택 가능 농도를 이 설정으로 제한하는 데 사용
+model ProductPositionOption {
+  productCode String // 소속 상품 -> Product.productCode
+  position    String // 시공 부위 -> CommonCodeDetail(code='BID_TINT_POSITION')
+  level       String // 이 부위에서 선택 가능한 농도 -> CommonCodeDetail(code='VLT')
+
+  product Product @relation(fields: [productCode], references: [productCode])
+
+  @@id([productCode, position, level])
+  @@map("product_position_options")
 }
 
 // 패키지 구성상품 매핑 — 패키지(PKG) 상품이 어떤 구성상품(SVC/GOODS)들로 이루어지는지 정의(Product 자기참조)
@@ -199,12 +247,18 @@ model NewCarPurchaseCustomer {
   trimName       String // 세부차종명(자유 텍스트, 예: "E 200")
   modelYear      String? // 연식 — 딜러가 등록 시점에 받을 수 있으면 채움(신차매핑된 MyCar.modelYear로 그대로 복사)
   packageCode    String? // 패키지상품코드 -> Product.productCode(prodType='PKG')
+  purchaseDate   DateTime? @db.Date // 구매일(DL-NCPK-02 필드) — 딜러가 등록 시점에 입력
 
   isMapped Boolean   @default(false) // 매핑여부
   mappedAt DateTime? @db.Timestamp(3) // 매핑일시
   memberId String? // 매핑된 회원id -> User.id
 
-  createdBy String? // 등록자id — 딜러사 직원 계정(파트너 로그인)이 아직 없어 FK 없이 문자열로만 보관
+  // 등록→확정 2단계 상태(DL-NCPK-04) — 확정 후에는 accountType='ADMIN'인 관리자만 수정 가능(딜러 직원은 조회만)
+  confirmed   Boolean   @default(false)
+  confirmedAt DateTime? @db.Timestamp(3)
+  confirmedBy String? // 확정 처리한 AdminAccount의 username
+
+  createdBy String? // 등록자id — AdminAccount(accountType='DEALER' 또는 'ADMIN')의 username을 문자열로만 보관(FK 없음)
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedBy String? // 수정자id
   updatedAt DateTime @updatedAt @db.Timestamp(3)
@@ -286,6 +340,7 @@ model Shop {
   bidPlans       BidPlan[]
   reviews        Review[]
   company        Company? // AD-CO 업체 관리에서 이 시공업체에 연결한 업체(사업자) 레코드
+  dealerMappings DealerShopMapping[] // 이 시공업체를 안내 가능 범위로 등록한 딜러사 매핑(AD-NCPK-04)
 
   @@map("shops")
 }
@@ -324,8 +379,22 @@ model Company {
 
   shop          Shop?          @relation(fields: [shopCode], references: [shopCode])
   adminAccounts AdminAccount[] // 이 업체에 소속된 관리자 계정(AdminAccount.companyId 역참조) — 딜러사·공급업체 소속 계정만 해당
+  shopMappings  DealerShopMapping[] // 이 딜러사가 안내 가능하다고 등록한 시공업체 매핑(AD-NCPK-04) — coType='DEALER'만 해당
 
   @@map("companies")
+}
+
+// 딜러사(Company, coType='DEALER')가 신차패키지 고객에게 안내 가능한 시공업체(Shop) 범위 설정(AD-NCPK-04) — 다대다
+model DealerShopMapping {
+  dealerCompanyId Int // -> Company.id (coType='DEALER')
+  shopCode        String // -> Shop.shopCode
+  createdAt       DateTime @default(now()) @db.Timestamp(3)
+
+  dealer Company @relation(fields: [dealerCompanyId], references: [id])
+  shop   Shop    @relation(fields: [shopCode], references: [shopCode])
+
+  @@id([dealerCompanyId, shopCode])
+  @@map("dealer_shop_mappings")
 }
 
 // 파트너(시공업체) 사용자 — apps/partner-app 로그인 계정. 자체 가입 없이 콜센터 등을 통해 발급되며, 발급 직후에는

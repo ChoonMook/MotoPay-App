@@ -20,7 +20,7 @@ export interface ProductApi {
   prodType: string;
   brand: string | null;
   prodCat: string | null;
-  dealerCode: string | null;
+  dealerCompanyId: number | null;
   name: string;
   price: number;
   originPrice: number | null;
@@ -41,8 +41,8 @@ export interface ListProductsParams {
   prodType?: string;
   prodCat?: string;
   brand?: string;
-  dealerCode?: string;
-  mappedDealerCode?: string; // AD-CTLG-10 딜러사 필터용 — ProductDealerMapping 다대다 기준(단일필드 dealerCode와 다름)
+  dealerCompanyId?: number;
+  mappedDealerCompanyId?: number; // AD-CTLG-10 딜러사 필터용 — ProductDealerMapping 다대다 기준(단일필드 dealerCompanyId와 다름)
   useYn?: boolean;
   keyword?: string;
 }
@@ -52,8 +52,8 @@ export function listProducts(params: ListProductsParams = {}): Promise<ProductAp
   if (params.prodType) query.set("prodType", params.prodType);
   if (params.prodCat) query.set("prodCat", params.prodCat);
   if (params.brand) query.set("brand", params.brand);
-  if (params.dealerCode) query.set("dealerCode", params.dealerCode);
-  if (params.mappedDealerCode) query.set("mappedDealerCode", params.mappedDealerCode);
+  if (params.dealerCompanyId !== undefined) query.set("dealerCompanyId", String(params.dealerCompanyId));
+  if (params.mappedDealerCompanyId !== undefined) query.set("mappedDealerCompanyId", String(params.mappedDealerCompanyId));
   if (params.useYn !== undefined) query.set("useYn", String(params.useYn));
   if (params.keyword) query.set("keyword", params.keyword);
   const qs = query.toString();
@@ -64,7 +64,7 @@ export interface CreateProductInput {
   prodType: string;
   brand?: string;
   prodCat?: string;
-  dealerCode?: string;
+  dealerCompanyId?: number;
   name: string;
   price: number;
   originPrice?: number;
@@ -120,7 +120,7 @@ export function setProductPositionOptions(id: number, input: SetProductPositionO
 
 export interface ProductDealerMappingApi {
   productCode: string;
-  dealerCode: string;
+  dealerCompanyId: number;
   price: number;
 }
 
@@ -128,10 +128,10 @@ export function getProductDealerMappings(id: number): Promise<ProductDealerMappi
   return authedRequest<ProductDealerMappingApi[]>(`/admin/products/${id}/dealer-mappings`);
 }
 
-export function setProductDealerMappings(id: number, dealerCodes: string[]): Promise<ProductDealerMappingApi[]> {
+export function setProductDealerMappings(id: number, dealerCompanyIds: number[]): Promise<ProductDealerMappingApi[]> {
   return authedRequest<ProductDealerMappingApi[]>(`/admin/products/${id}/dealer-mappings`, {
     method: "PUT",
-    body: JSON.stringify({ dealerCodes }),
+    body: JSON.stringify({ dealerCompanyIds }),
   });
 }
 

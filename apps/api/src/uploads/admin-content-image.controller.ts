@@ -12,7 +12,10 @@ import { UploadContentImageDto } from './dto/upload-content-image.dto';
 @Controller('admin/uploads')
 export class AdminContentImageController {
   @Post('content-image')
-  @ApiOperation({ summary: '리치텍스트 에디터 본문 삽입 이미지 업로드 — uploads/ 기준 상대경로 반환' })
+  @ApiOperation({
+    summary:
+      '리치텍스트 에디터 본문 삽입 이미지 업로드 — uploads/ 기준 상대경로 반환',
+  })
   async upload(@Body() dto: UploadContentImageDto): Promise<{ path: string }> {
     const path = await saveContentImage(dto.imageBase64);
     return { path };

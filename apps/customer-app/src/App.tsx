@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "./components/AppShell";
 import { pushBackAction } from "./native/backHandler";
-import { clearTokens, getAccessToken } from "./api/tokenStorage";
+import { clearTokens, getAccessToken, setOnSessionExpired } from "./api/tokenStorage";
 import AuthFlow from "./screens/auth/AuthFlow";
 import { getMe, type LoginUser } from "./api/auth";
 import HomeScreen from "./screens/home/HomeScreen";
@@ -24,9 +24,24 @@ function App() {
   const [booting, setBooting] = useState(() => !!getAccessToken());
   const [view, setView] = useState<View>("home");
   const [ncpkEntryScreen, setNcpkEntryScreen] = useState<NcpScreen>("main");
+  // 홈 화면의 "신차패키지 진행중 예약" 카드에서 어떤 예약을 탭했는지 — bookingdtl/handover 진입 시 NcpkFlow가
+  // 자체적으로 "가장 최근 예약"을 추측하지 않고 정확히 이 예약을 보여주도록 함(추측 로직은 여러 건 예약 시 다른
+  // 화면과 서로 다른 건을 골라 정보가 어긋나는 문제가 있었음)
+  const [ncpkTargetReservationNo, setNcpkTargetReservationNo] = useState<string | undefined>(undefined);
   const [mypEntryScreen, setMypEntryScreen] = useState<MypScreenId>("main");
   const [rsvEntryFilter, setRsvEntryFilter] = useState<ReqStatusFilter>("ALL");
 
+  // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
+  useEffect(() => {
+    setOnSessionExpired(() => {
+      setUser(null);
+      setView("home");
+    });
+    return () => setOnSessionExpired(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 저장된 토큰으로 세션 복원 시도 — accessToken이 만료됐어도 http.ts가 refreshToken으로 자동 재발급을 시도한 뒤 결과를 알려줌
   useEffect(() => {
     if (!booting) return;
     getMe()
@@ -75,11 +90,13 @@ function App() {
               setNcpkEntryScreen("main");
               setView("ncpk");
             }}
-            onOpenNcpkHandover={() => {
+            onOpenNcpkHandover={(reservationNo) => {
+              setNcpkTargetReservationNo(reservationNo);
               setNcpkEntryScreen("handover");
               setView("ncpk");
             }}
-            onOpenNcpkBookingDtl={() => {
+            onOpenNcpkBookingDtl={(reservationNo) => {
+              setNcpkTargetReservationNo(reservationNo);
               setNcpkEntryScreen("bookingdtl");
               setView("ncpk");
             }}
@@ -92,7 +109,16 @@ function App() {
             onOpenCs={() => setView("cs")}
           />
         )}
-        {view === "ncpk" && <NcpkFlow initialScreen={ncpkEntryScreen} onExit={() => setView("home")} />}
+        {view === "ncpk" && (
+          <NcpkFlow
+            initialScreen={ncpkEntryScreen}
+            targetReservationNo={ncpkTargetReservationNo}
+            onExit={() => {
+              setNcpkTargetReservationNo(undefined);
+              setView("home");
+            }}
+          />
+        )}
         {view === "rsv" && (
           <RsvFlow
             initialFilter={rsvEntryFilter}

@@ -16,7 +16,9 @@ import type { UpdateAdminAccountDto } from './dto/update-admin-account.dto';
 
 const SALT_ROUNDS = 10;
 
-type AdminAccountWithCompany = AdminAccount & { company: { name: string } | null };
+type AdminAccountWithCompany = AdminAccount & {
+  company: { name: string } | null;
+};
 
 export interface AdminAccountListItem {
   id: string;
@@ -85,14 +87,20 @@ export class AdminAccountsService {
       return null;
     }
     if (!companyId) {
-      throw new BadRequestException('딜러사·공급업체 소속 계정은 소속업체를 선택해야 합니다.');
+      throw new BadRequestException(
+        '딜러사·공급업체 소속 계정은 소속업체를 선택해야 합니다.',
+      );
     }
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) {
       throw new BadRequestException('선택한 소속업체를 찾을 수 없습니다.');
     }
     if (company.coType !== accountType) {
-      throw new BadRequestException('선택한 소속업체의 업체구분이 사용자유형과 일치하지 않습니다.');
+      throw new BadRequestException(
+        '선택한 소속업체의 업체구분이 사용자유형과 일치하지 않습니다.',
+      );
     }
     return companyId;
   }
@@ -106,7 +114,9 @@ export class AdminAccountsService {
   }
 
   /** 계정 추가 화면에서 아이디 입력 직후 중복 여부를 미리 확인하기 위한 조회 */
-  async checkUsernameAvailable(username: string): Promise<{ available: boolean }> {
+  async checkUsernameAvailable(
+    username: string,
+  ): Promise<{ available: boolean }> {
     const trimmed = username?.trim();
     if (!trimmed) {
       throw new BadRequestException('아이디를 입력해주세요.');
@@ -129,7 +139,10 @@ export class AdminAccountsService {
       throw new ConflictException('이미 존재하는 아이디입니다.');
     }
 
-    const companyId = await this.resolveCompanyId(dto.accountType, dto.companyId);
+    const companyId = await this.resolveCompanyId(
+      dto.accountType,
+      dto.companyId,
+    );
 
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
@@ -177,8 +190,12 @@ export class AdminAccountsService {
     let companyId: number | null | undefined;
     if (dto.accountType !== undefined || dto.companyId !== undefined) {
       const effectiveAccountType = dto.accountType ?? exists.accountType;
-      const effectiveCompanyId = dto.companyId !== undefined ? dto.companyId : exists.companyId;
-      companyId = await this.resolveCompanyId(effectiveAccountType, effectiveCompanyId);
+      const effectiveCompanyId =
+        dto.companyId !== undefined ? dto.companyId : exists.companyId;
+      companyId = await this.resolveCompanyId(
+        effectiveAccountType,
+        effectiveCompanyId,
+      );
     }
 
     let phoneEncrypted: string | undefined;

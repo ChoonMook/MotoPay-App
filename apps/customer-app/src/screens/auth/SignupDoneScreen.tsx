@@ -3,10 +3,12 @@ import Button from "../../components/ui/Button";
 
 interface SignupDoneScreenProps {
   name: string;
+  /** 이름+휴대폰이 일치하는 딜러 등록 신차 구매 정보가 있어 자동 매핑된 경우에만 안내 배지 표시 */
+  packageMapped: boolean;
   onGoHome: () => void;
 }
 
-export default function SignupDoneScreen({ name, onGoHome }: SignupDoneScreenProps) {
+export default function SignupDoneScreen({ name, packageMapped, onGoHome }: SignupDoneScreenProps) {
   return (
     <div
       className="absolute inset-0 flex flex-col px-6 pt-14 pb-8"
@@ -26,15 +28,17 @@ export default function SignupDoneScreen({ name, onGoHome }: SignupDoneScreenPro
           <br />
           이제 모든 정비 결제를 간편하게.
         </div>
-        <div className="mt-[26px] flex w-full items-center gap-3 rounded-xl border border-green-500 bg-status-success-bg p-4 text-left">
-          <span className="text-[22px]">🎁</span>
-          <div>
-            <div className="text-sm font-bold text-green-600">대기 중인 신차패키지가 연결됐어요</div>
-            <div className="mt-0.5 text-[12.5px] text-gray-600">
-              이름·휴대폰 정보로 자동 매핑 · 홈에서 확인하세요
+        {packageMapped && (
+          <div className="mt-[26px] flex w-full items-center gap-3 rounded-xl border border-green-500 bg-status-success-bg p-4 text-left">
+            <span className="text-[22px]">🎁</span>
+            <div>
+              <div className="text-sm font-bold text-green-600">대기 중인 신차패키지가 연결됐어요</div>
+              <div className="mt-0.5 text-[12.5px] text-gray-600">
+                이름·휴대폰 정보로 자동 매핑 · 홈에서 확인하세요
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
       <Button onClick={onGoHome}>홈으로 시작하기</Button>
     </div>

@@ -7,7 +7,7 @@ export interface ProductApi {
   prodType: string;
   brand: string | null;
   prodCat: string | null;
-  dealerCode: string | null;
+  dealerCompanyId: number | null;
   name: string;
   price: number;
   originPrice: number | null;

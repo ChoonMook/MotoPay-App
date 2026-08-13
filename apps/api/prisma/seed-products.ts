@@ -13,7 +13,7 @@ interface ProductSeed {
   brand?: string; // 패키지(PKG)는 구성상품마다 브랜드가 달라질 수 있어 생략 가능
   name: string;
   prodCat?: string; // 패키지(PKG)는 구성상품마다 분류가 달라질 수 있어 생략 가능
-  dealerCode?: string; // 딜러사 — 패키지(PKG)만 사용
+  dealerCompanyId?: number; // 딜러사 -> Company.id(coType='DEALER') — 패키지(PKG)만 사용
   price: number;
   originPrice?: number | null;
   supplyPrice?: number | null;
@@ -59,9 +59,9 @@ const EXPERT_PLAN_CATALOG_PRODUCTS: ProductSeed[] = [
 // KCC오토 전용 패키지 상품 — 가격은 별도 패키지 할인 없이 구성상품 소비자가/공급가 합산
 const KCC_PACKAGES: ProductSeed[] = [
   // 구성: 글라스틴트 펜더(0000000009) — 300000/180000 그대로
-  { prodType: 'PKG', dealerCode: 'KCC', name: '글라스틴트 틴팅 패키지', price: 300000, supplyPrice: 180000 },
+  { prodType: 'PKG', dealerCompanyId: 17, name: '글라스틴트 틴팅 패키지', price: 300000, supplyPrice: 180000 },
   // 구성: 후퍼옵틱 클래식(0000000011, 1000000/600000) + 파인뷰 X1000(0000000017, 359000/210000)
-  { prodType: 'PKG', dealerCode: 'KCC', name: '후퍼옵틱 GK 패키지', price: 1359000, supplyPrice: 810000 },
+  { prodType: 'PKG', dealerCompanyId: 17, name: '후퍼옵틱 GK 패키지', price: 1359000, supplyPrice: 810000 },
 ];
 
 // 패키지명 -> 구성상품 productCode 목록(사용자가 지정한 구성코드 그대로)

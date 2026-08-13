@@ -9,6 +9,7 @@ import type { CellClickedEvent, ColDef, ICellRendererParams } from "ag-grid-comm
 import { Download, ImageIcon, Plus, Search, Trash2, X } from "lucide-react";
 import { getMe } from "../../api/adminAuth";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import { API_BASE_URL } from "../../api/config";
 import {
   createProduct,
@@ -30,7 +31,6 @@ import { exportRowsAsXlsx } from "../../lib/exportXlsx";
 const PROD_TYPE_GROUP = "PROD_TYPE";
 const PROD_CAT_GROUP = "PROD_CAT";
 const PROD_BRAND_GROUP = "PROD_BRAND";
-const DEALER_GROUP = "DEALER";
 const SUPPLY_PRICE_VISIBLE_PERM_GROUPS = new Set(["SUPER_ADMIN", "SETTLEMENT"]);
 const MAX_PRODUCT_IMAGES = 10;
 
@@ -139,7 +139,7 @@ interface ProductFormValue {
   prodType: string;
   brand: string;
   prodCat: string;
-  dealerCode: string;
+  dealerCompanyId: string;
   name: string;
   price: string;
   originPrice: string;
@@ -164,7 +164,7 @@ function ProductFormFields({
   prodTypeItems: CommonCodeDetailApi[];
   prodCatItems: CommonCodeDetailApi[];
   brandItems: CommonCodeDetailApi[];
-  dealerItems: CommonCodeDetailApi[];
+  dealerItems: CompanyListItem[];
   canViewSupplyPrice: boolean;
 }) {
   const isPackage = value.prodType === "PKG";
@@ -176,7 +176,7 @@ function ProductFormFields({
           <label className={labelClass}>상품유형</label>
           <select
             value={value.prodType}
-            onChange={(e) => onChange({ prodType: e.target.value, ...(e.target.value !== "PKG" ? { dealerCode: "" } : {}) })}
+            onChange={(e) => onChange({ prodType: e.target.value, ...(e.target.value !== "PKG" ? { dealerCompanyId: "" } : {}) })}
             className={inputClass}
           >
             {prodTypeItems.map((i) => (
@@ -214,15 +214,15 @@ function ProductFormFields({
         <div className="space-y-1.5">
           <label className={labelClass}>딜러사{isPackage ? "" : " (패키지 전용)"}</label>
           <select
-            value={value.dealerCode}
-            onChange={(e) => onChange({ dealerCode: e.target.value })}
+            value={value.dealerCompanyId}
+            onChange={(e) => onChange({ dealerCompanyId: e.target.value })}
             disabled={!isPackage}
             className={`${inputClass} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-on-surface-variant`}
           >
             <option value="">선택 안 함</option>
             {dealerItems.map((i) => (
-              <option key={i.detailCode} value={i.detailCode}>
-                {i.detailName}
+              <option key={i.id} value={i.id}>
+                {i.name}
               </option>
             ))}
           </select>
@@ -299,7 +299,7 @@ const EMPTY_FORM: ProductFormValue = {
   prodType: "",
   brand: "",
   prodCat: "",
-  dealerCode: "",
+  dealerCompanyId: "",
   name: "",
   price: "",
   originPrice: "",
@@ -315,7 +315,7 @@ function formToInput(v: ProductFormValue): CreateProductInput {
     prodType: v.prodType,
     brand: v.brand || undefined,
     prodCat: v.prodCat || undefined,
-    dealerCode: v.dealerCode || undefined,
+    dealerCompanyId: v.dealerCompanyId ? Number(v.dealerCompanyId) : undefined,
     name: v.name.trim(),
     price: Number(v.price) || 0,
     originPrice: v.originPrice ? Number(v.originPrice) : undefined,
@@ -339,7 +339,7 @@ function AddProductModal({
   prodTypeItems: CommonCodeDetailApi[];
   prodCatItems: CommonCodeDetailApi[];
   brandItems: CommonCodeDetailApi[];
-  dealerItems: CommonCodeDetailApi[];
+  dealerItems: CompanyListItem[];
   canViewSupplyPrice: boolean;
   onCancel: () => void;
   onSubmit: (input: CreateProductInput, imageDataUris: string[]) => Promise<void>;
@@ -433,7 +433,7 @@ function EditProductModal({
   prodTypeItems: CommonCodeDetailApi[];
   prodCatItems: CommonCodeDetailApi[];
   brandItems: CommonCodeDetailApi[];
-  dealerItems: CommonCodeDetailApi[];
+  dealerItems: CompanyListItem[];
   canViewSupplyPrice: boolean;
   onCancel: () => void;
   onSave: (input: CreateProductInput) => Promise<void>;
@@ -444,7 +444,7 @@ function EditProductModal({
     prodType: product.prodType,
     brand: product.brand ?? "",
     prodCat: product.prodCat ?? "",
-    dealerCode: product.dealerCode ?? "",
+    dealerCompanyId: product.dealerCompanyId !== null ? String(product.dealerCompanyId) : "",
     name: product.name,
     price: String(product.price),
     originPrice: product.originPrice !== null ? String(product.originPrice) : "",
@@ -580,7 +580,7 @@ export default function ProductMgmtPage() {
   const [prodTypeItems, setProdTypeItems] = useState<CommonCodeDetailApi[]>([]);
   const [prodCatItems, setProdCatItems] = useState<CommonCodeDetailApi[]>([]);
   const [brandItems, setBrandItems] = useState<CommonCodeDetailApi[]>([]);
-  const [dealerItems, setDealerItems] = useState<CommonCodeDetailApi[]>([]);
+  const [dealerItems, setDealerItems] = useState<CompanyListItem[]>([]);
   const [permGroup, setPermGroup] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -607,15 +607,15 @@ export default function ProductMgmtPage() {
       getGroup(PROD_TYPE_GROUP),
       getGroup(PROD_CAT_GROUP),
       getGroup(PROD_BRAND_GROUP),
-      getGroup(DEALER_GROUP),
+      listCompanies(),
       getMe(),
     ])
-      .then(([productList, prodTypeGroup, prodCatGroup, brandGroup, dealerGroup, me]) => {
+      .then(([productList, prodTypeGroup, prodCatGroup, brandGroup, companies, me]) => {
         setProducts(productList);
         setProdTypeItems([...prodTypeGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
         setProdCatItems([...prodCatGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
         setBrandItems([...brandGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
-        setDealerItems([...dealerGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
+        setDealerItems(companies.filter((c) => c.coType === "DEALER" && c.useYn));
         setPermGroup(me.permGroup);
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "상품 목록을 불러오지 못했습니다."))

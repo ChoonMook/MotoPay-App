@@ -35,6 +35,10 @@ export class ReservationsController {
     @Body('date') date: string,
     @Body('time') time: string,
     @Body('reservationType') reservationType: string,
+    @Body('selectedItems')
+    selectedItems?: { componentCode: string; price: number }[],
+    @Body('tintPositions')
+    tintPositions?: { position: string; level: string }[],
   ) {
     return this.reservationsService.create({
       shopCode,
@@ -42,6 +46,8 @@ export class ReservationsController {
       time,
       reservationType,
       memberId: user.id,
+      selectedItems,
+      tintPositions,
     });
   }
 
@@ -76,6 +82,18 @@ export class ReservationsController {
     @Body('time') time: string,
   ) {
     return this.reservationsService.reschedule(user.id, id, { date, time });
+  }
+
+  @Get(':id/package-items')
+  @ApiOperation({
+    summary:
+      '신차패키지 선택 내역(CU-NCPK-09/CU-RSVC-20) — 예약확정 시점에 저장된 시공 항목·제품·가격, 썬팅 부위별 농도를 진행상태 상관없이 조회',
+  })
+  getPackageSelection(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.reservationsService.getPackageSelection(user.id, id);
   }
 
   @Get(':id/handover')

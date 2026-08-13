@@ -274,7 +274,9 @@ export class ShopScheduleService {
     const countByDate = new Map(
       reservationCounts.map((r) => [formatDateOnly(r.date), r._count._all]),
     );
-    const holidaySet = new Set(holidays.map((h) => formatDateOnly(h.holidayDate)));
+    const holidaySet = new Set(
+      holidays.map((h) => formatDateOnly(h.holidayDate)),
+    );
     const lockedSet = new Set(lockedSlots.map((s) => formatDateOnly(s.date)));
 
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();

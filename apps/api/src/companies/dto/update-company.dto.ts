@@ -35,7 +35,9 @@ export class UpdateCompanyDto {
   @IsBoolean()
   useYn?: boolean;
 
-  @ApiPropertyOptional({ description: '사용중지 사유 — useYn=false로 변경할 때 필수' })
+  @ApiPropertyOptional({
+    description: '사용중지 사유 — useYn=false로 변경할 때 필수',
+  })
   @IsOptional()
   @IsString()
   suspendReason?: string;
@@ -65,7 +67,11 @@ export class UpdateCompanyDto {
   @IsString()
   businessItem?: string;
 
-  @ApiPropertyOptional({ description: '사업자구분 -> CommonCodeDetail(code=BIZ_DIV: INDIVIDUAL/CORP)', example: 'CORP' })
+  @ApiPropertyOptional({
+    description:
+      '사업자구분 -> CommonCodeDetail(code=BIZ_DIV: INDIVIDUAL/CORP)',
+    example: 'CORP',
+  })
   @IsOptional()
   @IsString()
   bizDivision?: string;

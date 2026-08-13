@@ -5,7 +5,11 @@ const COMPANY_DOCUMENT_SUBDIR = 'company-documents';
 const MAX_COMPANY_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10MB — 스캔 PDF 다장 문서 고려
 
 export function saveCompanyDocument(dataUri: string): Promise<string> {
-  return saveDocument(dataUri, COMPANY_DOCUMENT_SUBDIR, MAX_COMPANY_DOCUMENT_BYTES);
+  return saveDocument(
+    dataUri,
+    COMPANY_DOCUMENT_SUBDIR,
+    MAX_COMPANY_DOCUMENT_BYTES,
+  );
 }
 
 /** 교체·삭제 시 이전 물리 파일 정리 — 이미 없어도(ENOENT) 무시 */

@@ -3,13 +3,13 @@
 // 동일한 마스터-디테일 패턴
 // [인터랙션] 좌측 상품 선택 시 우측 체크리스트가 해당 상품의 현재 매핑 상태로 갱신 / 저장 시 체크리스트
 // 전체 상태를 그대로 반영(새로 체크한 딜러사만 Product.price 스냅샷으로 매핑 생성, 이미 매핑된 딜러사는 그때
-// 저장된 판매가를 유지 — Product.dealerCode 단일필드와는 별개의 다대다 매핑)
+// 저장된 판매가를 유지 — Product.dealerCompanyId 단일필드와는 별개의 다대다 매핑)
 // apps/api(/admin/products/*, /admin/common-codes/*)와 연동된 실 데이터 화면
 // 목록 그리드는 관리자웹 표준 컴포넌트인 components/DataGrid.tsx(ag-grid-community 기반)를 사용한다
 import { useEffect, useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import { Search } from "lucide-react";
-import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import {
   getProductDealerMappings,
   listProducts,
@@ -30,7 +30,7 @@ function formatWon(v: number): string {
 
 export default function DealerMapMgmtPage() {
   const [products, setProducts] = useState<ProductApi[]>([]);
-  const [dealers, setDealers] = useState<CommonCodeDetailApi[]>([]);
+  const [dealers, setDealers] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -39,7 +39,7 @@ export default function DealerMapMgmtPage() {
 
   const [selectedProduct, setSelectedProduct] = useState<ProductApi | null>(null);
   const [mappings, setMappings] = useState<ProductDealerMappingApi[]>([]);
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [checked, setChecked] = useState<Set<number>>(new Set());
   const [mappingsLoading, setMappingsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -49,10 +49,10 @@ export default function DealerMapMgmtPage() {
   const load = () => {
     setLoading(true);
     setLoadError("");
-    Promise.all([listProducts({ prodType: "PKG" }), getGroup("DEALER")])
-      .then(([productList, dealerGroup]) => {
+    Promise.all([listProducts({ prodType: "PKG" }), listCompanies()])
+      .then(([productList, companies]) => {
         setProducts(productList);
-        setDealers([...dealerGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
+        setDealers(companies.filter((c) => c.coType === "DEALER" && c.useYn));
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "상품 목록을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -78,7 +78,7 @@ export default function DealerMapMgmtPage() {
     getProductDealerMappings(selectedProduct.id)
       .then((rows) => {
         setMappings(rows);
-        setChecked(new Set(rows.map((r) => r.dealerCode)));
+        setChecked(new Set(rows.map((r) => r.dealerCompanyId)));
       })
       .catch((err) => setGlobalError(err instanceof Error ? err.message : "매핑 현황을 불러오지 못했습니다."))
       .finally(() => setMappingsLoading(false));
@@ -89,7 +89,10 @@ export default function DealerMapMgmtPage() {
     return kw ? products.filter((p) => p.name.includes(kw)) : products;
   }, [products, appliedKeyword]);
 
-  const handleSearch = () => setAppliedKeyword(keyword);
+  const handleSearch = () => {
+    setAppliedKeyword(keyword);
+    load();
+  };
 
   const columnDefs = useMemo<ColDef<ProductApi>[]>(
     () => [
@@ -99,11 +102,11 @@ export default function DealerMapMgmtPage() {
     [],
   );
 
-  const toggleDealer = (dealerCode: string) => {
+  const toggleDealer = (dealerCompanyId: number) => {
     setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(dealerCode)) next.delete(dealerCode);
-      else next.add(dealerCode);
+      if (next.has(dealerCompanyId)) next.delete(dealerCompanyId);
+      else next.add(dealerCompanyId);
       return next;
     });
   };
@@ -192,22 +195,22 @@ export default function DealerMapMgmtPage() {
               ) : (
                 <div className="flex flex-col gap-2">
                   {dealers.map((dealer) => {
-                    const mapping = mappings.find((m) => m.dealerCode === dealer.detailCode);
+                    const mapping = mappings.find((m) => m.dealerCompanyId === dealer.id);
                     return (
                       <label
-                        key={dealer.detailCode}
+                        key={dealer.id}
                         className="flex items-center justify-between rounded-lg border border-outline-variant/60 px-3 py-2.5 transition-all hover:bg-surface-container-low"
                       >
                         <span className="flex items-center gap-2.5">
                           <input
                             type="checkbox"
-                            checked={checked.has(dealer.detailCode)}
-                            onChange={() => toggleDealer(dealer.detailCode)}
+                            checked={checked.has(dealer.id)}
+                            onChange={() => toggleDealer(dealer.id)}
                             className="h-4 w-4 rounded border-outline-variant text-primary"
                           />
-                          <span className="text-xs font-semibold text-on-surface">{dealer.detailName}</span>
+                          <span className="text-xs font-semibold text-on-surface">{dealer.name}</span>
                         </span>
-                        {checked.has(dealer.detailCode) && (
+                        {checked.has(dealer.id) && (
                           <span className="text-[11px] font-medium text-on-surface-variant">
                             {mapping ? `디폴트 판매가 ${formatWon(mapping.price)}` : "저장 시 현재 판매가로 부여"}
                           </span>

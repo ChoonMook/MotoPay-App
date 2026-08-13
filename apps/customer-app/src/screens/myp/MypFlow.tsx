@@ -31,8 +31,9 @@ type CodeNameMap = Record<string, string>;
 const toMap = (details: CommonCodeDetailApi[]): CodeNameMap =>
   Object.fromEntries(details.map((d) => [d.detailCode, d.detailName]));
 
-// 목록/상세 화면 표시용 — 브랜드·차종·딜러사 코드를 공통코드에서 조회한 실제 이름으로 변환
-function toViewCar(c: MyCarApi, brandNames: CodeNameMap, modelNames: CodeNameMap, dealerNames: CodeNameMap): Car {
+// 목록/상세 화면 표시용 — 브랜드·차종 코드를 공통코드에서 조회한 실제 이름으로 변환. 딜러사명은 서버가
+// dealerCompanyId를 조인해 이미 채워 내려주므로(GET /cars/me) 별도 코드 조회가 필요 없음
+function toViewCar(c: MyCarApi, brandNames: CodeNameMap, modelNames: CodeNameMap): Car {
   return {
     id: String(c.id),
     maker: brandNames[c.carBrandCode] ?? c.carBrandCode,
@@ -41,7 +42,7 @@ function toViewCar(c: MyCarApi, brandNames: CodeNameMap, modelNames: CodeNameMap
     plate: c.plateNumber ?? "",
     isDefault: c.isDefault,
     fromDealer: c.regType === "MAP",
-    dealerName: c.dealerCode ? (dealerNames[c.dealerCode] ?? c.dealerCode) : undefined,
+    dealerName: c.dealerCompanyName ?? undefined,
     vin: c.vin ?? undefined,
   };
 }
@@ -64,11 +65,9 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
   const [carsApi, setCarsApi] = useState<MyCarApi[]>([]);
   const [carBrandOptions, setCarBrandOptions] = useState<CommonCodeDetailApi[]>([]);
   const [carModelOptions, setCarModelOptions] = useState<CommonCodeDetailApi[]>([]);
-  const [dealerOptions, setDealerOptions] = useState<CommonCodeDetailApi[]>([]);
   const brandNameMap = toMap(carBrandOptions);
   const modelNameMap = toMap(carModelOptions);
-  const dealerNameMap = toMap(dealerOptions);
-  const cars = carsApi.map((c) => toViewCar(c, brandNameMap, modelNameMap, dealerNameMap));
+  const cars = carsApi.map((c) => toViewCar(c, brandNameMap, modelNameMap));
   // 차종이 하나도 없는 브랜드를 고르면 모델 드롭다운이 비어버리니, 차종이 있는 브랜드만 제조사 선택지로 노출
   const carBrandOptionsWithModels = carBrandOptions.filter((b) => carModelOptions.some((m) => m.ref1 === b.detailCode));
 
@@ -110,11 +109,10 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
     listMyCars()
       .then(setCarsApi)
       .catch((err) => showToast(err instanceof Error ? err.message : "차량 정보를 불러오지 못했어요", "danger"));
-    Promise.all([getCommonCodeDetails("CAR_BRAND"), getCommonCodeDetails("CAR_MODEL"), getCommonCodeDetails("DEALER")])
-      .then(([brands, models, dealers]) => {
+    Promise.all([getCommonCodeDetails("CAR_BRAND"), getCommonCodeDetails("CAR_MODEL")])
+      .then(([brands, models]) => {
         setCarBrandOptions(brands);
         setCarModelOptions(models);
-        setDealerOptions(dealers);
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "차량 코드 정보를 불러오지 못했어요", "danger"));
     // eslint-disable-next-line react-hooks/exhaustive-deps

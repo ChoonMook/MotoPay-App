@@ -1,9 +1,10 @@
-// CU-RSVC-15: 결제완료 - 결제 내역 요약 + 시공업체 해피콜 예정 안내. 예약시공 메인 진행중 요청으로 이동
+// CU-RSVC-15: 결제완료 - 결제 내역 요약(시공 항목별 가격, 썬팅 부위별 농도) + 시공업체 해피콜 예정 안내. 예약시공 메인 진행중 요청으로 이동
 import Button from "../../components/ui/Button";
 import { PhoneIcon } from "./rsvIcons";
 import { selectedEntry, computePayBreakdown } from "./rsvCalc";
 import { nfmt } from "./rsvFormat";
 import type { Bidder, PayMethodKey, RecoPlan } from "./rsvTypes";
+import { TINT_POSITION_LABELS, type PackageSelectionItemView } from "../common/commonTypes";
 
 const PAY_LABEL: Record<PayMethodKey, string> = { card: "신용/체크카드", bank: "무통장 입금" };
 
@@ -12,21 +13,52 @@ interface PayDoneScreenProps {
   isExpert: boolean;
   bidders: Bidder[];
   recos: RecoPlan[];
+  positions: { position: string; level: string }[];
   payMethod: PayMethodKey;
   couponSel: string | null;
   pointUse: number;
+  /** 업체·추천안 선택 직후 새로 생성된 실제 예약의 reservationNo — 아직 못 불러왔으면 행 자체를 생략 */
+  reservationNo?: string;
   onConfirm: () => void;
 }
 
-export default function PayDoneScreen({ selId, isExpert, bidders, recos, payMethod, couponSel, pointUse, onConfirm }: PayDoneScreenProps) {
-  const { isRec, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
+export default function PayDoneScreen({
+  selId,
+  isExpert,
+  bidders,
+  recos,
+  positions,
+  payMethod,
+  couponSel,
+  pointUse,
+  reservationNo,
+  onConfirm,
+}: PayDoneScreenProps) {
+  const { isRec, bidder, reco, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
   const { payRemain } = computePayBreakdown(selId, isExpert, couponSel, pointUse, bidders, recos);
   const rows = [
     { k: "시공 업체", v: selName },
-    { k: "결제 금액", v: `${nfmt(payRemain)}원` },
     { k: "결제 수단", v: PAY_LABEL[payMethod] },
-    { k: "예약 번호", v: isRec ? "RSVC-240713" : "RSVC-240512" },
+    ...(reservationNo ? [{ k: "예약 번호", v: reservationNo }] : []),
   ];
+
+  // CU-RSVC-15 시공 항목 카드 — 응찰(일반입찰)은 instCode 라벨 자체가 항목명, 추천안(전문가추천)은 실제 제품명을 표시.
+  // 썬팅(TINT) 항목에는 요청 시점에 선택한 부위별 농도를 함께 표기
+  const tintDetail =
+    positions.length > 0
+      ? positions.map((p) => `${TINT_POSITION_LABELS[p.position] ?? p.position} ${p.level}%`).join(" · ")
+      : undefined;
+  const items: PackageSelectionItemView[] = isRec
+    ? (reco?.plans ?? []).map(([name, , offerPrice, instCode]) => ({
+        product: name,
+        price: offerPrice,
+        tintDetail: instCode === "TINT" ? tintDetail : undefined,
+      }))
+    : (bidder?.items ?? []).map(([name, price, instCode]) => ({
+        product: name,
+        price,
+        tintDetail: instCode === "TINT" ? tintDetail : undefined,
+      }));
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -50,6 +82,25 @@ export default function PayDoneScreen({ selId, isExpert, bidders, recos, payMeth
               </div>
             ))}
           </div>
+
+          {items.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-[18px] shadow-sm">
+              <div className="pt-[15px] pb-1 text-[12.5px] font-bold text-gray-500">시공 항목</div>
+              {items.map((it, i) => (
+                <div key={`${it.product}-${i}`} className="border-b border-gray-100 py-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="min-w-0 text-[13.5px] font-bold text-gray-900">{it.product}</div>
+                    <span className="flex-none text-[13.5px] font-bold text-gray-900">{nfmt(it.price)}원</span>
+                  </div>
+                  {it.tintDetail && <div className="mt-1.5 text-[11.5px] text-gray-500">{it.tintDetail}</div>}
+                </div>
+              ))}
+              <div className="flex items-center justify-between py-[13px]">
+                <span className="text-[12.5px] text-gray-500">결제 금액</span>
+                <span className="text-right text-[13.5px] font-bold text-gray-900">{nfmt(payRemain)}원</span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-brand-subtle p-3.5">
             <span className="mt-px flex-none text-brand">

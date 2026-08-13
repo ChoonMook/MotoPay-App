@@ -13,16 +13,25 @@ import {
 } from 'class-validator';
 
 export class BundleItemInputDto {
-  @ApiProperty({ description: '구성상품 상품코드 -> Product.productCode(prodType=SVC 또는 GOODS)' })
+  @ApiProperty({
+    description:
+      '구성상품 상품코드 -> Product.productCode(prodType=SVC 또는 GOODS)',
+  })
   @IsString()
   @MinLength(1)
   componentCode: string;
 
-  @ApiProperty({ enum: ['BASIC', 'OPTION', 'ADD'], description: '구성상품 유형 -> CommonCodeDetail(code=BUNDLE_ITEM_TYPE)' })
+  @ApiProperty({
+    enum: ['BASIC', 'OPTION', 'ADD'],
+    description: '구성상품 유형 -> CommonCodeDetail(code=BUNDLE_ITEM_TYPE)',
+  })
   @IsIn(['BASIC', 'OPTION', 'ADD'])
   itemType: string;
 
-  @ApiPropertyOptional({ description: '이 패키지 안에서 적용할 가격(원) — 비우면 구성상품 자체 판매가를 그대로 사용' })
+  @ApiPropertyOptional({
+    description:
+      '이 패키지 안에서 적용할 가격(원) — 비우면 구성상품 자체 판매가를 그대로 사용',
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -40,7 +49,10 @@ export class BundleItemInputDto {
 }
 
 export class SetProductBundleItemsDto {
-  @ApiProperty({ type: [BundleItemInputDto], description: '패키지 구성상품 전체 목록(통째로 교체 저장)' })
+  @ApiProperty({
+    type: [BundleItemInputDto],
+    description: '패키지 구성상품 전체 목록(통째로 교체 저장)',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BundleItemInputDto)

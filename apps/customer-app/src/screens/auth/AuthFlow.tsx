@@ -75,6 +75,7 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
     setSignupAgreeMarketingPush(checked);
   };
   const [signupResultUser, setSignupResultUser] = useState<LoginUser | null>(null);
+  const [signupPackageMapped, setSignupPackageMapped] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [findIdLoading, setFindIdLoading] = useState(false);
@@ -176,6 +177,7 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         {screen === "done" && (
           <SignupDoneScreen
             name={signupName}
+            packageMapped={signupPackageMapped}
             onGoHome={() => signupResultUser && onAuthComplete(signupResultUser)}
           />
         )}
@@ -277,6 +279,7 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
                 // 회원가입 화면엔 자동로그인 체크박스가 없어 기본적으로 로그인 상태를 유지시킴
                 setTokens(result.accessToken, result.refreshToken, true);
                 setSignupResultUser(result.user);
+                setSignupPackageMapped(result.newCarPackageMapped);
                 setSheet(null);
                 setScreen("done");
               } catch (err) {

@@ -1,12 +1,15 @@
 // PT-NCPK-02: 시공 상세 - 고객·차량·패키지 정보와 시공 항목 확인, 상태에 따라 시공 착수/완료 등록 CTA
 import Button from "../../components/ui/Button";
 import carImg from "../../assets/images/car.png";
+import { API_BASE_URL } from "../../api/config";
 import type { PackageJobDetail } from "../../api/reservations";
-import { formatScheduleLabel, itemTagClass, itemTagLabel, statusChipClass, statusLabel } from "./ncpkData";
+import type { CommonCodeDetailApi } from "../../api/commonCodes";
+import { categoryLabel, formatScheduleLabel, formatTintDetail, itemTagClass, itemTagLabel, statusChipClass, statusLabel } from "./ncpkData";
 import { PhoneCallIcon } from "./ncpkIcons";
 
 interface NcpkDetailScreenProps {
   job: PackageJobDetail | null;
+  prodCatOptions: CommonCodeDetailApi[];
   loading: boolean;
   updating: boolean;
   onBack: () => void;
@@ -18,6 +21,7 @@ interface NcpkDetailScreenProps {
 
 export default function NcpkDetailScreen({
   job,
+  prodCatOptions,
   loading,
   updating,
   onBack,
@@ -67,7 +71,11 @@ export default function NcpkDetailScreen({
       <div className="mp-scroll flex-1 overflow-y-auto px-5 py-[18px]">
         <div className="mb-4 flex items-center gap-2.5">
           <span className="flex h-[52px] w-[52px] flex-none items-center justify-center overflow-hidden rounded-[13px] bg-gray-100">
-            <img src={carImg} alt="차량" className="h-auto w-11 object-contain" />
+            {job.carPhoto ? (
+              <img src={`${API_BASE_URL}/uploads/${job.carPhoto}`} alt="차량" className="h-full w-full object-cover" />
+            ) : (
+              <img src={carImg} alt="차량" className="h-auto w-11 object-contain" />
+            )}
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-base font-extrabold tracking-tight text-gray-900">{job.car ?? "-"}</div>
@@ -107,20 +115,26 @@ export default function NcpkDetailScreen({
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {job.items.map((it, i) => (
-              <div
-                key={`${it.name}-${i}`}
-                className="flex items-center gap-2.5 rounded-[14px] border border-gray-200 bg-white px-[15px] py-3.5"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-bold text-gray-800">{it.name}</div>
-                  {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+            {job.items.map((it, i) => {
+              const category = categoryLabel(it.prodCat, prodCatOptions);
+              const tintDetail = it.prodCat === "TINT" ? formatTintDetail(job.tintPositions) : undefined;
+              return (
+                <div
+                  key={`${it.name}-${i}`}
+                  className="flex items-center gap-2.5 rounded-[14px] border border-gray-200 bg-white px-[15px] py-3.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    {category && <div className="text-[11px] text-gray-500">{category}</div>}
+                    <div className="text-sm font-bold text-gray-800">{it.name}</div>
+                    {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+                    {tintDetail && <div className="mt-0.5 text-[11.5px] text-gray-500">{tintDetail}</div>}
+                  </div>
+                  <span className={`flex-none rounded-[5px] px-2 py-[3px] text-[10.5px] font-extrabold ${itemTagClass(it.tag)}`}>
+                    {itemTagLabel(it.tag)}
+                  </span>
                 </div>
-                <span className={`flex-none rounded-[5px] px-2 py-[3px] text-[10.5px] font-extrabold ${itemTagClass(it.tag)}`}>
-                  {itemTagLabel(it.tag)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

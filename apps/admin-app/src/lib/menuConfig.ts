@@ -77,9 +77,12 @@ export const MENU_GROUPS: MenuGroup[] = [
     // DL-NCPK-01(신차 구매내역 입력, 원래 딜러사웹_프로그램 시트 소속)은 딜러 직원도 시공업체 직원과 동일하게
     // AdminAccount(accountType=DEALER)로 admin-app에 로그인한다는 점에 착안해 이 그룹으로 편입(2026-08-11 확정).
     items: [
-      { pgId: "DL-NCPK-01", label: "신차 구매내역", path: "/ncp/purchase" },
+      { pgId: "AD-CTLG-08", label: "딜러사 매핑 관리", path: "/catalog/dealer-map-mgmt" },
+      { pgId: "AD-CTLG-09", label: "차종 매핑 관리", path: "/catalog/car-model-map-mgmt" },
       { pgId: "AD-NCPK-04", label: "딜러사-시공업체 매핑", path: "/ncp/dealer-ptn-map" },
-      { pgId: "AD-NCPK-06", label: "발급 현황", path: "/ncp/issue-stat" },
+      { pgId: "AD-CTLG-10", label: "신차패키지 구성 관리", path: "/catalog/pkg-comp-mgmt" },
+      { pgId: "DL-NCPK-01", label: "신차 구매내역", path: "/ncp/purchase" },
+      { pgId: "AD-NCPK-06", label: "발급 현황(미사용)", path: "/ncp/issue-stat" },
     ],
   },
   {
@@ -131,7 +134,7 @@ export const MENU_GROUPS: MenuGroup[] = [
   },
   {
     key: "catalog",
-    label: "시공상품 카탈로그",
+    label: "기준정보",
     icon: BookOpen,
     items: [
       { pgId: "AD-CTLG-02", label: "차종 마스터", path: "/catalog/car-model-mst" },
@@ -139,9 +142,6 @@ export const MENU_GROUPS: MenuGroup[] = [
       { pgId: "AD-CTLG-04", label: "브랜드 관리", path: "/catalog/brand-mgmt" },
       { pgId: "AD-CTLG-05", label: "상품 관리", path: "/catalog/prod-mgmt" },
       { pgId: "AD-CTLG-07", label: "상품 옵션 관리", path: "/catalog/prod-opt-mgmt" },
-      { pgId: "AD-CTLG-08", label: "딜러사 매핑 관리", path: "/catalog/dealer-map-mgmt" },
-      { pgId: "AD-CTLG-09", label: "차종 매핑 관리", path: "/catalog/car-model-map-mgmt" },
-      { pgId: "AD-CTLG-10", label: "신차패키지 구성 관리", path: "/catalog/pkg-comp-mgmt" },
     ],
   },
   {

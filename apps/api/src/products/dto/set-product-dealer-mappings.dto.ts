@@ -1,10 +1,14 @@
 // PUT /admin/products/:id/dealer-mappings 요청 바디 검증
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsString } from 'class-validator';
+import { IsArray, IsInt } from 'class-validator';
 
 export class SetProductDealerMappingsDto {
-  @ApiProperty({ example: ['KCC', 'EO'], description: '이 상품(패키지)을 판매할 딜러사 목록 -> CommonCodeDetail(code=DEALER)' })
+  @ApiProperty({
+    example: [17, 19],
+    description:
+      '이 상품(패키지)을 판매할 딜러사 목록 -> Company.id(coType=DEALER)',
+  })
   @IsArray()
-  @IsString({ each: true })
-  dealerCodes: string[];
+  @IsInt({ each: true })
+  dealerCompanyIds: number[];
 }

@@ -15,17 +15,24 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { CAR_INST_VALUES, TINT_POSITION_VALUES, VLT_VALUES } from './create-bid-request.dto';
+import {
+  CAR_INST_VALUES,
+  TINT_POSITION_VALUES,
+  VLT_VALUES,
+} from './create-bid-request.dto';
 
 export class SubmitBidPlanItemDto {
   @ApiProperty({
     enum: CAR_INST_VALUES,
-    description: "관심 카테고리 -> CommonCodeDetail(code='CAR_INST'), 요청의 관심 카테고리와 정확히 일치해야 함",
+    description:
+      "관심 카테고리 -> CommonCodeDetail(code='CAR_INST'), 요청의 관심 카테고리와 정확히 일치해야 함",
   })
   @IsIn(CAR_INST_VALUES)
   instCode: (typeof CAR_INST_VALUES)[number];
 
-  @ApiPropertyOptional({ description: '추천 상품 -> Product.productCode(카탈로그에서 고른 경우)' })
+  @ApiPropertyOptional({
+    description: '추천 상품 -> Product.productCode(카탈로그에서 고른 경우)',
+  })
   @IsOptional()
   @IsString()
   productCode?: string;
@@ -66,7 +73,10 @@ export class SubmitBidPlanPositionDto {
 }
 
 export class SubmitBidPlanDto {
-  @ApiProperty({ type: [SubmitBidPlanItemDto], description: '관심 카테고리별 추천 상품·가격' })
+  @ApiProperty({
+    type: [SubmitBidPlanItemDto],
+    description: '관심 카테고리별 추천 상품·가격',
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayUnique((item: SubmitBidPlanItemDto) => item.instCode)
@@ -76,7 +86,8 @@ export class SubmitBidPlanDto {
 
   @ApiPropertyOptional({
     type: [SubmitBidPlanPositionDto],
-    description: '틴팅 부위별 농도 추천(관심 카테고리에 TINT를 포함한 경우에만 유효)',
+    description:
+      '틴팅 부위별 농도 추천(관심 카테고리에 TINT를 포함한 경우에만 유효)',
   })
   @IsOptional()
   @IsArray()
@@ -85,7 +96,11 @@ export class SubmitBidPlanDto {
   @Type(() => SubmitBidPlanPositionDto)
   positions?: SubmitBidPlanPositionDto[];
 
-  @ApiProperty({ example: '14:00', description: '시공 예정 시각(HH:mm) — 요청의 희망일(desiredDate) 기준 업체 실제 예약 가능 시간 중 하나' })
+  @ApiProperty({
+    example: '14:00',
+    description:
+      '시공 예정 시각(HH:mm) — 요청의 희망일(desiredDate) 기준 업체 실제 예약 가능 시간 중 하나',
+  })
   @IsString()
   scheduledTime: string;
 

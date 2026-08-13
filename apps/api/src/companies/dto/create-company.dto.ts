@@ -61,7 +61,11 @@ export class CreateCompanyDto {
   @IsString()
   businessItem?: string;
 
-  @ApiPropertyOptional({ description: '사업자구분 -> CommonCodeDetail(code=BIZ_DIV: INDIVIDUAL/CORP)', example: 'CORP' })
+  @ApiPropertyOptional({
+    description:
+      '사업자구분 -> CommonCodeDetail(code=BIZ_DIV: INDIVIDUAL/CORP)',
+    example: 'CORP',
+  })
   @IsOptional()
   @IsString()
   bizDivision?: string;
@@ -76,7 +80,10 @@ export class CreateCompanyDto {
   @IsString()
   faxNo?: string;
 
-  @ApiPropertyOptional({ description: "은행 -> CommonCodeDetail(code='BANK')", example: 'KB' })
+  @ApiPropertyOptional({
+    description: "은행 -> CommonCodeDetail(code='BANK')",
+    example: 'KB',
+  })
   @IsOptional()
   @IsString()
   bankName?: string;

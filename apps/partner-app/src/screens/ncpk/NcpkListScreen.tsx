@@ -1,7 +1,8 @@
 // PT-NCPK-01: 신차패키지 시공관리 목록 - 상태별(착수대기/시공중/완료) 탭으로 배정된 시공 건 조회
 import type { PackageJob } from "../../api/reservations";
+import type { CommonCodeDetailApi } from "../../api/commonCodes";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon } from "../home/homeIcons";
-import { NCPK_TAB_META, formatScheduleLabel, statusChipClass, statusLabel, type NcpkTab } from "./ncpkData";
+import { NCPK_TAB_META, formatScheduleLabel, statusChipClass, statusLabel, summarizeCategories, type NcpkTab } from "./ncpkData";
 import { SearchIcon } from "./ncpkIcons";
 
 const NAV_ITEMS = [
@@ -15,6 +16,7 @@ interface NcpkListScreenProps {
   tab: NcpkTab;
   onChangeTab: (tab: NcpkTab) => void;
   jobs: PackageJob[];
+  prodCatOptions: CommonCodeDetailApi[];
   tabCounts: Record<NcpkTab, number>;
   loading: boolean;
   onOpenJob: (job: PackageJob) => void;
@@ -27,6 +29,7 @@ export default function NcpkListScreen({
   tab,
   onChangeTab,
   jobs,
+  prodCatOptions,
   tabCounts,
   loading,
   onOpenJob,
@@ -84,8 +87,9 @@ export default function NcpkListScreen({
                 <div className="mb-[3px] text-[13.5px] text-gray-800">{j.car ?? "-"}</div>
                 <div className="mb-[3px] font-mono text-[12.5px] tabular-nums text-gray-500">VIN {j.vin ?? "-"}</div>
                 <div className="mb-2.5 text-[12.5px] text-gray-500">{formatScheduleLabel(j.date, j.time)}</div>
-                <div className="rounded-[9px] bg-gray-100 px-[11px] py-[9px] text-[12.5px] text-gray-500">
-                  {j.itemSummary}
+                <div className="rounded-[9px] bg-gray-100 px-[11px] py-[9px]">
+                  <div className="text-[12.5px] font-semibold text-gray-700">{j.packageName ?? "-"}</div>
+                  <div className="mt-0.5 text-[12.5px] text-gray-500">{summarizeCategories(j.categories, prodCatOptions)}</div>
                 </div>
               </div>
             ))}

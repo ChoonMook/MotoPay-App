@@ -3,9 +3,8 @@ import Button from "../../components/ui/Button";
 import shopThumb from "../../assets/images/shop.png";
 import NcpHeader from "./NcpHeader";
 
-// GET /shops 응답에 리뷰·평점 모델이 없어(백엔드에 아직 미구현) official/rating/reviews는
-// NcpkFlow에서 매장명 기준 임시 목업값으로 채워 내려온다. distLabel도 이번엔 위치정보 연동을
-// 하지 않아 항상 "-"로 내려온다. 나머지 필드(shopCode/name/categories/intro 등)는 실제 API 값
+// rating/reviews/distLabel 모두 GET /shops 응답(평균평점·후기수·위치기반 거리)을 NcpkFlow가 가공해 내려준다.
+// official("공식") 배지만 아직 대응하는 백엔드 데이터가 없어 항상 false
 export interface ShopView {
   shopCode: string;
   name: string;
@@ -17,6 +16,8 @@ export interface ShopView {
   intro: string | null;
   greeting: string | null;
   address: string | null;
+  lat: number | null;
+  lng: number | null;
   photoUrl: string | null;
 }
 

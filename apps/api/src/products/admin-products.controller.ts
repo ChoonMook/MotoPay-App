@@ -36,14 +36,17 @@ export class AdminProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  @ApiOperation({ summary: '상품 목록 조회 — 상품유형/상품분류/브랜드/딜러사/사용여부/상품명 검색으로 필터' })
+  @ApiOperation({
+    summary:
+      '상품 목록 조회 — 상품유형/상품분류/브랜드/딜러사/사용여부/상품명 검색으로 필터',
+  })
   list(
     @CurrentAdmin() me: SafeAdminAccount,
     @Query('prodType') prodType?: string,
     @Query('prodCat') prodCat?: string,
     @Query('brand') brand?: string,
-    @Query('dealerCode') dealerCode?: string,
-    @Query('mappedDealerCode') mappedDealerCode?: string,
+    @Query('dealerCompanyId') dealerCompanyId?: string,
+    @Query('mappedDealerCompanyId') mappedDealerCompanyId?: string,
     @Query('useYn') useYn?: string,
     @Query('keyword') keyword?: string,
   ) {
@@ -51,8 +54,12 @@ export class AdminProductsController {
       prodType,
       prodCat,
       brand,
-      dealerCode,
-      mappedDealerCode,
+      dealerCompanyId:
+        dealerCompanyId === undefined ? undefined : Number(dealerCompanyId),
+      mappedDealerCompanyId:
+        mappedDealerCompanyId === undefined
+          ? undefined
+          : Number(mappedDealerCompanyId),
       useYn: useYn === undefined ? undefined : useYn === 'true',
       keyword,
       permGroup: me.permGroup,
@@ -61,7 +68,10 @@ export class AdminProductsController {
 
   @Get(':id')
   @ApiOperation({ summary: '상품 상세 조회' })
-  get(@Param('id', ParseIntPipe) id: number, @CurrentAdmin() me: SafeAdminAccount) {
+  get(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentAdmin() me: SafeAdminAccount,
+  ) {
     return this.productsService.adminGet(id, me.permGroup);
   }
 
@@ -108,7 +118,10 @@ export class AdminProductsController {
   }
 
   @Put(':id/position-options')
-  @ApiOperation({ summary: '부위옵션 사용여부·부위별 선택 가능 농도 통째로 교체 저장(AD-CTLG-07)' })
+  @ApiOperation({
+    summary:
+      '부위옵션 사용여부·부위별 선택 가능 농도 통째로 교체 저장(AD-CTLG-07)',
+  })
   setPositionOptions(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SetProductPositionOptionsDto,
@@ -124,8 +137,14 @@ export class AdminProductsController {
   }
 
   @Put(':id/dealer-mappings')
-  @ApiOperation({ summary: '딜러사 매핑 체크리스트 전체 교체 저장(AD-CTLG-08) — 신규 체크분만 판매가 스냅샷 생성' })
-  setDealerMappings(@Param('id', ParseIntPipe) id: number, @Body() dto: SetProductDealerMappingsDto) {
+  @ApiOperation({
+    summary:
+      '딜러사 매핑 체크리스트 전체 교체 저장(AD-CTLG-08) — 신규 체크분만 판매가 스냅샷 생성',
+  })
+  setDealerMappings(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetProductDealerMappingsDto,
+  ) {
     return this.productsService.setDealerMappings(id, dto);
   }
 
@@ -136,8 +155,13 @@ export class AdminProductsController {
   }
 
   @Put(':id/car-model-mappings')
-  @ApiOperation({ summary: '적용 가능 차종 트리 체크 상태 전체 교체 저장(AD-CTLG-09)' })
-  setCarModelMappings(@Param('id', ParseIntPipe) id: number, @Body() dto: SetProductCarModelMappingsDto) {
+  @ApiOperation({
+    summary: '적용 가능 차종 트리 체크 상태 전체 교체 저장(AD-CTLG-09)',
+  })
+  setCarModelMappings(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetProductCarModelMappingsDto,
+  ) {
     return this.productsService.setCarModelMappings(id, dto);
   }
 
@@ -148,8 +172,14 @@ export class AdminProductsController {
   }
 
   @Put(':id/bundle-items')
-  @ApiOperation({ summary: '패키지 구성상품 목록(유형·가격override·수량·순서) 전체 교체 저장(AD-CTLG-10)' })
-  setBundleItems(@Param('id', ParseIntPipe) id: number, @Body() dto: SetProductBundleItemsDto) {
+  @ApiOperation({
+    summary:
+      '패키지 구성상품 목록(유형·가격override·수량·순서) 전체 교체 저장(AD-CTLG-10)',
+  })
+  setBundleItems(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetProductBundleItemsDto,
+  ) {
     return this.productsService.setBundleItems(id, dto);
   }
 }

@@ -4,32 +4,40 @@ import {
   IsBoolean,
   IsInt,
   IsOptional,
+  IsPositive,
   IsString,
   Min,
   MinLength,
 } from 'class-validator';
 
 export class UpdateProductDto {
-  @ApiPropertyOptional({ description: '상품유형 -> CommonCodeDetail(code=PROD_TYPE)' })
+  @ApiPropertyOptional({
+    description: '상품유형 -> CommonCodeDetail(code=PROD_TYPE)',
+  })
   @IsOptional()
   @IsString()
   @MinLength(1)
   prodType?: string;
 
-  @ApiPropertyOptional({ description: '브랜드 -> CommonCodeDetail(code=PROD_BRAND)' })
+  @ApiPropertyOptional({
+    description: '브랜드 -> CommonCodeDetail(code=PROD_BRAND)',
+  })
   @IsOptional()
   @IsString()
   brand?: string;
 
-  @ApiPropertyOptional({ description: '상품분류 -> CommonCodeDetail(code=PROD_CAT)' })
+  @ApiPropertyOptional({
+    description: '상품분류 -> CommonCodeDetail(code=PROD_CAT)',
+  })
   @IsOptional()
   @IsString()
   prodCat?: string;
 
-  @ApiPropertyOptional({ description: '딜러사 -> CommonCodeDetail(code=DEALER)' })
+  @ApiPropertyOptional({ description: '딜러사 -> Company.id(coType=DEALER)' })
   @IsOptional()
-  @IsString()
-  dealerCode?: string;
+  @IsInt()
+  @IsPositive()
+  dealerCompanyId?: number;
 
   @ApiPropertyOptional({ description: '상품명' })
   @IsOptional()
@@ -50,7 +58,8 @@ export class UpdateProductDto {
   originPrice?: number;
 
   @ApiPropertyOptional({
-    description: '공급가(원) — 원가. SUPER_ADMIN·SETTLEMENT 권한 관리자의 요청만 실제로 반영됨',
+    description:
+      '공급가(원) — 원가. SUPER_ADMIN·SETTLEMENT 권한 관리자의 요청만 실제로 반영됨',
   })
   @IsOptional()
   @IsInt()

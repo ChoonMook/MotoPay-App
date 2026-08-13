@@ -223,6 +223,7 @@ export default function ProdOptMgmtPage() {
 
   const handleSearch = () => {
     setAppliedFilters({ keyword, usageFilter });
+    load();
   };
 
   const handleSave = async (input: SetProductPositionOptionsInput) => {

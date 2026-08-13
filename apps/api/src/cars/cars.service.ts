@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { MyCar } from '@prisma/client';
+import type { MyCar, NewCarPurchaseCustomer } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateMyCarDto } from './dto/create-my-car.dto';
 import type { UpdateMyCarDto } from './dto/update-my-car.dto';
@@ -15,6 +15,7 @@ import type { UpdateMyCarDto } from './dto/update-my-car.dto';
 export interface MyCarView extends MyCar {
   packageCode: string | null;
   mappedAt: string | null;
+  dealerCompanyName: string | null;
 }
 
 @Injectable()
@@ -25,13 +26,17 @@ export class CarsService {
   async listMyCars(userId: string): Promise<MyCarView[]> {
     const cars = await this.prisma.myCar.findMany({
       where: { memberId: userId },
-      include: { purchase: { select: { packageCode: true, mappedAt: true } } },
+      include: {
+        purchase: { select: { packageCode: true, mappedAt: true } },
+        dealer: { select: { name: true } },
+      },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
     });
-    return cars.map(({ purchase, ...car }) => ({
+    return cars.map(({ purchase, dealer, ...car }) => ({
       ...car,
       packageCode: purchase?.packageCode ?? null,
       mappedAt: purchase?.mappedAt?.toISOString() ?? null,
+      dealerCompanyName: dealer?.name ?? null,
     }));
   }
 
@@ -145,23 +150,15 @@ export class CarsService {
     return car;
   }
 
-  /**
-   * 회원가입 직후 호출 — 이름+휴대폰 해시로 미매핑된 신차 구매 정보를 찾아
-   * 매핑 처리(NewCarPurchaseCustomer)하고 내 차량 정보(MyCar)에 자동 등록.
-   * 매칭되는 구매 정보가 없으면 아무 일도 하지 않음.
-   */
-  async mapNewCarPurchase(
+  /** 매핑 실행 공통 로직 — NewCarPurchaseCustomer.isMapped/mappedAt/memberId 갱신 + 내 차량 정보(MyCar, MAP)를 생성.
+   * 이미 다른 차량을 보유한 회원일 수 있어(관리자 등록 시점 매핑) 대표차량 여부는 항상 true가 아니라 보유 차량 수로 판단 */
+  private async applyMapping(
+    purchase: NewCarPurchaseCustomer,
     userId: string,
-    name: string,
-    phoneHash: string,
   ): Promise<void> {
-    const purchase = await this.prisma.newCarPurchaseCustomer.findFirst({
-      where: { phoneHash, customerName: name, isMapped: false },
+    const existingCount = await this.prisma.myCar.count({
+      where: { memberId: userId },
     });
-    if (!purchase) {
-      return;
-    }
-
     await this.prisma.$transaction([
       this.prisma.newCarPurchaseCustomer.update({
         where: { vin: purchase.vin },
@@ -172,15 +169,60 @@ export class CarsService {
           memberId: userId,
           regType: 'MAP',
           purchaseVin: purchase.vin,
-          dealerCode: purchase.dealerCode,
+          dealerCompanyId: purchase.dealerCompanyId,
           carBrandCode: purchase.carBrandCode,
           carModelCode: purchase.carModelCode,
           trimName: purchase.trimName,
           modelYear: purchase.modelYear,
           vin: purchase.vin,
-          isDefault: true, // 가입 직후 자동 매핑되는 첫 차량이라 대표차량으로 지정
+          isDefault: existingCount === 0,
         },
       }),
     ]);
+  }
+
+  /**
+   * 회원가입 직후 호출 — 이름+휴대폰 해시로 미매핑된 신차 구매 정보를 찾아
+   * 매핑 처리(NewCarPurchaseCustomer)하고 내 차량 정보(MyCar)에 자동 등록.
+   * 매칭되는 구매 정보가 없으면 아무 일도 하지 않고 false를 반환(가입완료 화면의 매핑 안내 배지 노출 여부에 사용)
+   */
+  async mapNewCarPurchase(
+    userId: string,
+    name: string,
+    phoneHash: string,
+  ): Promise<boolean> {
+    const purchase = await this.prisma.newCarPurchaseCustomer.findFirst({
+      where: { phoneHash, customerName: name, isMapped: false },
+    });
+    if (!purchase) {
+      return false;
+    }
+    await this.applyMapping(purchase, userId);
+    return true;
+  }
+
+  /**
+   * 신차 구매 정보 등록 직후(admin-app DL-NCPK-01~03) 호출 — 이름+휴대폰 해시가 일치하는 이미 가입된 회원이
+   * 있으면 그 자리에서 바로 매핑 처리. 없으면 아무 일도 하지 않고 false를 반환(가입은 이후에 이 정보로 자동 매핑됨)
+   */
+  async mapExistingCustomerToPurchase(
+    vin: string,
+    customerName: string,
+    phoneHash: string,
+  ): Promise<boolean> {
+    const user = await this.prisma.user.findFirst({
+      where: { phoneHash, name: customerName },
+    });
+    if (!user) {
+      return false;
+    }
+    const purchase = await this.prisma.newCarPurchaseCustomer.findUnique({
+      where: { vin },
+    });
+    if (!purchase || purchase.isMapped) {
+      return false;
+    }
+    await this.applyMapping(purchase, user.id);
+    return true;
   }
 }

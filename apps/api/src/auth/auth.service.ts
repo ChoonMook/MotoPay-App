@@ -63,7 +63,9 @@ export class AuthService {
     };
   }
 
-  async signup(dto: SignupDto): Promise<AuthTokens & { user: SafeUser }> {
+  async signup(
+    dto: SignupDto,
+  ): Promise<AuthTokens & { user: SafeUser; newCarPackageMapped: boolean }> {
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     const normalizedPhone = this.phoneCrypto.normalize(dto.phone);
     // 저장·반환용은 "000-0000-0000" 형식으로 통일, 검색용 해시는 하이픈 유무와 무관하게 항상 정규화된 숫자만 사용
@@ -109,17 +111,47 @@ export class AuthService {
     }
 
     // 신차 구매 고객 정보(딜러사 등록분)에 이름+휴대폰이 일치하는 미매핑 건이 있으면 자동 매핑 + 내 차량 정보 등록
-    await this.carsService.mapNewCarPurchase(user.id, user.name, phoneHash);
+    const newCarPackageMapped = await this.carsService.mapNewCarPurchase(
+      user.id,
+      user.name,
+      phoneHash,
+    );
 
     return {
       ...this.issueTokens(this.toPayload(user)),
       user: this.toSafeUser(user),
+      newCarPackageMapped,
     };
   }
 
   async findSafeUserById(id: string): Promise<SafeUser | null> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     return user ? this.toSafeUser(user) : null;
+  }
+
+  /** accessToken 만료 시 refreshToken으로 access/refresh 토큰을 재발급(rotation) — refreshToken도 만료·무효면 재로그인 필요 */
+  async refresh(refreshToken: string): Promise<AuthTokens> {
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify<JwtPayload>(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException(
+        '로그인이 만료되었습니다. 다시 로그인해주세요.',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw new UnauthorizedException(
+        '로그인이 만료되었습니다. 다시 로그인해주세요.',
+      );
+    }
+
+    return this.issueTokens(this.toPayload(user));
   }
 
   /** 아이디 찾기 — 휴대폰번호로 계정을 찾아 마스킹된 아이디를 반환 */

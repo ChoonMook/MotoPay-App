@@ -141,7 +141,10 @@ export default function CarModelMapMgmtPage() {
     return kw ? products.filter((p) => p.name.includes(kw)) : products;
   }, [products, appliedKeyword]);
 
-  const handleSearch = () => setAppliedKeyword(keyword);
+  const handleSearch = () => {
+    setAppliedKeyword(keyword);
+    load();
+  };
 
   const columnDefs = useMemo<ColDef<ProductApi>[]>(
     () => [

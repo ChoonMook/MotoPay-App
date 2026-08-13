@@ -40,7 +40,8 @@ export class UpdateAdminAccountDto {
   accountType?: string;
 
   @ApiPropertyOptional({
-    description: '소속업체 -> Company.id — accountType이 DEALER·SUPPLIER인 경우 필수(같은 업체구분의 업체만 선택 가능), ADMIN이면 지정 불가',
+    description:
+      '소속업체 -> Company.id — accountType이 DEALER·SUPPLIER인 경우 필수(같은 업체구분의 업체만 선택 가능), ADMIN이면 지정 불가',
   })
   @IsOptional()
   @IsInt()

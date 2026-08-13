@@ -5,5 +5,9 @@ const RESERVATION_PHOTO_SUBDIR = 'reservation-photos';
 const MAX_RESERVATION_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
 export function saveReservationPhoto(dataUri: string): Promise<string> {
-  return saveImage(dataUri, RESERVATION_PHOTO_SUBDIR, MAX_RESERVATION_PHOTO_BYTES);
+  return saveImage(
+    dataUri,
+    RESERVATION_PHOTO_SUBDIR,
+    MAX_RESERVATION_PHOTO_BYTES,
+  );
 }

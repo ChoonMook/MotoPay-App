@@ -4,7 +4,8 @@ import { IsString, Matches } from 'class-validator';
 
 export class UploadCommonCodeDetailPhotoDto {
   @ApiProperty({
-    description: 'data URI(base64) 형식의 이미지 — JPEG·PNG·WEBP만 허용(예: 차종 대표사진)',
+    description:
+      'data URI(base64) 형식의 이미지 — JPEG·PNG·WEBP만 허용(예: 차종 대표사진)',
     example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
   })
   @IsString()

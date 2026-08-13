@@ -73,9 +73,18 @@
 - **백엔드 스택**: `apps/api`(NestJS) + Prisma ORM + MariaDB(MySQL 프로토콜). `DATABASE_URL`은 원격 공유 개발 DB를 가리키며, 여러 세션이 동시에 접근할 수 있는 환경이다.
 
 ### 코드성 컬럼 설계
-- 고정된 값 목록을 갖는 컬럼(상품유형, 상품분류, 딜러사, 기본/추가상품 구분 등)은 Prisma 네이티브 `enum`이 아니라 `String` 타입 + `CommonCodeDetail(code='XXX')` 참조 방식을 기본으로 한다. DB에는 FK를 걸지 않고, 필드 옆 주석으로 참조 관계만 명시한다(예: `prodType String // -> CommonCodeDetail(code='PROD_TYPE')`).
+- 고정된 값 목록을 갖는 컬럼(상품유형, 상품분류, 기본/추가상품 구분 등)은 Prisma 네이티브 `enum`이 아니라 `String` 타입 + `CommonCodeDetail(code='XXX')` 참조 방식을 기본으로 한다. DB에는 FK를 걸지 않고, 필드 옆 주석으로 참조 관계만 명시한다(예: `prodType String // -> CommonCodeDetail(code='PROD_TYPE')`).
+  - **예외 — 딜러사**: 딜러사는 실제 사업자 엔티티(로그인 계정·정산 정보 등을 가진 실체)라 고정 코드값이 아니라 `Company`(coType='DEALER') 레코드로 관리한다. 딜러사를 참조하는 컬럼은 `dealerCompanyId Int // -> Company.id(coType='DEALER')`처럼 실제 FK로 연결한다(2026-08-13 사용자 확정 — 예전엔 `CommonCodeDetail(code='DEALER')`를 썼으나 `Company`로 완전히 대체함).
 - Prisma `enum`은 `UserRole`처럼 인증·권한 등 코어 시스템 레벨의 고정 값에만 사용한다.
 - 새 코드 그룹을 추가하면 스키마 변경과 함께 반드시 `prisma/seed-common-codes.ts`의 `MASTERS`/`DETAILS` 배열에도 등록하고, `npx ts-node prisma/seed-common-codes.ts`로 시드까지 실행해야 한다(스키마만 바꾸고 시드 등록을 누락하지 않는다).
+
+### 시스템 컬럼(등록자/등록일시/수정자/수정일시) 기본 원칙
+- 자체 PK(단일 `id` 또는 자기 완결적인 자연키)를 갖고 **수정(UPDATE) UI가 있는** 테이블은 기본적으로 `createdBy`/`createdAt`/`updatedBy`/`updatedAt` 4개 시스템 컬럼을 둔다. 순서는 `createdBy` → `createdAt` → `updatedBy` → `updatedAt`(AdminAccount/NewCarPurchaseCustomer와 동일 배치).
+  - `createdAt`: `DateTime @default(now()) @db.Timestamp(3)`
+  - `updatedAt`: `DateTime @updatedAt @db.Timestamp(3)`
+  - `createdBy`/`updatedBy`: `String?`, FK 없이 행위 계정(AdminAccount/PartnerUser/User 등)의 username 또는 id를 문자열로만 보관 — 어떤 계정 유형을 참조하는지 필드 옆 주석으로 명시한다.
+- **제외 대상**: 순수 다대다 매핑/정송(junction) 테이블 — 자체 식별 의미 없는 복합키(`@@id([a, b])`)를 쓰고, 체크리스트 저장 방식이 항상 "전체 삭제 후 재생성"이라 UPDATE를 쓰지 않는 테이블(예: `ProductDealerMapping`, `ProductCarModelMapping`, `ShopInstCategory`, `DealerShopMapping`, `BidPlanItem`, `BidRequestPosition` 등)과, 업로드/삭제만 있고 수정 UI가 없는 첨부·로그성 테이블(`ProductImage`, `ShopPhoto`, `ReservationPhoto`, `ReviewPhoto`, `ReservationCallLog`, `BidInvitation` 등)은 대상에서 제외한다 — `updatedAt`/`updatedBy`가 항상 `createdAt`/`createdBy`와 동일해져 의미가 없기 때문(2026-08-13 사용자 확정).
+- 스키마에 컬럼을 추가하는 것과 실제로 값을 채우는 것은 별개 작업이다. 컬럼만 먼저 추가했다면(예: 2026-08-13 일괄 추가), 이후 그 테이블의 create/update 서비스 로직을 건드릴 때 로그인 계정 정보(`CurrentAdmin`/`CurrentPartnerUser`/`CurrentUser` 등)를 실제로 `createdBy`/`updatedBy`에 기록하도록 이어서 반영한다.
 
 ### 마이그레이션 실행 방법
 - `DATABASE_URL`이 비대화형(non-interactive) 셸에서 접근하는 원격 DB라, `npx prisma migrate dev`가 확인 프롬프트(데이터 손실 경고 등)를 띄워야 하는 상황을 만나면 그대로 에러로 실패한다.

@@ -48,7 +48,8 @@ export class ShopScheduleController {
   @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '업체 휴무일 일괄 등록(휴무일 일괄 적용, 파트너 로그인 전용·본인 소속 업체만)',
+    summary:
+      '업체 휴무일 일괄 등록(휴무일 일괄 적용, 파트너 로그인 전용·본인 소속 업체만)',
   })
   async addHolidays(
     @CurrentPartnerUser() partnerUser: SafePartnerUser,
@@ -89,7 +90,8 @@ export class ShopScheduleController {
   @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '요일구분별 예약가능 시간대 템플릿 저장(전체 교체, 파트너 로그인 전용·본인 소속 업체만)',
+    summary:
+      '요일구분별 예약가능 시간대 템플릿 저장(전체 교체, 파트너 로그인 전용·본인 소속 업체만)',
   })
   async replaceTimeSlots(
     @CurrentPartnerUser() partnerUser: SafePartnerUser,
@@ -134,7 +136,8 @@ export class ShopScheduleController {
   @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '특정 일자·시간의 정원/잠금 오버라이드(파트너 로그인 전용·본인 소속 업체만)',
+    summary:
+      '특정 일자·시간의 정원/잠금 오버라이드(파트너 로그인 전용·본인 소속 업체만)',
   })
   async upsertDailySlot(
     @CurrentPartnerUser() partnerUser: SafePartnerUser,

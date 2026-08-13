@@ -30,13 +30,15 @@ export interface PackageJob {
   car: string | null;
   vin: string | null;
   progressStatus: string; // APPLIED/IN_PROGRESS/DONE -> CommonCodeDetail(code='RESERVATION_PROGRESS')
-  itemSummary: string;
+  packageName: string | null;
+  categories: string[]; // 시공 항목의 상품분류코드 목록(중복 제거) -> CommonCodeDetail(code='PROD_CAT'), 상세는 시공 상세 화면에서 확인
 }
 
 export interface PackageJobItem {
   name: string;
   spec: string | null;
   tag: "BASIC" | "OPTION";
+  prodCat: string | null; // 상품분류코드 -> CommonCodeDetail(code='PROD_CAT')
 }
 
 export interface PackageJobDetail {
@@ -47,10 +49,12 @@ export interface PackageJobDetail {
   phoneMasked: string;
   phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: string | null;
+  carPhoto: string | null; // 차종 대표사진(uploads/ 기준 상대경로) — 관리자가 등록해두지 않았으면 null
   vin: string | null;
   progressStatus: string;
   packageName: string | null;
   items: PackageJobItem[];
+  tintPositions: { position: string; level: string }[]; // 썬팅 부위별 농도(패키지에 썬팅이 포함된 경우만)
   completionMemo: string | null;
   completedAt: string | null;
   handoverConfirmedAt: string | null; // 고객이 인수확인했거나(또는 completedAt+3일 경과로 자동확정된) 시점

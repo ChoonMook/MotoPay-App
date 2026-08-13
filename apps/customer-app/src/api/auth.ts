@@ -34,8 +34,13 @@ export function login(username: string, password: string): Promise<LoginResult> 
   return apiRequest<LoginResult>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
 }
 
-export function signup(input: SignupInput): Promise<LoginResult> {
-  return apiRequest<LoginResult>("/auth/signup", { method: "POST", body: JSON.stringify(input) });
+export interface SignupResult extends LoginResult {
+  /** 이름+휴대폰이 일치하는 딜러 등록 신차 구매 정보가 있어 자동 매핑됐는지 — 가입완료 화면의 안내 배지 노출 여부에 사용 */
+  newCarPackageMapped: boolean;
+}
+
+export function signup(input: SignupInput): Promise<SignupResult> {
+  return apiRequest<SignupResult>("/auth/signup", { method: "POST", body: JSON.stringify(input) });
 }
 
 export async function checkUsernameAvailable(username: string): Promise<boolean> {

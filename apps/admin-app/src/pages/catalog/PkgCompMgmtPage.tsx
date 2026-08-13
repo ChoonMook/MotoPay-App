@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import { ChevronDown, ChevronUp, Plus, Search, Trash2 } from "lucide-react";
-import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import {
   getProductBundleItems,
   listProducts,
@@ -50,7 +50,7 @@ function formatWon(v: number): string {
 export default function PkgCompMgmtPage() {
   const [products, setProducts] = useState<ProductApi[]>([]);
   const [componentProducts, setComponentProducts] = useState<ProductApi[]>([]);
-  const [dealers, setDealers] = useState<CommonCodeDetailApi[]>([]);
+  const [dealers, setDealers] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -72,7 +72,7 @@ export default function PkgCompMgmtPage() {
     setLoadError("");
     listProducts({
       prodType: "PKG",
-      mappedDealerCode: dealerFilter === "all" ? undefined : dealerFilter,
+      mappedDealerCompanyId: dealerFilter === "all" ? undefined : Number(dealerFilter),
       keyword: kw || undefined,
     })
       .then(setProducts)
@@ -83,10 +83,10 @@ export default function PkgCompMgmtPage() {
   useEffect(() => loadProducts(appliedKeyword), [dealerFilter]);
 
   const loadComponentData = () => {
-    Promise.all([listProducts(), getGroup("DEALER")])
-      .then(([all, dealerGroup]) => {
+    Promise.all([listProducts(), listCompanies()])
+      .then(([all, companies]) => {
         setComponentProducts(all.filter((p) => p.prodType !== "PKG"));
-        setDealers([...dealerGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder));
+        setDealers(companies.filter((c) => c.coType === "DEALER" && c.useYn));
       })
       .catch((err) => setGlobalError(err instanceof Error ? err.message : "기초 데이터를 불러오지 못했습니다."));
   };
@@ -206,8 +206,8 @@ export default function PkgCompMgmtPage() {
             <select value={dealerFilter} onChange={(e) => setDealerFilter(e.target.value)} className={`${inputClass} w-40`}>
               <option value="all">전체</option>
               {dealers.map((d) => (
-                <option key={d.detailCode} value={d.detailCode}>
-                  {d.detailName}
+                <option key={d.id} value={d.id}>
+                  {d.name}
                 </option>
               ))}
             </select>

@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
+import { getCurrentPosition } from "../../lib/geolocation";
 import { API_BASE_URL } from "../../api/config";
 import { listMyCars, type MyCarApi } from "../../api/cars";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { getPackageDetail, type PackageDetailApi } from "../../api/products";
-import { listShops, type ShopListItemApi } from "../../api/shops";
+import { listShops, listShopReviews, type ShopListItemApi, type ShopReviewApi } from "../../api/shops";
 import { listShopHolidays, getDailySchedule, type DailyScheduleApi } from "../../api/shopSchedule";
 import {
   createReservation,
@@ -16,8 +17,10 @@ import {
   rescheduleReservation,
   getHandoverDetail,
   confirmHandover,
+  getPackageSelection,
   type ReservationApi,
   type HandoverDetail,
+  type PackageSelectionDetail,
 } from "../../api/reservations";
 import PkgScreen from "./PkgScreen";
 import MyPkgCfmScreen, { type PkgGroup } from "./MyPkgCfmScreen";
@@ -29,11 +32,18 @@ import RsvCfmScreen from "./RsvCfmScreen";
 import PosLvlSelScreen from "../common/PosLvlSelScreen";
 import CstDoneHandoverScreen, { type VehicleSummary } from "../common/CstDoneHandoverScreen";
 import ReviewWriteScreen from "../common/ReviewWriteScreen";
-import CoDtlProfScreen from "../common/CoDtlProfScreen";
+import CoDtlProfScreen, { type CoDtlReview } from "../common/CoDtlProfScreen";
 import BookingDtlScreen, { type BookingTimelineStep } from "../common/BookingDtlScreen";
 import BookingReschedScreen from "../common/BookingReschedScreen";
 import BookingCancelScreen, { CANCEL_REASONS } from "../common/BookingCancelScreen";
-import { TINT_POSITIONS, type TintLevel, type HandoverStatus } from "../common/commonTypes";
+import {
+  TINT_POSITIONS,
+  TINT_POSITION_TO_CODE,
+  TINT_POSITION_LABELS,
+  type TintLevel,
+  type HandoverStatus,
+  type PackageSelectionItemView,
+} from "../common/commonTypes";
 import { type NcpScreen, type NcpSheet, type PayMethodKey } from "./ncpTypes";
 import { nfmt } from "./ncpFormat";
 
@@ -49,20 +59,34 @@ function formatVisitLabel(dateKey: string, timeLabel: string): string {
   return `${y}.${pad2(m)}.${pad2(d)}(${wd})${timeLabel ? " " + timeLabel : ""}`;
 }
 
-// 백엔드에 리뷰·평점 모델이 아직 없어 매장명 기준 임시 목업값을 그대로 사용 — 실제 리뷰 API가 생기면 교체
-const SHOP_MOCK_STATS: Record<string, { official: boolean; rating: string; reviews: string }> = {
-  "강남 오토바디": { official: true, rating: "4.9", reviews: "1,284" },
-  "역삼 카케어": { official: false, rating: "4.8", reviews: "926" },
-  "서초 프리미엄 디테일": { official: false, rating: "4.7", reviews: "641" },
-};
-const DEFAULT_SHOP_STATS = { official: false, rating: "4.8", reviews: "-" };
+// 거리 라벨 — 1km 미만은 m 단위, 그 이상은 소수점 1자리 km 단위. 위치 정보를 못 구했거나 업체 좌표가 없으면 "-"
+function formatDistance(distanceKm: number | null): string {
+  if (distanceKm === null) return "-";
+  return distanceKm < 1 ? `${Math.round(distanceKm * 1000)}m` : `${distanceKm.toFixed(1)}km`;
+}
+
+// 예약 확정/일정 변경 직전 방어 로직 — 화면에 떠 있는 daySlots는 사용자가 달력을 연 시점의 스냅샷이라 그 사이
+// 다른 고객이 같은 시간대를 채웠거나 업체가 휴무·잠금 처리했을 수 있다. 저장 API를 호출하기 직전 이 함수로 방금
+// 새로 받아온 일정을 검사해 막힌 상태면 저장을 시도하지도 않고 명확한 사유를 사용자에게 알려준다(백엔드도 동일한
+// 조건을 다시 검증하지만, 그건 이미 저장을 시도한 뒤의 반응적 거부라 이 사전 체크가 더 빠르고 분명하다)
+function findBookableSlotError(schedule: DailyScheduleApi, time: string): string | null {
+  if (schedule.isHoliday) return "선택하신 날짜가 휴무일로 바뀌었어요. 다른 날짜를 선택해주세요.";
+  const slot = schedule.slots.find((s) => s.time === time);
+  if (!slot || slot.capacity === null) return "선택하신 시간은 예약 가능한 시간대가 아니에요. 다른 시간을 선택해주세요.";
+  if (slot.isLocked) return "선택하신 시간이 마감됐어요. 다른 시간을 선택해주세요.";
+  if (slot.reservedCount >= slot.capacity) return "선택하신 시간의 예약 가능 인원이 방금 마감됐어요. 다른 시간을 선택해주세요.";
+  return null;
+}
 
 interface NcpkFlowProps {
   onExit: () => void;
   initialScreen?: NcpScreen;
+  /** 홈 화면 카드에서 특정 예약을 탭하고 들어온 경우의 그 예약번호 — bookingdtl/handover 진입 시 이 값으로 정확히
+   * 그 예약을 찾아 보여준다. 없으면(신차패키지 메뉴로 직접 진입 등) 서버에 남아있는 최근 확정 예약으로 대체 복원한다 */
+  targetReservationNo?: string;
 }
 
-export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowProps) {
+export default function NcpkFlow({ onExit, initialScreen = "main", targetReservationNo }: NcpkFlowProps) {
   const [screen, setScreen] = useState<NcpScreen>(initialScreen);
   const [sheet, setSheet] = useState<NcpSheet>(null);
 
@@ -73,6 +97,8 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
   const [carInstOptions, setCarInstOptions] = useState<CommonCodeDetailApi[]>([]);
   const [shopsApi, setShopsApi] = useState<ShopListItemApi[]>([]);
   const [reservationsApi, setReservationsApi] = useState<ReservationApi[]>([]);
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [shopReviews, setShopReviews] = useState<ShopReviewApi[]>([]);
 
   const [tintLevels, setTintLevels] = useState<Record<string, TintLevel>>({}); // 기본값: 농도 미선택
   const [tintBulk, setTintBulk] = useState(false); // 기본값: 전체 일괄 적용 꺼짐
@@ -116,6 +142,9 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
   const [couponSel, setCouponSel] = useState<string | null>(null);
   const [handoverDetail, setHandoverDetail] = useState<HandoverDetail | null>(null);
   const [loadingHandover, setLoadingHandover] = useState(false);
+  // CU-NCPK-09/CU-RSVC-20 예약확정·예약상세 — 예약확정 시점에 저장된 실제 선택 내역(가격 포함). pkgSel/addOpts/tintLevels는
+  // 화면을 새로 마운트할 때마다 기본값으로 초기화돼(레거시 버그) 결제 후 조회 화면은 반드시 이 백엔드 값을 써야 한다
+  const [packageSelection, setPackageSelection] = useState<PackageSelectionDetail | null>(null);
   const [confirmingHandover, setConfirmingHandover] = useState(false);
   const [reviewStar, setReviewStar] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -123,26 +152,32 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
 
   const { toast, showToast } = useToast();
 
-  // CU-NCPK-05/06 시공업체 목록·프로필 — 리뷰·평점은 백엔드에 데이터가 없어 매장명 기준 임시 목업값을 덧씌움.
-  // 거리(distLabel)는 이번 연계 범위에서 위치정보 연동을 하지 않아 항상 "-"
-  const shopViews: ShopView[] = shopsApi.map((s) => {
-    const stats = SHOP_MOCK_STATS[s.name] ?? DEFAULT_SHOP_STATS;
-    return {
-      shopCode: s.shopCode,
-      name: s.name,
-      official: stats.official,
-      rating: stats.rating,
-      reviews: stats.reviews,
-      distLabel: "-",
-      categories: s.categories.map((code) => carInstOptions.find((c) => c.detailCode === code)?.detailName ?? code),
-      intro: s.intro,
-      greeting: s.greeting,
-      address: [s.address, s.addressDetail].filter(Boolean).join(" · ") || null,
-      photoUrl: s.mainPhoto ? `${API_BASE_URL}/uploads/${s.mainPhoto.photoPath}` : null,
-    };
-  });
+  // CU-NCPK-05/06 시공업체 목록·프로필 — 평점·후기수·거리 모두 GET /shops 응답의 실제 값을 사용.
+  // official("공식") 배지는 백엔드에 대응하는 데이터가 아직 없어 항상 false(비노출)
+  const shopViews: ShopView[] = shopsApi.map((s) => ({
+    shopCode: s.shopCode,
+    name: s.name,
+    official: false,
+    rating: s.avgRating !== null ? s.avgRating.toFixed(1) : "-",
+    reviews: nfmt(s.reviewCount),
+    distLabel: formatDistance(s.distanceKm),
+    categories: s.categories.map((code) => carInstOptions.find((c) => c.detailCode === code)?.detailName ?? code),
+    intro: s.intro,
+    greeting: s.greeting,
+    address: [s.address, s.addressDetail].filter(Boolean).join(" · ") || null,
+    lat: s.latitude,
+    lng: s.longitude,
+    photoUrl: s.mainPhoto ? `${API_BASE_URL}/uploads/${s.mainPhoto.photoPath}` : null,
+  }));
   const selShopView = shopViews[shopIndex];
   const selShopName = selShopView?.name ?? "";
+
+  // CU-NCPK-06 업체 프로필의 후기 목록 — 별점(숫자)을 화면 표시용 별 문자열로 변환
+  const shopReviewViews: CoDtlReview[] = shopReviews.map((r) => ({
+    name: r.reviewerName,
+    stars: "★".repeat(r.rating),
+    text: r.content,
+  }));
 
   // CU-NCPK-02 차량정보 카드 — 마이페이지와 동일하게 대표차량(없으면 첫 차량) 기준으로 표시
   const defaultCarApi = carsApi.find((c) => c.isDefault) ?? carsApi[0];
@@ -226,10 +261,46 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
   ];
   const payTotal = payItems.reduce((sum, p) => sum + p.price, 0);
 
+  // 예약확정(POST /reservations) 시 저장할 최종 선택 항목 전체 — 분류별로 선택된 구성상품(기본상품이면 가격 0,
+  // 업그레이드옵션이면 해당 가격) 1건씩 + 체크한 추가옵션들, 각 항목의 실제 적용 가격을 함께 전달
+  const selectedItems = [
+    ...pkgGroups.flatMap((g) => {
+      const code = pkgSel[g.prodCat];
+      if (!code) return [];
+      const upgrade = g.upgradeOptions.find((o) => o.code === code);
+      return [{ componentCode: code, price: upgrade?.price ?? 0 }];
+    }),
+    ...addOptions.filter((o) => addOpts[o.code]).map((o) => ({ componentCode: o.code, price: o.price })),
+  ];
+
+  // 예약확정 시 저장할 썬팅 부위별 농도 — 시공 안 함으로 끈 부위는 제외, 코드값(BID_TINT_POSITION)으로 변환해 전달
+  const tintPositionsPayload = tintActivePositions
+    .filter((p) => !!tintLevels[p])
+    .map((p) => ({ position: TINT_POSITION_TO_CODE[p] ?? p, level: tintLevels[p] as string }));
+
   // CU-NCPK-09 예약 확정 요약 라벨
   const itemSummaryLabel =
     pkgGroups.length === 0 ? "시공 항목 없음" : pkgGroups.length === 1 ? pkgGroups[0].name : `${pkgGroups[0].name} 외 ${pkgGroups.length - 1}건`;
   const paidAmountLabel = payTotal > 0 ? `${nfmt(payTotal)}원 결제완료` : "결제 금액 없음";
+
+  // CU-NCPK-09/CU-RSVC-20 예약확정·예약상세 상세 표시 — pkgSel/addOpts 등 라이브 상태는 화면 재마운트 때마다
+  // 기본값으로 리셋되므로(위 payItems/paidAmountLabel과 달리) 예약확정 시점에 백엔드에 저장해둔 실제 선택 내역을 사용
+  const confirmedTintDetail =
+    packageSelection && packageSelection.tintPositions.length > 0
+      ? packageSelection.tintPositions.map((t) => `${TINT_POSITION_LABELS[t.position] ?? t.position} ${t.level}%`).join(" · ")
+      : undefined;
+  const confirmedItems: PackageSelectionItemView[] = (packageSelection?.items ?? []).map((it) => ({
+    category: it.prodCat ? prodCatOptions.find((c) => c.detailCode === it.prodCat)?.detailName ?? it.prodCat : it.name,
+    product: it.name,
+    price: it.price,
+    tintDetail: it.prodCat === "TINT" ? confirmedTintDetail : undefined,
+  }));
+  const confirmedPriceLabel = packageSelection
+    ? (() => {
+        const total = packageSelection.items.reduce((sum, it) => sum + it.price, 0);
+        return total > 0 ? `${nfmt(total)}원 결제완료` : "결제 금액 없음";
+      })()
+    : paidAmountLabel; // 조회 전(막 결제 직후 등)에는 라이브 계산값으로 잠깐 대체 — 이 시점엔 아직 정확함
 
   // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 실제 완료 등록된 차량·구성상품·사진으로 화면 구성
   const handover: HandoverStatus = handoverDetail?.handoverStatus === "confirmed" ? "done" : "pending";
@@ -249,18 +320,19 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
   // CU-NCPK-10/CU-RSVC-20 예약 상세 — 파트너앱에서 실제로 기록하는 진행상태(progressStatus)를 기준으로
   // 완료 여부를 판단해 인수확인 단계로 안내할지, 예약상세(진행현황)로 안내할지 결정
   const todayKey = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-  const activeReservationProgress =
-    reservationsApi.find((r) => r.reservationNo === reservationNo)?.progressStatus ?? "APPLIED";
+  const activeReservation = reservationsApi.find((r) => r.reservationNo === reservationNo);
+  const activeReservationProgress = activeReservation?.progressStatus ?? "APPLIED";
   const bookingDone = activeReservationProgress === "DONE";
   const hasBooking = !!reservationNo;
+  // 예약 상세 화면 전용 로딩 게이트 — 업체 인덱스 동기화(위 useEffect)나 packageDetail 조회가 아직 안 끝난
+  // 상태에서 selShopName·itemSummaryLabel이 임시값으로 잠깐 보였다가 실제 값으로 바뀌는 깜빡임을 막기 위함
+  const bookingDtlLoading =
+    hasBooking &&
+    (!activeReservation || selShopView?.shopCode !== activeReservation.shopCode || !packageDetail || !packageSelection);
   // 시공 시작(IN_PROGRESS) 이후에는 일정변경·예약취소 모두 불가 — 백엔드 cancel()/reschedule()과 동일 기준
   const bookingCancellable = hasBooking && !bookingCancelled && activeReservationProgress === "APPLIED";
   const bookingVisitLabel = reschedDay ? `${reschedCalY}.${pad2(reschedCalM)}.${pad2(reschedDay)} ${reschedTime}` : formatVisitLabel(sel, time);
-  const bookingRows: Array<[string, string]> = [
-    ["방문 일시", bookingVisitLabel],
-    ["시공 항목", itemSummaryLabel],
-    ["업그레이드 차액", paidAmountLabel],
-  ];
+  const bookingRows: Array<[string, string]> = [["방문 일시", bookingVisitLabel]];
   const bookingStages = bookingCancelled ? ["선정완료", "시공예정", "취소됨"] : ["선정완료", "시공예정", "시공중", "시공완료"];
   // 0-indexed: cancelled면 기존과 동일하게 "시공예정"에 고정, 그 외엔 실제 progressStatus를 그대로 반영
   const bookingCur = bookingCancelled
@@ -305,32 +377,67 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
         setCarInstOptions(carInsts);
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "차량 코드 정보를 불러오지 못했어요", "danger"));
-    listShops()
-      .then(setShopsApi)
-      .catch((err) => showToast(err instanceof Error ? err.message : "시공업체 정보를 불러오지 못했어요", "danger"));
     listMyReservations()
       .then(setReservationsApi)
       .catch((err) => showToast(err instanceof Error ? err.message : "예약 정보를 불러오지 못했어요", "danger"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // CU-NCPK-05 시공업체 선택 화면의 거리순 정렬용 — 권한 거부·미지원이어도 흐름은 그대로 진행(거리 없이 표시)
+  useEffect(() => {
+    getCurrentPosition().then(setMyLocation);
+  }, []);
+
+  // CU-NCPK-05 시공업체 선택 — 대표차량(신차매핑)의 딜러사가 DealerShopMapping(AD-NCPK-04)으로 지정한
+  // 업체만 노출해야 해서, carsApi가 로드된 뒤(대표차량의 dealerCompanyId를 알 수 있을 때) 조회한다.
+  // myLocation은 비동기로 뒤늦게 채워질 수 있어(위치 권한 프롬프트 대기) 의존성에 넣어 확보되는 즉시 거리순으로 재조회
+  useEffect(() => {
+    const dealerCompanyId = (carsApi.find((c) => c.isDefault) ?? carsApi[0])?.dealerCompanyId ?? undefined;
+    listShops({ dealerCompanyId, lat: myLocation?.lat, lng: myLocation?.lng })
+      .then(setShopsApi)
+      .catch((err) => showToast(err instanceof Error ? err.message : "시공업체 정보를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carsApi, myLocation]);
+
   // 홈 화면 카드 등 다른 진입점에서 바로 예약상세/인수확인 화면으로 들어온 경우, 이번 세션에서 새로
-  // 결제까지 마친 예약이 없으면(reservationNo 미설정) 서버에 남아있는 최근 확정 예약으로 상태를 복원
+  // 결제까지 마친 예약이 없으면(reservationNo 미설정) 서버에 남아있는 예약으로 상태를 복원.
+  // targetReservationNo가 있으면(홈 화면 카드를 탭한 경우) 그 예약을 정확히 찾아 쓰고, 없을 때만 "가장 최근
+  // 확정 예약"으로 추측한다 — 이 추측 로직은 HomeScreen.tsx가 카드에 띄우는 예약을 고르는 기준(mappedAt 이후
+  // 생성분만 대상)과 반드시 동일해야 한다. 기준이 어긋나면 홈 카드에는 A 업체가 보이는데 상세 화면은 다른 예약을
+  // 추측해 B 업체를 보여주는 불일치가 생긴다(2026-08-13 실제 발생 확인)
   useEffect(() => {
     if (initialScreen !== "bookingdtl" && initialScreen !== "handover") return;
     if (reservationNo) return;
-    const activePkgRes = reservationsApi
-      .filter((r) => r.reservationType === "PKG" && r.status === "CONFIRMED")
-      .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+    const mappedAt = defaultCarApi?.mappedAt ? new Date(defaultCarApi.mappedAt).getTime() : null;
+    const activePkgRes = targetReservationNo
+      ? reservationsApi.find((r) => r.reservationNo === targetReservationNo)
+      : reservationsApi
+          .filter(
+            (r) =>
+              r.reservationType === "PKG" &&
+              r.status === "CONFIRMED" &&
+              (mappedAt === null || new Date(r.createdAt).getTime() >= mappedAt),
+          )
+          .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
     if (!activePkgRes) return;
     setReservationNo(activePkgRes.reservationNo);
     setReservationId(activePkgRes.id);
     setSel(activePkgRes.date);
     setTime(activePkgRes.time);
-    const shopIdx = shopsApi.findIndex((s) => s.shopCode === activePkgRes.shopCode);
-    if (shopIdx >= 0) setShopIndex(shopIdx);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservationsApi, shopsApi]);
+  }, [reservationsApi, targetReservationNo, defaultCarApi?.mappedAt]);
+
+  // 위 복원 로직과 별도 effect로 분리 — shopsApi는 carsApi 로드 → 위치 취득(최대 5초 대기) → 이후에야 채워지는
+  // 체인이라, reservationsApi가 먼저 응답해 위 effect가 shopsApi=[] 상태로 먼저 실행되는 경우가 흔하다. 그 경우
+  // 위 effect에서 findIndex가 실패해도 reservationNo가 이미 설정돼 있어 재실행되지 않으므로, shopIndex 동기화만
+  // shopsApi가 바뀔 때마다 독립적으로 다시 계산해 shopsApi가 늦게 도착해도 정확한 업체로 맞춰지게 한다
+  useEffect(() => {
+    if (!reservationNo) return;
+    const shopCode = reservationsApi.find((r) => r.reservationNo === reservationNo)?.shopCode;
+    if (!shopCode) return;
+    const shopIdx = shopsApi.findIndex((s) => s.shopCode === shopCode);
+    if (shopIdx >= 0) setShopIndex(shopIdx);
+  }, [reservationNo, reservationsApi, shopsApi]);
 
   // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 인수확인 화면에 들어올 때마다 최신 상태(사진·인수확인 여부)를 다시 조회
   useEffect(() => {
@@ -342,6 +449,25 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
       .finally(() => setLoadingHandover(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, reservationId]);
+
+  // CU-NCPK-09/CU-RSVC-20 예약확정·예약상세 화면에 들어올 때마다 예약확정 시점에 저장된 실제 선택 내역을 다시 조회
+  useEffect(() => {
+    if ((screen !== "confirm" && screen !== "bookingdtl") || reservationId === null) return;
+    getPackageSelection(reservationId)
+      .then(setPackageSelection)
+      .catch(() => setPackageSelection(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, reservationId]);
+
+  // CU-NCPK-06 업체 프로필 — 프로필 화면에 들어갈 때만 그 업체의 후기 목록을 조회(목록 화면에선 평점·후기수만 필요)
+  useEffect(() => {
+    const shopCode = selShopView?.shopCode;
+    if (screen !== "copro" || !shopCode) return;
+    listShopReviews(shopCode)
+      .then(setShopReviews)
+      .catch((err) => showToast(err instanceof Error ? err.message : "후기를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, selShopView?.shopCode]);
 
   useEffect(() => {
     const packageCode = (carsApi.find((c) => c.isDefault) ?? carsApi[0])?.packageCode;
@@ -363,60 +489,77 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageDetail]);
 
-  // CU-NCPK-07 달력에 보이는 달의 업체 휴무일 조회 — 업체·연·월이 바뀔 때마다 갱신
+  // CU-NCPK-07 달력에 보이는 달의 업체 휴무일 조회 — 업체·연·월이 바뀔 때마다 갱신.
+  // 함수로 분리해둬 "이 업체로 진행하기" 클릭 시(handleProceedToSched)에도 같은 업체·월이어도 강제로 다시 불러올 수 있게 함
+  const loadShopHolidays = (shopCode: string, year: number, month: number) => {
+    listShopHolidays(shopCode, year, month)
+      .then(setShopHolidays)
+      .catch((err) => showToast(err instanceof Error ? err.message : "휴무일 정보를 불러오지 못했어요", "danger"));
+  };
+
   useEffect(() => {
     const shopCode = selShopView?.shopCode;
     if (!shopCode) {
       setShopHolidays([]);
       return;
     }
-    listShopHolidays(shopCode, calY, calM)
-      .then(setShopHolidays)
-      .catch((err) => showToast(err instanceof Error ? err.message : "휴무일 정보를 불러오지 못했어요", "danger"));
+    loadShopHolidays(shopCode, calY, calM);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selShopView?.shopCode, calY, calM]);
 
-  // CU-NCPK-07 선택한 날짜의 예약 가능 시간대 조회
+  // CU-NCPK-07 선택한 날짜의 예약 가능 시간대 조회 — 위와 동일한 이유로 함수로 분리
+  const loadDaySchedule = (shopCode: string, dateKey: string) => {
+    setScheduleLoading(true);
+    getDailySchedule(shopCode, dateKey)
+      .then(setDaySchedule)
+      .catch((err) => showToast(err instanceof Error ? err.message : "예약 가능 시간을 불러오지 못했어요", "danger"))
+      .finally(() => setScheduleLoading(false));
+  };
+
   useEffect(() => {
     const shopCode = selShopView?.shopCode;
     if (!shopCode || !sel) {
       setDaySchedule(null);
       return;
     }
-    setScheduleLoading(true);
-    getDailySchedule(shopCode, sel)
-      .then(setDaySchedule)
-      .catch((err) => showToast(err instanceof Error ? err.message : "예약 가능 시간을 불러오지 못했어요", "danger"))
-      .finally(() => setScheduleLoading(false));
+    loadDaySchedule(shopCode, sel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selShopView?.shopCode, sel]);
 
-  // CU-RSVC-21 일정 변경 — 달력에 보이는 달의 휴무일 조회 — 업체·연·월이 바뀔 때마다 갱신
+  // CU-RSVC-21 일정 변경 — 달력에 보이는 달의 휴무일 조회 — 업체·연·월이 바뀔 때마다 갱신.
+  // 위 CU-NCPK-07과 동일한 이유로 함수 분리 — "일정 변경" 클릭 시(handleOpenResched)에도 명시적으로 다시 불러옴
+  const loadReschedHolidays = (shopCode: string, year: number, month: number) => {
+    listShopHolidays(shopCode, year, month)
+      .then(setReschedHolidays)
+      .catch(() => {});
+  };
+
   useEffect(() => {
     const shopCode = selShopView?.shopCode;
     if (!shopCode) {
       setReschedHolidays([]);
       return;
     }
-    listShopHolidays(shopCode, reschedCalY, reschedCalM)
-      .then(setReschedHolidays)
-      .catch(() => {});
+    loadReschedHolidays(shopCode, reschedCalY, reschedCalM);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selShopView?.shopCode, reschedCalY, reschedCalM]);
 
   // CU-RSVC-21 일정 변경 — 새로 고른 날짜의 예약 가능 시간대 조회
+  const loadReschedDaySchedule = (shopCode: string, dateKey: string) => {
+    setReschedScheduleLoading(true);
+    getDailySchedule(shopCode, dateKey)
+      .then(setReschedDaySchedule)
+      .catch((err) => showToast(err instanceof Error ? err.message : "예약 가능 시간을 불러오지 못했어요", "danger"))
+      .finally(() => setReschedScheduleLoading(false));
+  };
+
   useEffect(() => {
     const shopCode = selShopView?.shopCode;
     if (!shopCode || !reschedDay) {
       setReschedDaySchedule(null);
       return;
     }
-    const dateKey = `${reschedCalY}-${pad2(reschedCalM)}-${pad2(reschedDay)}`;
-    setReschedScheduleLoading(true);
-    getDailySchedule(shopCode, dateKey)
-      .then(setReschedDaySchedule)
-      .catch((err) => showToast(err instanceof Error ? err.message : "예약 가능 시간을 불러오지 못했어요", "danger"))
-      .finally(() => setReschedScheduleLoading(false));
+    loadReschedDaySchedule(shopCode, `${reschedCalY}-${pad2(reschedCalM)}-${pad2(reschedDay)}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selShopView?.shopCode, reschedDay]);
 
@@ -511,7 +654,16 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
       {screen === "shops" && (
         <PtnSelScreen
           onBack={() => setScreen("pkg")}
-          onProceed={() => setScreen("sched")}
+          onProceed={() => {
+            // 앞서 이 업체를 이미 조회해둔 상태(동일 shopCode·연월)였다면 useEffect 의존성이 안 바뀌어 재조회가
+            // 안 일어나므로, 예약 직전 시점의 최신 휴무일·예약가능시간을 보장하기 위해 여기서 명시적으로 다시 불러옴
+            const shopCode = selShopView?.shopCode;
+            if (shopCode) {
+              loadShopHolidays(shopCode, calY, calM);
+              if (sel) loadDaySchedule(shopCode, sel);
+            }
+            setScreen("sched");
+          }}
           shops={shopViews}
           shopIndex={shopIndex}
           onSelectShop={setShopIndex}
@@ -563,7 +715,24 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
             if (!shopCode || !sel || !time) return;
             setPayProcessing(true);
             try {
-              const reservation = await createReservation({ shopCode, date: sel, time, reservationType: "PKG" });
+              // 방어 로직: 결제(예약 확정) 직전 해당 일자·시간·예약가능대수를 최신 상태로 다시 확인
+              const freshSchedule = await getDailySchedule(shopCode, sel);
+              setDaySchedule(freshSchedule);
+              const slotError = findBookableSlotError(freshSchedule, time);
+              if (slotError) {
+                showToast(slotError, "danger");
+                setTime("");
+                setScreen("sched");
+                return;
+              }
+              const reservation = await createReservation({
+                shopCode,
+                date: sel,
+                time,
+                reservationType: "PKG",
+                selectedItems,
+                tintPositions: tintPositionsPayload,
+              });
               setReservationNo(reservation.reservationNo);
               setReservationId(reservation.id);
               setScreen("confirm");
@@ -606,8 +775,8 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
           }}
           shopName={selShopName}
           visitLabel={visitLabel}
-          itemSummaryLabel={itemSummaryLabel}
-          paidAmountLabel={paidAmountLabel}
+          items={confirmedItems}
+          paidAmountLabel={confirmedPriceLabel}
           reservationNo={reservationNo ?? undefined}
         />
       )}
@@ -650,12 +819,24 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
           shopName={selShopName}
           shopMeta="신차패키지 시공 예약"
           bookingRows={bookingRows}
+          items={confirmedItems}
+          priceLabel={confirmedPriceLabel}
           timeline={bookingTimeline}
           cancelled={bookingCancelled}
           cancelReasonLabel={cancelReasonLabel}
           cancelRefundLabel={cancelRefundLabel}
           cancellable={bookingCancellable}
-          onOpenResched={() => setScreen("resched")}
+          loading={bookingDtlLoading}
+          onOpenResched={() => {
+            // "이 업체로 진행하기"와 동일한 이유 — 의존성(shopCode·연월)이 안 바뀌었어도 일정 변경 화면을 열 때마다
+            // 최신 휴무일·예약가능시간을 다시 불러옴
+            const shopCode = selShopView?.shopCode;
+            if (shopCode) {
+              loadReschedHolidays(shopCode, reschedCalY, reschedCalM);
+              if (reschedDay) loadReschedDaySchedule(shopCode, `${reschedCalY}-${pad2(reschedCalM)}-${pad2(reschedDay)}`);
+            }
+            setScreen("resched");
+          }}
           onOpenCancel={() => setScreen("cancel")}
         />
       )}
@@ -665,9 +846,21 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
           onBack={() => setScreen("bookingdtl")}
           onConfirm={async () => {
             if (!reservationId || !reschedDay || !reschedTime) return;
+            const shopCode = selShopView?.shopCode;
             const dateKey = `${reschedCalY}-${pad2(reschedCalM)}-${pad2(reschedDay)}`;
             setReschedSubmitting(true);
             try {
+              // 방어 로직: 일정 변경 저장 직전 해당 일자·시간·예약가능대수를 최신 상태로 다시 확인
+              if (shopCode) {
+                const freshSchedule = await getDailySchedule(shopCode, dateKey);
+                setReschedDaySchedule(freshSchedule);
+                const slotError = findBookableSlotError(freshSchedule, reschedTime);
+                if (slotError) {
+                  showToast(slotError, "danger");
+                  setReschedTime("");
+                  return;
+                }
+              }
               const updated = await rescheduleReservation(reservationId, dateKey, reschedTime);
               setSel(updated.date);
               setTime(updated.time);
@@ -761,6 +954,9 @@ export default function NcpkFlow({ onExit, initialScreen = "main" }: NcpkFlowPro
           intro={selShopView.intro ?? undefined}
           greeting={selShopView.greeting ?? undefined}
           address={selShopView.address ?? undefined}
+          lat={selShopView.lat}
+          lng={selShopView.lng}
+          reviews={shopReviewViews}
           photoUrl={selShopView.photoUrl}
           onBack={() => setScreen("shops")}
         />

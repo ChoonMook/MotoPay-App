@@ -1,4 +1,4 @@
-// GET /shops(목록)/GET /shops/:shopCode(상세) — 로그인 불필요, 시공업체 조회용
+// GET /shops(목록)/GET /shops/:shopCode(상세)/GET /shops/:shopCode/reviews(후기 목록) — 로그인 불필요, 시공업체 조회용
 // GET·PATCH /shops/me, POST·DELETE /shops/me/photos — 파트너 로그인 계정 전용(반드시 :shopCode 라우트보다 먼저 선언)
 import {
   Body,
@@ -28,10 +28,11 @@ export class ShopsController {
   @Get()
   @ApiOperation({
     summary:
-      '시공업체 목록 조회 — instCodes(콤마구분)로 시공가능 카테고리를 모두 지원하는 업체만 필터, lat/lng 지정 시 거리순 정렬',
+      '시공업체 목록 조회 — instCodes(콤마구분)로 시공가능 카테고리를 모두 지원하는 업체만 필터, dealerCompanyId 지정 시 그 딜러사가 매핑한 업체만(AD-NCPK-04), lat/lng 지정 시 거리순 정렬',
   })
   list(
     @Query('instCodes') instCodes?: string,
+    @Query('dealerCompanyId') dealerCompanyId?: string,
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
   ) {
@@ -40,6 +41,8 @@ export class ShopsController {
 
     return this.shopsService.list({
       instCodes: instCodes ? instCodes.split(',').filter(Boolean) : undefined,
+      dealerCompanyId:
+        dealerCompanyId !== undefined ? Number(dealerCompanyId) : undefined,
       lat: latNum !== undefined && Number.isFinite(latNum) ? latNum : undefined,
       lng: lngNum !== undefined && Number.isFinite(lngNum) ? lngNum : undefined,
     });
@@ -94,8 +97,18 @@ export class ShopsController {
   }
 
   @Get(':shopCode')
-  @ApiOperation({ summary: '시공업체 상세 조회 — 사진·시공가능 카테고리 포함' })
+  @ApiOperation({
+    summary: '시공업체 상세 조회 — 사진·시공가능 카테고리·평균평점·후기수 포함',
+  })
   getDetail(@Param('shopCode') shopCode: string) {
     return this.shopsService.getDetail(shopCode);
+  }
+
+  @Get(':shopCode/reviews')
+  @ApiOperation({
+    summary: '시공업체가 받은 후기 목록 조회(최신순) — 로그인 불필요',
+  })
+  listReviews(@Param('shopCode') shopCode: string) {
+    return this.shopsService.listReviews(shopCode);
   }
 }

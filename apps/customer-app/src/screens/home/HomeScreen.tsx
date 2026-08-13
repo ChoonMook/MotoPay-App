@@ -29,6 +29,7 @@ import {
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 interface NcpkBooking {
+  reservationNo: string;
   shopName: string;
   dateLabel: string;
   /** 파트너앱에서 실제로 기록하는 진행상태(progressStatus)가 DONE이면 true — 인수확인 단계로 안내 */
@@ -101,8 +102,8 @@ const NAV_ITEMS = [
 interface HomeScreenProps {
   name: string;
   onOpenNcpk: () => void;
-  onOpenNcpkHandover: () => void;
-  onOpenNcpkBookingDtl: () => void;
+  onOpenNcpkHandover: (reservationNo: string) => void;
+  onOpenNcpkBookingDtl: (reservationNo: string) => void;
   onOpenRsv: (filter?: ReqStatusFilter) => void;
   onOpenPoint: () => void;
   onOpenShop: () => void;
@@ -171,6 +172,7 @@ export default function HomeScreen({
             const [y, m, d] = activePkgRes.date.split("-").map(Number);
             const wd = WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()];
             setNcpkBooking({
+              reservationNo: activePkgRes.reservationNo,
               shopName: shops.find((s) => s.shopCode === activePkgRes.shopCode)?.name ?? "선정 업체",
               dateLabel: `${activePkgRes.date.replaceAll("-", ".")}(${wd}) ${activePkgRes.time}`,
               done: activePkgRes.progressStatus === "DONE",
@@ -320,14 +322,14 @@ export default function HomeScreen({
                 차량 인수 후 7일 이내 인수 확인이 필요해요
               </div>
               <div className="mt-3.5">
-                <Button size="lg" onClick={onOpenNcpkHandover}>
+                <Button size="lg" onClick={() => onOpenNcpkHandover(ncpkBooking.reservationNo)}>
                   인수 확인하기
                 </Button>
               </div>
             </div>
           ) : (
             <div
-              onClick={onOpenNcpkBookingDtl}
+              onClick={() => onOpenNcpkBookingDtl(ncpkBooking.reservationNo)}
               className="mt-3 cursor-pointer rounded-2xl border border-brand bg-brand-subtle p-[18px]"
               style={{ animation: "mp-fade .3s ease" }}
             >
@@ -339,7 +341,7 @@ export default function HomeScreen({
                 {ncpkBooking.shopName} · {ncpkBooking.dateLabel}
               </div>
               <div className="mt-3.5">
-                <Button size="lg" variant="secondary" onClick={onOpenNcpkBookingDtl}>
+                <Button size="lg" variant="secondary" onClick={() => onOpenNcpkBookingDtl(ncpkBooking.reservationNo)}>
                   진행 상황 확인하기
                 </Button>
               </div>

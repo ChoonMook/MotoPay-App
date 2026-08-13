@@ -78,7 +78,10 @@ export class CreateBidRequestDto {
   @IsIn(['GENERAL', 'EXPERT'])
   reqType: 'GENERAL' | 'EXPERT';
 
-  @ApiProperty({ example: '2026-08-10', description: '희망 시공일(YYYY-MM-DD)' })
+  @ApiProperty({
+    example: '2026-08-10',
+    description: '희망 시공일(YYYY-MM-DD)',
+  })
   @IsString()
   @MinLength(1)
   desiredDate: string;
@@ -120,7 +123,8 @@ export class CreateBidRequestDto {
 
   @ApiPropertyOptional({
     type: [CreateBidRequestPositionDto],
-    description: '틴팅 부위별 농도 목록(일반입찰 + 썬팅(틴팅) 선택 시에만 유효)',
+    description:
+      '틴팅 부위별 농도 목록(일반입찰 + 썬팅(틴팅) 선택 시에만 유효)',
   })
   @IsOptional()
   @IsArray()

@@ -1,4 +1,5 @@
-// 공통코드 마스터/상세 시드 — 딜러사/차량브랜드/차종/윈도우 틴팅 농도/자동차 시공 코드값 일괄 등록(재실행해도 안전한 upsert)
+// 공통코드 마스터/상세 시드 — 차량브랜드/차종/윈도우 틴팅 농도/자동차 시공 코드값 일괄 등록(재실행해도 안전한 upsert)
+// 딜러사는 더 이상 공통코드가 아니라 companies 테이블(coType='DEALER')로 관리함(2026-08-13 사용자 확정)
 import 'dotenv/config';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '@prisma/client';
@@ -9,7 +10,6 @@ const prisma = new PrismaClient({
 });
 
 const MASTERS: { code: string; name: string }[] = [
-  { code: 'DEALER', name: '딜러사' },
   { code: 'CAR_BRAND', name: '차량브랜드' },
   { code: 'CAR_MODEL', name: '차종' },
   { code: 'VLT', name: '윈도우 틴팅 농도' },
@@ -45,11 +45,6 @@ interface DetailRow {
 }
 
 const DETAILS: DetailRow[] = [
-  // DEALER
-  { code: 'DEALER', detailCode: 'KCC', detailName: 'KCC 오토' },
-  { code: 'DEALER', detailCode: 'EO', detailName: '에펠오토' },
-  { code: 'DEALER', detailCode: 'AP', detailName: '아우토플라츠' },
-
   // CAR_BRAND
   { code: 'CAR_BRAND', detailCode: 'BENZ', detailName: '벤츠' },
   { code: 'CAR_BRAND', detailCode: 'BYD', detailName: 'BYD' },

@@ -2,7 +2,15 @@
 // GET /shops/me/reservations/packages, GET /shops/me/reservations/packages/:reservationNo, PATCH /shops/me/reservations/:reservationNo/complete
 // GET /shops/me/reservations/bids, POST/GET /shops/me/reservations/:reservationNo/call-logs
 // — 파트너(시공업체) 로그인 전용, 항상 로그인 계정 소속 업체(shopCode) 기준으로만 조회/수정
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentPartnerUser } from '../partner-auth/decorators/current-partner-user.decorator';
 import { JwtPartnerAuthGuard } from '../partner-auth/guards/jwt-partner-auth.guard';
@@ -20,7 +28,9 @@ export class PartnerReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   @Get('today')
-  @ApiOperation({ summary: '내 업체의 오늘 예약 목록(파트너 홈 "오늘의 시공 일정")' })
+  @ApiOperation({
+    summary: '내 업체의 오늘 예약 목록(파트너 홈 "오늘의 시공 일정")',
+  })
   listToday(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
     return this.reservationsService.listTodayForShop(partnerUser.shopCode);
   }
@@ -36,7 +46,8 @@ export class PartnerReservationsController {
 
   @Get('packages')
   @ApiOperation({
-    summary: '내 업체의 신차패키지 시공 건 목록(PT-NCPK-01) — 상태 무관 전체, 탭 구분은 프론트에서 필터',
+    summary:
+      '내 업체의 신차패키지 시공 건 목록(PT-NCPK-01) — 상태 무관 전체, 탭 구분은 프론트에서 필터',
   })
   listPackages(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
     return this.reservationsService.listPackagesForShop(partnerUser.shopCode);
@@ -44,7 +55,8 @@ export class PartnerReservationsController {
 
   @Get('bids')
   @ApiOperation({
-    summary: '내 업체의 예약시공(입찰) 시공 건 목록(PT-RSVC-08) — 낙찰 확정된 Reservation(BID) 전체',
+    summary:
+      '내 업체의 예약시공(입찰) 시공 건 목록(PT-RSVC-08) — 낙찰 확정된 Reservation(BID) 전체',
   })
   listBidJobs(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
     return this.reservationsService.listBidJobsForShop(partnerUser.shopCode);
@@ -52,7 +64,8 @@ export class PartnerReservationsController {
 
   @Get('bids/:reservationNo')
   @ApiOperation({
-    summary: '예약시공(입찰) 완료건 상세(PT-RSVC-11) — 완료 등록 시 저장된 사진·메모·인수확인 상태',
+    summary:
+      '예약시공(입찰) 완료건 상세(PT-RSVC-11) — 완료 등록 시 저장된 사진·메모·인수확인 상태',
   })
   getBidDetail(
     @CurrentPartnerUser() partnerUser: SafePartnerUser,
@@ -66,7 +79,8 @@ export class PartnerReservationsController {
 
   @Get('packages/:reservationNo')
   @ApiOperation({
-    summary: '신차패키지 시공 상세(PT-NCPK-02) — 고객·차량·패키지 구성상품 포함',
+    summary:
+      '신차패키지 시공 상세(PT-NCPK-02) — 고객·차량·패키지 구성상품 포함',
   })
   getPackageDetail(
     @CurrentPartnerUser() partnerUser: SafePartnerUser,

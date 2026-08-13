@@ -1,12 +1,14 @@
-// CU-NCPK-09: 예약 확정 - 차액 결제 완료 후 예약 요약 + 시공업체 해피콜 예정 안내
+// CU-NCPK-09: 예약 확정 - 차액 결제 완료 후 예약 요약(시공 항목별 제품·가격, 썬팅 부위별 농도) + 시공업체 해피콜 예정 안내
 import Button from "../../components/ui/Button";
 import { CheckIcon, PhoneIcon } from "./ncpIcons";
+import { nfmt } from "./ncpFormat";
+import type { PackageSelectionItemView } from "../common/commonTypes";
 
 interface RsvCfmScreenProps {
   onConfirm: () => void;
   shopName: string;
   visitLabel: string;
-  itemSummaryLabel: string;
+  items: PackageSelectionItemView[];
   paidAmountLabel: string;
   reservationNo?: string;
 }
@@ -15,7 +17,7 @@ export default function RsvCfmScreen({
   onConfirm,
   shopName,
   visitLabel,
-  itemSummaryLabel,
+  items,
   paidAmountLabel,
   reservationNo,
 }: RsvCfmScreenProps) {
@@ -23,8 +25,6 @@ export default function RsvCfmScreen({
     ...(reservationNo ? ([["예약번호", reservationNo]] as Array<[string, string]>) : []),
     ["시공업체", shopName],
     ["방문 일시", visitLabel],
-    ["시공 항목", itemSummaryLabel],
-    ["업그레이드 차액", paidAmountLabel],
   ];
 
   return (
@@ -55,6 +55,30 @@ export default function RsvCfmScreen({
               </div>
             ))}
           </div>
+
+          {items.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-[18px] shadow-sm">
+              <div className="pt-[15px] pb-1 text-[12.5px] font-bold text-gray-500">시공 항목</div>
+              {items.map((it, i) => (
+                <div key={`${it.category}-${it.product}-${i}`} className="border-b border-gray-100 py-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="min-w-0">
+                      {it.category && <div className="text-[12px] text-gray-500">{it.category}</div>}
+                      <div className={`text-[13.5px] font-bold text-gray-900 ${it.category ? "mt-0.5" : ""}`}>{it.product}</div>
+                    </div>
+                    <span className="flex-none text-[13.5px] font-bold text-gray-900">
+                      {it.price > 0 ? `+${nfmt(it.price)}원` : "기본 포함"}
+                    </span>
+                  </div>
+                  {it.tintDetail && <div className="mt-1.5 text-[11.5px] text-gray-500">{it.tintDetail}</div>}
+                </div>
+              ))}
+              <div className="flex items-center justify-between py-[13px]">
+                <span className="text-[12.5px] text-gray-500">업그레이드 차액</span>
+                <span className="text-right text-[13.5px] font-bold text-gray-900">{paidAmountLabel}</span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-brand-subtle px-[15px] py-3.5">
             <span className="mt-px flex-none text-brand">

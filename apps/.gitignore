@@ -27,10 +27,12 @@ dist-ssr
 # Expo system & cache files 
 .expo/
 
-# env files
-apps/admin-app/.env
-apps/admin-app/.env.*
-!apps/admin-app/.env.example
+# env files (apps/.gitignore 자신의 위치인 apps/ 기준 상대경로라 "apps/" 접두사를 붙이면 안 됨)
+admin-app/.env
+admin-app/.env.*
+
+customer-app/.env
+customer-app/.env.*
 
 # api upload files
 apps/api/uploads/*

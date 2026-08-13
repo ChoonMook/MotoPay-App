@@ -13,10 +13,10 @@ const RecoStarIcon = () => (
   </svg>
 );
 
-function recoTotal(plans: Array<[string, number, number]>) {
+function recoTotal(plans: Array<[string, number, number, string]>) {
   return plans.reduce((s, [, , offer]) => s + offer, 0);
 }
-function recoRetail(plans: Array<[string, number, number]>) {
+function recoRetail(plans: Array<[string, number, number, string]>) {
   return plans.reduce((s, [, retail]) => s + retail, 0);
 }
 

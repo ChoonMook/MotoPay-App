@@ -25,7 +25,8 @@ export class CreateReviewDto {
   @ApiProperty({
     type: [String],
     required: false,
-    description: '첨부 사진(data URI, base64) 목록 — JPEG·PNG·WEBP만 허용, 최대 5장',
+    description:
+      '첨부 사진(data URI, base64) 목록 — JPEG·PNG·WEBP만 허용, 최대 5장',
     example: ['data:image/jpeg;base64,/9j/4AAQSkZJRg...'],
   })
   @IsOptional()

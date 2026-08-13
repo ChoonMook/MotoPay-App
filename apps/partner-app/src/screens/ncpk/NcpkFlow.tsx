@@ -16,6 +16,7 @@ import {
   type PackageJob,
   type PackageJobDetail,
 } from "../../api/reservations";
+import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { progressToTab, type NcpkTab } from "./ncpkData";
 import NcpkListScreen from "./NcpkListScreen";
 import NcpkDetailScreen from "./NcpkDetailScreen";
@@ -40,6 +41,8 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
 
   const [jobs, setJobs] = useState<PackageJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+  // 시공 항목 카드의 분류명(예: "썬팅") 표기용 — PROD_CAT은 관리자가 계속 추가할 수 있어 하드코딩하지 않고 조회
+  const [prodCatOptions, setProdCatOptions] = useState<CommonCodeDetailApi[]>([]);
 
   const [selectedJob, setSelectedJob] = useState<PackageJobDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -60,6 +63,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       .then(setJobs)
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 목록을 불러오지 못했어요", "danger"))
       .finally(() => setLoadingJobs(false));
+    getCommonCodeDetails("PROD_CAT").then(setProdCatOptions).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -197,6 +201,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
           tab={tab}
           onChangeTab={setTab}
           jobs={visibleJobs}
+          prodCatOptions={prodCatOptions}
           tabCounts={tabCounts}
           loading={loadingJobs}
           onOpenJob={openJob}
@@ -209,6 +214,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       {screen === "detail" && (
         <NcpkDetailScreen
           job={selectedJob}
+          prodCatOptions={prodCatOptions}
           loading={loadingDetail}
           updating={updating}
           onBack={() => setScreen("list")}
@@ -227,6 +233,8 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       {screen === "done" && selectedJob && (
         <NcpkDoneScreen
           items={selectedJob.items}
+          tintPositions={selectedJob.tintPositions}
+          prodCatOptions={prodCatOptions}
           checks={checks}
           onToggleCheck={toggleCheck}
           photos={photos}
@@ -253,6 +261,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       {sheet === "start" && selectedJob && (
         <NcpkStartSheet
           job={selectedJob}
+          prodCatOptions={prodCatOptions}
           onCancel={() => setSheet(null)}
           onConfirm={confirmStart}
           confirming={updating}

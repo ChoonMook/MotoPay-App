@@ -46,7 +46,13 @@ import {
 } from "./rsvTypes";
 import { selectedEntry } from "./rsvCalc";
 import { nfmt } from "./rsvFormat";
-import { TINT_POSITIONS, type TintLevel, type HandoverStatus } from "../common/commonTypes";
+import {
+  TINT_POSITIONS,
+  TINT_POSITION_LABELS,
+  type TintLevel,
+  type HandoverStatus,
+  type PackageSelectionItemView,
+} from "../common/commonTypes";
 import {
   createBidRequest,
   listMyBidRequests,
@@ -263,7 +269,7 @@ export default function RsvFlow({
     setSheet("reqtype");
   };
   const isExpert = flow === "expert";
-  const { isRec, name: selName, total: selTotal } = selectedEntry(selId, isExpert, bidOffers, recoPlans);
+  const { isRec, bidder: selBidder, reco: selReco, name: selName, total: selTotal } = selectedEntry(selId, isExpert, bidOffers, recoPlans);
   // GENERAL 응찰·EXPERT 추천안 모두 DB에 리뷰/좌표 데이터가 없어 평점·거리 미제공
   const selRating = "";
   const selDist = "";
@@ -275,15 +281,27 @@ export default function RsvFlow({
   const bookingItemLabel = activeBidRequest
     ? activeBidRequest.items.map((it) => INST_CODE_LABELS[it.instCode] ?? it.instCode).join(" · ") || "-"
     : "-";
+  // CU-RSVC-20 시공 항목 카드 — 낙찰된 업체(bidder)/추천안(reco)의 실제 항목·가격, 썬팅은 요청 시점 부위별 농도 표기
+  const bookingTintDetail =
+    activeBidRequest && activeBidRequest.positions.length > 0
+      ? activeBidRequest.positions.map((p) => `${TINT_POSITION_LABELS[p.position] ?? p.position} ${p.level}%`).join(" · ")
+      : undefined;
+  const bookingItems: PackageSelectionItemView[] = isRec
+    ? (selReco?.plans ?? []).map(([name, , offerPrice, instCode]) => ({
+        product: name,
+        price: offerPrice,
+        tintDetail: instCode === "TINT" ? bookingTintDetail : undefined,
+      }))
+    : (selBidder?.items ?? []).map(([name, price, instCode]) => ({
+        product: name,
+        price,
+        tintDetail: instCode === "TINT" ? bookingTintDetail : undefined,
+      }));
   const bookingBaseVisitLabel = activeReservation ? `${activeReservation.date.replaceAll("-", ".")} ${activeReservation.time}` : "";
   const bookingVisitLabel = reschedDay
     ? `${reschedCalY}.${String(reschedCalM).padStart(2, "0")}.${String(reschedDay).padStart(2, "0")} ${reschedTime}`
     : bookingBaseVisitLabel;
-  const bookingRows: Array<[string, string]> = [
-    ["예약 일시", bookingVisitLabel],
-    ["시공 항목", bookingItemLabel],
-    ["확정 견적", `${nfmt(selTotal)}원`],
-  ];
+  const bookingRows: Array<[string, string]> = [["예약 일시", bookingVisitLabel]];
   const bookingProgress = activeReservation?.progressStatus ?? "APPLIED";
   // 취소 여부는 별도 로컬 플래그가 아니라 activeReservation.status를 그대로 반영 — 취소 후 화면을 나갔다 다시 들어와도
   // (openMyRequest가 서버에서 다시 조회한 실제 상태를 담아오므로) 취소 상태가 그대로 유지됨
@@ -432,7 +450,7 @@ export default function RsvFlow({
     id: o.offerNo,
     name: o.shopName,
     when: formatWhenLabel(desiredDate, o.scheduledTime),
-    items: o.items.map((it): [string, number] => [INST_CODE_LABELS[it.instCode] ?? it.instCode, it.price]),
+    items: o.items.map((it): [string, number, string] => [INST_CODE_LABELS[it.instCode] ?? it.instCode, it.price, it.instCode]),
   });
 
   // GET /bid-requests/:id/plans 응답을 화면 표시용 RecoPlan으로 변환
@@ -444,8 +462,26 @@ export default function RsvFlow({
       itemSummary: names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : (names[0] ?? "-"),
       reason: p.reason,
       when: formatWhenLabel(desiredDate, p.scheduledTime),
-      plans: p.items.map((it): [string, number, number] => [it.productName, it.retailPrice, it.offerPrice]),
+      plans: p.items.map((it): [string, number, number, string] => [it.productName, it.retailPrice, it.offerPrice, it.instCode]),
     };
+  };
+
+  // CU-RSVC-14/15 업체·추천안 선택(selectOffer/selectPlan) 직후 — 서버는 그 자리에서 실제 Reservation을 생성하지만
+  // 응답(BidRequestView)에는 reservationNo가 담겨 있지 않아, 마운트 시 1회만 불러온 reqReservation은 아직 이 건을 모른다.
+  // 방금 생성된 예약을 다시 조회해 activeReservation·reqReservation·reqProgress를 모두 최신화 — paydone 화면의 실제 예약번호 표시,
+  // 이후 "내 요청" 목록에서 바로 이 요청을 다시 열었을 때도 새로고침 없이 정확한 상태가 보이도록 함
+  const loadReservationForRequest = async (requestNo: string) => {
+    setActiveReservation(null); // 실패 시 이전(다른 요청의) 예약이 잘못 남아 보이지 않도록 먼저 비움
+    try {
+      const reservations = await listMyReservations();
+      const reservation = reservations.find((r) => r.reservationType === "BID" && r.requestNo === requestNo);
+      if (!reservation) return;
+      setActiveReservation(reservation);
+      setReqReservation((prev) => ({ ...prev, [requestNo]: reservation }));
+      setReqProgress((prev) => ({ ...prev, [requestNo]: reservation.progressStatus }));
+    } catch {
+      // 예약번호 표시만 영향받고 결제완료 자체는 이미 끝난 뒤라 별도 에러 토스트 없이 조용히 실패
+    }
   };
 
   // CU-RSVC-01 내 요청 카드 탭 — 시공완료(DONE)는 인수확인·후기등록 화면으로, 선정완료~시공중(SELECTED/IN_PROGRESS)은
@@ -709,6 +745,7 @@ export default function RsvFlow({
               const updated = await selectBidOffer(activeBidRequest.id, selId);
               setActiveBidRequest(updated);
               setMyRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+              await loadReservationForRequest(updated.requestNo);
               setScreen("pay");
             } catch (err) {
               showToast(err instanceof Error ? err.message : "업체 선택에 실패했어요", "danger");
@@ -753,6 +790,7 @@ export default function RsvFlow({
               const updated = await selectBidPlan(activeBidRequest.id, selId);
               setActiveBidRequest(updated);
               setMyRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+              await loadReservationForRequest(updated.requestNo);
               setScreen("pay");
             } catch (err) {
               showToast(err instanceof Error ? err.message : "추천안 선택에 실패했어요", "danger");
@@ -792,9 +830,11 @@ export default function RsvFlow({
           isExpert={isExpert}
           bidders={bidOffers}
           recos={recoPlans}
+          positions={activeBidRequest?.positions ?? []}
           payMethod={payMethod}
           couponSel={couponSel}
           pointUse={pointUse}
+          reservationNo={activeReservation?.reservationNo}
           onConfirm={goMain}
         />
       )}
@@ -847,6 +887,9 @@ export default function RsvFlow({
             setScreen("copro");
           }}
           bookingRows={bookingRows}
+          items={bookingItems}
+          priceLabel={`${nfmt(selTotal)}원`}
+          priceRowLabel="확정 견적"
           timeline={bookingTimeline}
           cancelled={bookingCancelled}
           cancelReasonLabel={cancelReasonLabel}

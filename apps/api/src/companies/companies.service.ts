@@ -28,7 +28,10 @@ import type { UpdatePartnerUserDto } from './dto/update-partner-user.dto';
 import type { TimeSlotInputDto } from './dto/replace-company-time-slots.dto';
 import type { UpsertCompanyDailySlotDto } from './dto/upsert-company-daily-slot.dto';
 import type { UploadCompanyDocumentDto } from './dto/upload-company-document.dto';
-import { saveCompanyDocument, deleteCompanyDocument } from '../common/storage/company-document-storage';
+import {
+  saveCompanyDocument,
+  deleteCompanyDocument,
+} from '../common/storage/company-document-storage';
 
 const SALT_ROUNDS = 10;
 
@@ -127,7 +130,9 @@ export class CompaniesService {
       username: user.username,
       name: user.name,
       email: user.email,
-      phone: user.phoneEncrypted ? this.phoneCrypto.decrypt(user.phoneEncrypted) : null,
+      phone: user.phoneEncrypted
+        ? this.phoneCrypto.decrypt(user.phoneEncrypted)
+        : null,
       useYn: user.useYn,
       mustChangePassword: user.mustChangePassword,
       lastLoginAt: user.lastLoginAt,
@@ -167,7 +172,9 @@ export class CompaniesService {
       const created = await this.prisma.$transaction(async (tx) => {
         // Shop.shopCode(pk 성격의 unique)는 자동 채번(id 기반) 전까지 임시값이 필요 — Product.productCode와
         // 동일한 2단계 채번 방식(prisma/seed-shops.ts 참고): 생성 → id 기반 10자리 0-padding으로 즉시 업데이트
-        const placeholder = await tx.shop.create({ data: { name: dto.name, shopCode: '0'.repeat(10) } });
+        const placeholder = await tx.shop.create({
+          data: { name: dto.name, shopCode: '0'.repeat(10) },
+        });
         const shop = await tx.shop.update({
           where: { id: placeholder.id },
           data: { shopCode: String(placeholder.id).padStart(10, '0') },
@@ -219,14 +226,21 @@ export class CompaniesService {
 
   // ── 사업자 등록증 / 통장사본 첨부 ──────────────────────────────
 
-  async uploadCompanyDocument(id: number, dto: UploadCompanyDocumentDto): Promise<CompanyListItem> {
+  async uploadCompanyDocument(
+    id: number,
+    dto: UploadCompanyDocumentDto,
+  ): Promise<CompanyListItem> {
     const company = await this.prisma.company.findUnique({ where: { id } });
     if (!company) {
       throw new NotFoundException('업체를 찾을 수 없습니다.');
     }
     const relativePath = await saveCompanyDocument(dto.fileBase64);
-    const field = dto.docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
-    const previousPath = dto.docType === 'BIZ_REG_CERT' ? company.bizRegCertPath : company.bankbookCopyPath;
+    const field =
+      dto.docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
+    const previousPath =
+      dto.docType === 'BIZ_REG_CERT'
+        ? company.bizRegCertPath
+        : company.bankbookCopyPath;
 
     const updated = await this.prisma.company.update({
       where: { id },
@@ -238,13 +252,20 @@ export class CompaniesService {
     return this.toListItem(updated);
   }
 
-  async deleteCompanyDocument(id: number, docType: 'BIZ_REG_CERT' | 'BANKBOOK_COPY'): Promise<CompanyListItem> {
+  async deleteCompanyDocument(
+    id: number,
+    docType: 'BIZ_REG_CERT' | 'BANKBOOK_COPY',
+  ): Promise<CompanyListItem> {
     const company = await this.prisma.company.findUnique({ where: { id } });
     if (!company) {
       throw new NotFoundException('업체를 찾을 수 없습니다.');
     }
-    const field = docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
-    const previousPath = docType === 'BIZ_REG_CERT' ? company.bizRegCertPath : company.bankbookCopyPath;
+    const field =
+      docType === 'BIZ_REG_CERT' ? 'bizRegCertPath' : 'bankbookCopyPath';
+    const previousPath =
+      docType === 'BIZ_REG_CERT'
+        ? company.bizRegCertPath
+        : company.bankbookCopyPath;
 
     const updated = await this.prisma.company.update({
       where: { id },
@@ -259,14 +280,21 @@ export class CompaniesService {
   // ── 승인 처리 ────────────────────────────────────────────────
   // 승인(approved=true)이 되어야 소속 로그인 계정이 정상 로그인 가능(PartnerAuthService.login 참고)
 
-  async approveCompany(id: number, adminUsername: string): Promise<CompanyListItem> {
+  async approveCompany(
+    id: number,
+    adminUsername: string,
+  ): Promise<CompanyListItem> {
     const exists = await this.prisma.company.findUnique({ where: { id } });
     if (!exists) {
       throw new NotFoundException('업체를 찾을 수 없습니다.');
     }
     const updated = await this.prisma.company.update({
       where: { id },
-      data: { approved: true, approvedAt: new Date(), approvedBy: adminUsername },
+      data: {
+        approved: true,
+        approvedAt: new Date(),
+        approvedBy: adminUsername,
+      },
     });
     return this.toListItem(updated);
   }
@@ -284,13 +312,19 @@ export class CompaniesService {
   }
 
   /** coType='SHOP'인 업체만 매장·소속계정 관리 대상 — 아니면 400 */
-  private async requireShopCompany(companyId: number): Promise<Company & { shopCode: string }> {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+  private async requireShopCompany(
+    companyId: number,
+  ): Promise<Company & { shopCode: string }> {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) {
       throw new NotFoundException('업체를 찾을 수 없습니다.');
     }
     if (company.coType !== 'SHOP' || !company.shopCode) {
-      throw new BadRequestException('시공업체 타입 업체만 매장·계정 정보를 관리할 수 있습니다.');
+      throw new BadRequestException(
+        '시공업체 타입 업체만 매장·계정 정보를 관리할 수 있습니다.',
+      );
     }
     return company as Company & { shopCode: string };
   }
@@ -315,12 +349,16 @@ export class CompaniesService {
   }
 
   /** 사용자 계정 추가 화면에서 아이디 입력 직후 중복 여부를 미리 확인하기 위한 조회(전역 유니크) */
-  async checkPartnerUsernameAvailable(username: string): Promise<{ available: boolean }> {
+  async checkPartnerUsernameAvailable(
+    username: string,
+  ): Promise<{ available: boolean }> {
     const trimmed = username?.trim();
     if (!trimmed) {
       throw new BadRequestException('아이디를 입력해주세요.');
     }
-    const exists = await this.prisma.partnerUser.findUnique({ where: { username: trimmed } });
+    const exists = await this.prisma.partnerUser.findUnique({
+      where: { username: trimmed },
+    });
     return { available: !exists };
   }
 
@@ -330,7 +368,9 @@ export class CompaniesService {
   ): Promise<{ user: PartnerUserListItem; tempPassword: string }> {
     const company = await this.requireShopCompany(companyId);
 
-    const exists = await this.prisma.partnerUser.findUnique({ where: { username: dto.username } });
+    const exists = await this.prisma.partnerUser.findUnique({
+      where: { username: dto.username },
+    });
     if (exists) {
       throw new ConflictException('이미 존재하는 아이디입니다.');
     }
@@ -338,7 +378,9 @@ export class CompaniesService {
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, SALT_ROUNDS);
     const normalized = this.phoneCrypto.normalize(dto.phone);
-    const phoneEncrypted = this.phoneCrypto.encrypt(this.phoneCrypto.format(normalized));
+    const phoneEncrypted = this.phoneCrypto.encrypt(
+      this.phoneCrypto.format(normalized),
+    );
     const phoneHash = this.phoneCrypto.hash(normalized);
 
     const created = await this.prisma.partnerUser.create({
@@ -358,7 +400,9 @@ export class CompaniesService {
 
   private async requirePartnerUserInCompany(companyId: number, userId: string) {
     const company = await this.requireShopCompany(companyId);
-    const user = await this.prisma.partnerUser.findUnique({ where: { id: userId } });
+    const user = await this.prisma.partnerUser.findUnique({
+      where: { id: userId },
+    });
     if (!user || user.shopCode !== company.shopCode) {
       throw new NotFoundException('소속 사용자 계정을 찾을 수 없습니다.');
     }
@@ -376,7 +420,9 @@ export class CompaniesService {
     let phoneHash: string | undefined;
     if (dto.phone) {
       const normalized = this.phoneCrypto.normalize(dto.phone);
-      phoneEncrypted = this.phoneCrypto.encrypt(this.phoneCrypto.format(normalized));
+      phoneEncrypted = this.phoneCrypto.encrypt(
+        this.phoneCrypto.format(normalized),
+      );
       phoneHash = this.phoneCrypto.hash(normalized);
     }
 
@@ -400,19 +446,29 @@ export class CompaniesService {
 
   // ── 매장 사진 ──────────────────────────────────────────────
 
-  async uploadShopPhoto(companyId: number, dto: UploadShopPhotoDto): Promise<ShopDetail> {
+  async uploadShopPhoto(
+    companyId: number,
+    dto: UploadShopPhotoDto,
+  ): Promise<ShopDetail> {
     const company = await this.requireShopCompany(companyId);
     return this.shopsService.uploadPhoto(company.shopCode, dto);
   }
 
-  async deleteShopPhoto(companyId: number, photoId: number): Promise<ShopDetail> {
+  async deleteShopPhoto(
+    companyId: number,
+    photoId: number,
+  ): Promise<ShopDetail> {
     const company = await this.requireShopCompany(companyId);
     return this.shopsService.deletePhoto(company.shopCode, photoId);
   }
 
   // ── 휴무일 ──────────────────────────────────────────────
 
-  async listHolidays(companyId: number, year: number, month: number): Promise<string[]> {
+  async listHolidays(
+    companyId: number,
+    year: number,
+    month: number,
+  ): Promise<string[]> {
     const company = await this.requireShopCompany(companyId);
     return this.shopScheduleService.listHolidays(company.shopCode, year, month);
   }
@@ -429,24 +485,41 @@ export class CompaniesService {
 
   // ── 예약가능 시간대 템플릿 ──────────────────────────────────
 
-  async getTimeSlots(companyId: number, dayType: string): Promise<{ time: string; capacity: number }[]> {
+  async getTimeSlots(
+    companyId: number,
+    dayType: string,
+  ): Promise<{ time: string; capacity: number }[]> {
     const company = await this.requireShopCompany(companyId);
     return this.shopScheduleService.getTimeSlots(company.shopCode, dayType);
   }
 
-  async replaceTimeSlots(companyId: number, dayType: string, slots: TimeSlotInputDto[]): Promise<void> {
+  async replaceTimeSlots(
+    companyId: number,
+    dayType: string,
+    slots: TimeSlotInputDto[],
+  ): Promise<void> {
     const company = await this.requireShopCompany(companyId);
-    await this.shopScheduleService.replaceTimeSlots(company.shopCode, dayType, slots);
+    await this.shopScheduleService.replaceTimeSlots(
+      company.shopCode,
+      dayType,
+      slots,
+    );
   }
 
   // ── 일자별 스케줄(템플릿+오버라이드+예약 병합 조회, 정원·잠금 오버라이드 수정) ──
 
-  async getDailySchedule(companyId: number, date: string): Promise<DailyScheduleView> {
+  async getDailySchedule(
+    companyId: number,
+    date: string,
+  ): Promise<DailyScheduleView> {
     const company = await this.requireShopCompany(companyId);
     return this.shopScheduleService.getDailySchedule(company.shopCode, date);
   }
 
-  async upsertDailySlot(companyId: number, dto: UpsertCompanyDailySlotDto): Promise<void> {
+  async upsertDailySlot(
+    companyId: number,
+    dto: UpsertCompanyDailySlotDto,
+  ): Promise<void> {
     const company = await this.requireShopCompany(companyId);
     await this.shopScheduleService.upsertDailySlot(company.shopCode, dto);
   }

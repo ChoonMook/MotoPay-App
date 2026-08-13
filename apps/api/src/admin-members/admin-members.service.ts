@@ -123,7 +123,10 @@ export class AdminMembersService {
     };
   }
 
-  async setWithdrawn(id: string, withdrawn: boolean): Promise<AdminMemberListItem> {
+  async setWithdrawn(
+    id: string,
+    withdrawn: boolean,
+  ): Promise<AdminMemberListItem> {
     const exists = await this.prisma.user.findUnique({ where: { id } });
     if (!exists || exists.role !== CUSTOMER_ROLE) {
       throw new NotFoundException('회원을 찾을 수 없습니다.');

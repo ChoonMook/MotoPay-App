@@ -11,7 +11,7 @@ const prisma = new PrismaClient({
 
 interface PurchaseSeed {
   vin: string;
-  dealerCode: string;
+  dealerCompanyId: number;
   customerName: string;
   phone: string;
   carBrandCode: string;
@@ -23,7 +23,7 @@ interface PurchaseSeed {
 const PURCHASES: PurchaseSeed[] = [
   {
     vin: 'W1KLF5AB4TA288926',
-    dealerCode: 'KCC',
+    dealerCompanyId: 17, // KCC 오토
     customerName: '길춘묵',
     phone: '010-4182-9325',
     carBrandCode: 'BENZ',
@@ -42,7 +42,7 @@ async function main() {
     await prisma.newCarPurchaseCustomer.upsert({
       where: { vin: p.vin },
       update: {
-        dealerCode: p.dealerCode,
+        dealerCompanyId: p.dealerCompanyId,
         customerName: p.customerName,
         phoneEncrypted,
         phoneHash,
@@ -53,7 +53,7 @@ async function main() {
       },
       create: {
         vin: p.vin,
-        dealerCode: p.dealerCode,
+        dealerCompanyId: p.dealerCompanyId,
         customerName: p.customerName,
         phoneEncrypted,
         phoneHash,

@@ -88,7 +88,10 @@ export default function DealerPtnMapPage() {
     return kw ? shops.filter((s) => s.name.includes(kw)) : shops;
   }, [shops, shopKeyword]);
 
-  const handleSearch = () => setAppliedKeyword(keyword);
+  const handleSearch = () => {
+    setAppliedKeyword(keyword);
+    load();
+  };
 
   const columnDefs = useMemo<ColDef<CompanyListItem>[]>(
     () => [{ headerName: "딜러사명", field: "name", flex: 1, minWidth: 160 }],

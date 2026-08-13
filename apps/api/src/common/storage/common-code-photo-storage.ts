@@ -5,7 +5,11 @@ const COMMON_CODE_PHOTO_SUBDIR = 'common-code-photos';
 const MAX_COMMON_CODE_PHOTO_BYTES = 5 * 1024 * 1024; // 5MB
 
 export function saveCommonCodePhoto(dataUri: string): Promise<string> {
-  return saveImage(dataUri, COMMON_CODE_PHOTO_SUBDIR, MAX_COMMON_CODE_PHOTO_BYTES);
+  return saveImage(
+    dataUri,
+    COMMON_CODE_PHOTO_SUBDIR,
+    MAX_COMMON_CODE_PHOTO_BYTES,
+  );
 }
 
 /** 교체·삭제 시 이전 물리 파일 정리 — 이미 없어도(ENOENT) 무시 */

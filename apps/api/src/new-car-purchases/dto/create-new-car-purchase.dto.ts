@@ -3,7 +3,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsDateString,
+  IsInt,
   IsOptional,
+  IsPositive,
   IsString,
   Length,
   MinLength,
@@ -15,22 +17,26 @@ export class CreateNewCarPurchaseDto {
   @Length(17, 17)
   vin: string;
 
-  @ApiProperty({ description: '딜러사코드 -> CommonCodeDetail(code=DEALER)' })
-  @IsString()
-  @MinLength(1)
-  dealerCode: string;
+  @ApiProperty({ description: '딜러사 -> Company.id(coType=DEALER)' })
+  @IsInt()
+  @IsPositive()
+  dealerCompanyId: number;
 
   @ApiProperty({ description: '고객명' })
   @IsString()
   @MinLength(1)
   customerName: string;
 
-  @ApiProperty({ description: '휴대폰번호(형식 무관 — 서버가 정규화 후 암호화 저장)' })
+  @ApiProperty({
+    description: '휴대폰번호(형식 무관 — 서버가 정규화 후 암호화 저장)',
+  })
   @IsString()
   @MinLength(9)
   phone: string;
 
-  @ApiProperty({ description: '차량브랜드코드 -> CommonCodeDetail(code=CAR_BRAND)' })
+  @ApiProperty({
+    description: '차량브랜드코드 -> CommonCodeDetail(code=CAR_BRAND)',
+  })
   @IsString()
   @MinLength(1)
   carBrandCode: string;
@@ -55,13 +61,16 @@ export class CreateNewCarPurchaseDto {
   @IsDateString()
   purchaseDate?: string;
 
-  @ApiPropertyOptional({ description: '패키지상품코드 -> Product.productCode(prodType=PKG)' })
+  @ApiPropertyOptional({
+    description: '패키지상품코드 -> Product.productCode(prodType=PKG)',
+  })
   @IsOptional()
   @IsString()
   packageCode?: string;
 
   @ApiPropertyOptional({
-    description: '패키지 구성상품 중 고객이 선택한 업그레이드옵션(OPTION)·추가옵션(ADD) 상품코드 목록(기본상품은 항상 포함이라 제외)',
+    description:
+      '패키지 구성상품 중 고객이 선택한 업그레이드옵션(OPTION)·추가옵션(ADD) 상품코드 목록(기본상품은 항상 포함이라 제외)',
   })
   @IsOptional()
   @IsArray()

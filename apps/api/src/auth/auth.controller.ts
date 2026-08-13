@@ -1,4 +1,4 @@
-// POST /auth/login, POST /auth/signup, GET /auth/check-username/:username, GET /auth/me,
+// POST /auth/login, POST /auth/signup, POST /auth/refresh, GET /auth/check-username/:username, GET /auth/me,
 // POST /auth/find-username, POST /auth/request-password-reset, POST /auth/reset-password
 import {
   Body,
@@ -15,6 +15,7 @@ import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { FindUsernameDto } from './dto/find-username.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SignupDto } from './dto/signup.dto';
@@ -43,6 +44,16 @@ export class AuthController {
   })
   signup(@Body() dto: SignupDto) {
     return this.authService.signup(dto);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'accessToken 만료 시 refreshToken으로 access/refresh 토큰 재발급(rotation)',
+  })
+  refresh(@Body() dto: RefreshDto) {
+    return this.authService.refresh(dto.refreshToken);
   }
 
   @Get('check-username/:username')

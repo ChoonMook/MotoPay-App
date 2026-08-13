@@ -31,7 +31,11 @@ import type { SubmitBidPlanDto } from './dto/submit-bid-plan.dto';
 const BID_DEADLINE_DAYS = 1; // 입찰 마감 기한 정책 미정 상태의 임시 상수 — createdAt + N일
 
 type CarSnapshot = Pick<MyCar, 'carBrandCode' | 'carModelCode' | 'trimName'>;
-const CAR_SELECT = { carBrandCode: true, carModelCode: true, trimName: true } as const;
+const CAR_SELECT = {
+  carBrandCode: true,
+  carModelCode: true,
+  trimName: true,
+} as const;
 
 export interface BidRequestView extends Omit<BidRequest, 'desiredDate'> {
   desiredDate: string; // "YYYY-MM-DD"
@@ -74,7 +78,12 @@ export interface ShopBidRequestView {
   // 고객이 최종 선택한 추천번호(EXPERT, 없으면 null) — 파트너앱이 자기 추천안(myPlan.planNo)과 비교해 낙찰 여부를 판단
   selectedPlanNo: string | null;
   // 내 업체가 이 요청에 이미 제출한 입찰(없으면 null) — 요청이 OPEN인 동안은 재제출(수정) 가능
-  myOffer: { offerNo: string; items: BidOfferItem[]; scheduledTime: string; memo: string | null } | null;
+  myOffer: {
+    offerNo: string;
+    items: BidOfferItem[];
+    scheduledTime: string;
+    memo: string | null;
+  } | null;
   // 내 업체가 이 요청에 이미 제출한 추천안(없으면 null) — 요청이 OPEN인 동안은 재제출(수정) 가능
   myPlan: {
     planNo: string;
@@ -113,7 +122,10 @@ export class BidRequestsService {
     private readonly shopScheduleService: ShopScheduleService,
   ) {}
 
-  async create(memberId: string, dto: CreateBidRequestDto): Promise<BidRequestView> {
+  async create(
+    memberId: string,
+    dto: CreateBidRequestDto,
+  ): Promise<BidRequestView> {
     const items = dto.items ?? [];
     // 부위·농도는 일반입찰 + 썬팅(틴팅) 선택 시에만 의미가 있음 — 전문가추천은 애초에 이 화면을 거치지 않으므로 항상 무시
     const positions = dto.reqType === 'GENERAL' ? (dto.positions ?? []) : [];
@@ -128,7 +140,10 @@ export class BidRequestsService {
     if (dto.reqType === 'EXPERT' && !dto.budget) {
       throw new BadRequestException('희망 예산을 입력해주세요.');
     }
-    if (positions.length > 0 && !items.some((item) => item.instCode === 'TINT')) {
+    if (
+      positions.length > 0 &&
+      !items.some((item) => item.instCode === 'TINT')
+    ) {
       throw new BadRequestException(
         '썬팅(틴팅)을 선택하지 않으면 부위·농도를 지정할 수 없습니다.',
       );
@@ -163,13 +178,17 @@ export class BidRequestsService {
         },
       });
       const requestNo = String(req.id).padStart(10, '0');
-      await tx.bidRequest.update({ where: { id: req.id }, data: { requestNo } });
+      await tx.bidRequest.update({
+        where: { id: req.id },
+        data: { requestNo },
+      });
 
       await tx.bidRequestItem.createMany({
         data: items.map((item) => ({
           requestNo,
           instCode: item.instCode,
-          productName: dto.reqType === 'GENERAL' ? (item.productName ?? null) : null,
+          productName:
+            dto.reqType === 'GENERAL' ? (item.productName ?? null) : null,
         })),
       });
       if (positions.length) {
@@ -197,7 +216,11 @@ export class BidRequestsService {
 
       return tx.bidRequest.findUniqueOrThrow({
         where: { requestNo },
-        include: { items: true, positions: true, myCar: { select: CAR_SELECT } },
+        include: {
+          items: true,
+          positions: true,
+          myCar: { select: CAR_SELECT },
+        },
       });
     });
 
@@ -214,7 +237,11 @@ export class BidRequestsService {
   }
 
   /** 요청 취소 — 아직 입찰/추천안이 붙지 않는 OPEN 상태만 가능(수정 대신 취소 후 재요청 방식) */
-  async cancel(memberId: string, id: number, dto: CancelBidRequestDto): Promise<BidRequestView> {
+  async cancel(
+    memberId: string,
+    id: number,
+    dto: CancelBidRequestDto,
+  ): Promise<BidRequestView> {
     const existing = await this.prisma.bidRequest.findUnique({ where: { id } });
     if (!existing || existing.memberId !== memberId) {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
@@ -231,7 +258,8 @@ export class BidRequestsService {
       data: {
         status: 'CANCELLED',
         cancelReason: dto.cancelReason,
-        cancelReasonNote: dto.cancelReason === 'ETC' ? (dto.cancelReasonNote ?? null) : null,
+        cancelReasonNote:
+          dto.cancelReason === 'ETC' ? (dto.cancelReasonNote ?? null) : null,
       },
       include: { items: true, positions: true, myCar: { select: CAR_SELECT } },
     });
@@ -250,7 +278,10 @@ export class BidRequestsService {
             myCar: { select: CAR_SELECT },
             member: { select: { name: true } },
             offers: { where: { shopCode }, include: { items: true } },
-            plans: { where: { shopCode }, include: { items: true, positions: true } },
+            plans: {
+              where: { shopCode },
+              include: { items: true, positions: true },
+            },
           },
         },
       },
@@ -277,7 +308,12 @@ export class BidRequestsService {
         selectedOfferNo: r.selectedOfferNo,
         selectedPlanNo: r.selectedPlanNo,
         myOffer: myOffer
-          ? { offerNo: myOffer.offerNo, items: myOffer.items, scheduledTime: formatTimeOnly(myOffer.scheduledTime), memo: myOffer.memo }
+          ? {
+              offerNo: myOffer.offerNo,
+              items: myOffer.items,
+              scheduledTime: formatTimeOnly(myOffer.scheduledTime),
+              memo: myOffer.memo,
+            }
           : null,
         myPlan: myPlan
           ? {
@@ -305,7 +341,9 @@ export class BidRequestsService {
       where: { requestNo_shopCode: { requestNo, shopCode } },
     });
     if (!invitation) {
-      throw new ForbiddenException('입찰의뢰를 받은 요청만 참여할 수 있습니다.');
+      throw new ForbiddenException(
+        '입찰의뢰를 받은 요청만 참여할 수 있습니다.',
+      );
     }
 
     const request = await this.prisma.bidRequest.findUnique({
@@ -316,15 +354,21 @@ export class BidRequestsService {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
     }
     if (request.status !== 'OPEN') {
-      throw new BadRequestException('입찰중인 요청만 참여(수정)할 수 있습니다.');
+      throw new BadRequestException(
+        '입찰중인 요청만 참여(수정)할 수 있습니다.',
+      );
     }
 
     const existing = await this.prisma.bidOffer.findUnique({
       where: { requestNo_shopCode: { requestNo, shopCode } },
     });
 
-    const requestInstCodes = new Set(request.items.map((item) => item.instCode));
-    const dtoInstCodes = new Set<string>(dto.items.map((item) => item.instCode));
+    const requestInstCodes = new Set(
+      request.items.map((item) => item.instCode),
+    );
+    const dtoInstCodes = new Set<string>(
+      dto.items.map((item) => item.instCode),
+    );
     const sameSet =
       requestInstCodes.size === dtoInstCodes.size &&
       [...requestInstCodes].every((code) => dtoInstCodes.has(code));
@@ -337,8 +381,15 @@ export class BidRequestsService {
       formatDateOnly(request.desiredDate),
     );
     const slot = schedule.slots.find((s) => s.time === dto.scheduledTime);
-    if (!slot || slot.capacity === null || slot.isLocked || slot.reservedCount >= slot.capacity) {
-      throw new BadRequestException('선택한 시간은 예약 가능한 시간이 아닙니다.');
+    if (
+      !slot ||
+      slot.capacity === null ||
+      slot.isLocked ||
+      slot.reservedCount >= slot.capacity
+    ) {
+      throw new BadRequestException(
+        '선택한 시간은 예약 가능한 시간이 아닙니다.',
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -347,7 +398,10 @@ export class BidRequestsService {
         offerNo = existing.offerNo;
         await tx.bidOffer.update({
           where: { offerNo },
-          data: { scheduledTime: parseTimeOnly(dto.scheduledTime), memo: dto.memo },
+          data: {
+            scheduledTime: parseTimeOnly(dto.scheduledTime),
+            memo: dto.memo,
+          },
         });
         await tx.bidOfferItem.deleteMany({ where: { offerNo } });
       } else {
@@ -361,7 +415,10 @@ export class BidRequestsService {
           },
         });
         offerNo = String(offer.id).padStart(10, '0');
-        await tx.bidOffer.update({ where: { id: offer.id }, data: { offerNo } });
+        await tx.bidOffer.update({
+          where: { id: offer.id },
+          data: { offerNo },
+        });
       }
       await tx.bidOfferItem.createMany({
         data: dto.items.map((item) => ({
@@ -386,7 +443,9 @@ export class BidRequestsService {
       where: { requestNo_shopCode: { requestNo, shopCode } },
     });
     if (!invitation) {
-      throw new ForbiddenException('입찰의뢰를 받은 요청만 참여할 수 있습니다.');
+      throw new ForbiddenException(
+        '입찰의뢰를 받은 요청만 참여할 수 있습니다.',
+      );
     }
 
     const request = await this.prisma.bidRequest.findUnique({
@@ -397,27 +456,42 @@ export class BidRequestsService {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
     }
     if (request.reqType !== 'EXPERT') {
-      throw new BadRequestException('전문가추천 요청에만 추천안을 제출할 수 있습니다.');
+      throw new BadRequestException(
+        '전문가추천 요청에만 추천안을 제출할 수 있습니다.',
+      );
     }
     if (request.status !== 'OPEN') {
-      throw new BadRequestException('입찰중인 요청만 참여(수정)할 수 있습니다.');
+      throw new BadRequestException(
+        '입찰중인 요청만 참여(수정)할 수 있습니다.',
+      );
     }
 
     const existing = await this.prisma.bidPlan.findUnique({
       where: { requestNo_shopCode: { requestNo, shopCode } },
     });
 
-    const requestInstCodes = new Set(request.items.map((item) => item.instCode));
-    const dtoInstCodes = new Set<string>(dto.items.map((item) => item.instCode));
+    const requestInstCodes = new Set(
+      request.items.map((item) => item.instCode),
+    );
+    const dtoInstCodes = new Set<string>(
+      dto.items.map((item) => item.instCode),
+    );
     const sameSet =
       requestInstCodes.size === dtoInstCodes.size &&
       [...requestInstCodes].every((code) => dtoInstCodes.has(code));
     if (!sameSet) {
-      throw new BadRequestException('요청한 관심 카테고리와 일치하지 않습니다.');
+      throw new BadRequestException(
+        '요청한 관심 카테고리와 일치하지 않습니다.',
+      );
     }
     const positions = dto.positions ?? [];
-    if (positions.length > 0 && !dto.items.some((item) => item.instCode === 'TINT')) {
-      throw new BadRequestException('썬팅(틴팅)을 포함하지 않으면 부위·농도를 지정할 수 없습니다.');
+    if (
+      positions.length > 0 &&
+      !dto.items.some((item) => item.instCode === 'TINT')
+    ) {
+      throw new BadRequestException(
+        '썬팅(틴팅)을 포함하지 않으면 부위·농도를 지정할 수 없습니다.',
+      );
     }
 
     const schedule = await this.shopScheduleService.getDailySchedule(
@@ -425,8 +499,15 @@ export class BidRequestsService {
       formatDateOnly(request.desiredDate),
     );
     const slot = schedule.slots.find((s) => s.time === dto.scheduledTime);
-    if (!slot || slot.capacity === null || slot.isLocked || slot.reservedCount >= slot.capacity) {
-      throw new BadRequestException('선택한 시간은 예약 가능한 시간이 아닙니다.');
+    if (
+      !slot ||
+      slot.capacity === null ||
+      slot.isLocked ||
+      slot.reservedCount >= slot.capacity
+    ) {
+      throw new BadRequestException(
+        '선택한 시간은 예약 가능한 시간이 아닙니다.',
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -435,7 +516,10 @@ export class BidRequestsService {
         planNo = existing.planNo;
         await tx.bidPlan.update({
           where: { planNo },
-          data: { scheduledTime: parseTimeOnly(dto.scheduledTime), reason: dto.reason },
+          data: {
+            scheduledTime: parseTimeOnly(dto.scheduledTime),
+            reason: dto.reason,
+          },
         });
         await tx.bidPlanItem.deleteMany({ where: { planNo } });
         await tx.bidPlanPosition.deleteMany({ where: { planNo } });
@@ -464,14 +548,21 @@ export class BidRequestsService {
       });
       if (positions.length) {
         await tx.bidPlanPosition.createMany({
-          data: positions.map((pos) => ({ planNo, position: pos.position, level: pos.level })),
+          data: positions.map((pos) => ({
+            planNo,
+            position: pos.position,
+            level: pos.level,
+          })),
         });
       }
     });
   }
 
   /** 고객이 보는 특정 요청의 입찰 목록(비교화면) */
-  async listOffersForRequest(memberId: string, id: number): Promise<BidOfferView[]> {
+  async listOffersForRequest(
+    memberId: string,
+    id: number,
+  ): Promise<BidOfferView[]> {
     const request = await this.prisma.bidRequest.findUnique({ where: { id } });
     if (!request || request.memberId !== memberId) {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
@@ -493,7 +584,10 @@ export class BidRequestsService {
   }
 
   /** 고객이 보는 특정 요청의 추천안 목록(비교화면, 전문가추천 전용) */
-  async listPlansForRequest(memberId: string, id: number): Promise<BidPlanView[]> {
+  async listPlansForRequest(
+    memberId: string,
+    id: number,
+  ): Promise<BidPlanView[]> {
     const request = await this.prisma.bidRequest.findUnique({ where: { id } });
     if (!request || request.memberId !== memberId) {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
@@ -501,7 +595,11 @@ export class BidRequestsService {
 
     const plans = await this.prisma.bidPlan.findMany({
       where: { requestNo: request.requestNo },
-      include: { items: true, positions: true, shop: { select: { name: true } } },
+      include: {
+        items: true,
+        positions: true,
+        shop: { select: { name: true } },
+      },
       orderBy: { createdAt: 'asc' },
     });
     return plans.map((p) => ({
@@ -520,13 +618,19 @@ export class BidRequestsService {
    * 실제 시공건(Reservation, reservationType='BID')을 생성해 파트너앱 "시공 대기 목록"에 노출시킴.
    * 알려진 단순화: 선택 시점에 슬롯이 다른 확정 예약으로 이미 꽉 찼는지는 재검증하지 않음(입찰 제출 시점에 검증됨).
    */
-  async selectOffer(memberId: string, id: number, offerNo: string): Promise<BidRequestView> {
+  async selectOffer(
+    memberId: string,
+    id: number,
+    offerNo: string,
+  ): Promise<BidRequestView> {
     const request = await this.prisma.bidRequest.findUnique({ where: { id } });
     if (!request || request.memberId !== memberId) {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
     }
     if (request.status !== 'OPEN') {
-      throw new BadRequestException('입찰중인 요청만 업체를 선택할 수 있습니다.');
+      throw new BadRequestException(
+        '입찰중인 요청만 업체를 선택할 수 있습니다.',
+      );
     }
     const offer = await this.prisma.bidOffer.findUnique({ where: { offerNo } });
     if (!offer || offer.requestNo !== request.requestNo) {
@@ -537,7 +641,11 @@ export class BidRequestsService {
       const req = await tx.bidRequest.update({
         where: { id },
         data: { status: 'SELECTED', selectedOfferNo: offerNo },
-        include: { items: true, positions: true, myCar: { select: CAR_SELECT } },
+        include: {
+          items: true,
+          positions: true,
+          myCar: { select: CAR_SELECT },
+        },
       });
 
       const reservedCount = await tx.reservation.count({
@@ -574,13 +682,19 @@ export class BidRequestsService {
    * 고객의 추천안 선택(전문가추천 전용) — selectOffer와 동일하게 하나의 트랜잭션 안에서
    * status:'SELECTED', selectedPlanNo 업데이트 + Reservation(reservationType='BID') 생성.
    */
-  async selectPlan(memberId: string, id: number, planNo: string): Promise<BidRequestView> {
+  async selectPlan(
+    memberId: string,
+    id: number,
+    planNo: string,
+  ): Promise<BidRequestView> {
     const request = await this.prisma.bidRequest.findUnique({ where: { id } });
     if (!request || request.memberId !== memberId) {
       throw new NotFoundException('요청을 찾을 수 없습니다.');
     }
     if (request.status !== 'OPEN') {
-      throw new BadRequestException('입찰중인 요청만 업체를 선택할 수 있습니다.');
+      throw new BadRequestException(
+        '입찰중인 요청만 업체를 선택할 수 있습니다.',
+      );
     }
     const plan = await this.prisma.bidPlan.findUnique({ where: { planNo } });
     if (!plan || plan.requestNo !== request.requestNo) {
@@ -591,7 +705,11 @@ export class BidRequestsService {
       const req = await tx.bidRequest.update({
         where: { id },
         data: { status: 'SELECTED', selectedPlanNo: planNo },
-        include: { items: true, positions: true, myCar: { select: CAR_SELECT } },
+        include: {
+          items: true,
+          positions: true,
+          myCar: { select: CAR_SELECT },
+        },
       });
 
       const reservedCount = await tx.reservation.count({

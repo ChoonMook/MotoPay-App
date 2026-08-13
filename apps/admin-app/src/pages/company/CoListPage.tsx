@@ -95,6 +95,7 @@ export default function CoListPage() {
 
   const handleSearch = () => {
     setAppliedFilters({ keyword, coTypeFilter, statusFilter });
+    loadCompanies();
   };
 
   const columnDefs = useMemo<ColDef<CompanyListItem>[]>(

@@ -13,6 +13,7 @@ import ExcelJS from "exceljs";
 import { Search, Upload, X } from "lucide-react";
 import { getMe, type AdminAccount } from "../../api/adminAuth";
 import { getGroup, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { listCompanies, type CompanyListItem } from "../../api/companies";
 import {
   bulkCreateNewCarPurchases,
   confirmNewCarPurchase,
@@ -33,7 +34,7 @@ const inputClass =
 const labelClass = "ml-0.5 text-[11px] font-bold tracking-widest text-secondary uppercase";
 
 interface SharedData {
-  dealers: CommonCodeDetailApi[];
+  dealers: CompanyListItem[];
   brands: CommonCodeDetailApi[];
   models: CommonCodeDetailApi[];
   packages: ProductApi[];
@@ -42,7 +43,7 @@ interface SharedData {
 
 interface PurchaseFormValue {
   vin: string;
-  dealerCode: string;
+  dealerCompanyId: string;
   customerName: string;
   phone: string;
   carBrandCode: string;
@@ -55,7 +56,7 @@ interface PurchaseFormValue {
 
 const EMPTY_FORM: PurchaseFormValue = {
   vin: "",
-  dealerCode: "",
+  dealerCompanyId: "",
   customerName: "",
   phone: "",
   carBrandCode: "",
@@ -69,7 +70,7 @@ const EMPTY_FORM: PurchaseFormValue = {
 function formToInput(v: PurchaseFormValue): NewCarPurchaseInput {
   return {
     vin: v.vin.trim().toUpperCase(),
-    dealerCode: v.dealerCode,
+    dealerCompanyId: Number(v.dealerCompanyId),
     customerName: v.customerName.trim(),
     phone: v.phone.trim(),
     carBrandCode: v.carBrandCode,
@@ -118,15 +119,15 @@ function PurchaseFormFields({
         <div className="space-y-1.5">
           <label className={labelClass}>딜러사</label>
           <select
-            value={value.dealerCode}
-            onChange={(e) => onChange({ dealerCode: e.target.value })}
+            value={value.dealerCompanyId}
+            onChange={(e) => onChange({ dealerCompanyId: e.target.value })}
             disabled={disabled}
             className={inputClass}
           >
             <option value="">선택</option>
             {shared.dealers.map((d) => (
-              <option key={d.detailCode} value={d.detailCode}>
-                {d.detailName}
+              <option key={d.id} value={d.id}>
+                {d.name}
               </option>
             ))}
           </select>
@@ -221,7 +222,7 @@ function AddPurchaseModal({ shared, onCancel, onCreated }: { shared: SharedData;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value.vin.trim() || value.vin.trim().length !== 17 || !value.dealerCode || !value.customerName.trim() || !value.phone.trim() || !value.carBrandCode || !value.carModelCode || !value.trimName.trim()) {
+    if (!value.vin.trim() || value.vin.trim().length !== 17 || !value.dealerCompanyId || !value.customerName.trim() || !value.phone.trim() || !value.carBrandCode || !value.carModelCode || !value.trimName.trim()) {
       setError("VIN(17자)·딜러사·고객명·휴대폰·차량브랜드·차종·세부차종명은 필수입니다.");
       return;
     }
@@ -260,7 +261,7 @@ function AddPurchaseModal({ shared, onCancel, onCreated }: { shared: SharedData;
   );
 }
 
-const UPLOAD_COLUMNS = ["VIN", "딜러사코드", "고객명", "휴대폰", "차량브랜드코드", "차종코드", "세부차종명", "연식", "구매일(YYYY-MM-DD)", "패키지코드"];
+const UPLOAD_COLUMNS = ["VIN", "딜러사업체ID", "고객명", "휴대폰", "차량브랜드코드", "차종코드", "세부차종명", "연식", "구매일(YYYY-MM-DD)", "패키지코드"];
 
 function BulkUploadModal({ onCancel, onCreated }: { onCancel: () => void; onCreated: () => void }) {
   const [rows, setRows] = useState<NewCarPurchaseInput[]>([]);
@@ -287,7 +288,7 @@ function BulkUploadModal({ onCancel, onCreated }: { onCancel: () => void; onCrea
         if (!vin) return;
         parsed.push({
           vin: vin.toUpperCase(),
-          dealerCode: cell(2),
+          dealerCompanyId: Number(cell(2)),
           customerName: cell(3),
           phone: cell(4),
           carBrandCode: cell(5),
@@ -424,7 +425,7 @@ function PurchaseDetailModal({
 }) {
   const [value, setValue] = useState<PurchaseFormValue>({
     vin: item.vin,
-    dealerCode: item.dealerCode,
+    dealerCompanyId: String(item.dealerCompanyId),
     customerName: item.customerName,
     phone: item.phone,
     carBrandCode: item.carBrandCode,
@@ -528,7 +529,15 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
   const [keyword, setKeyword] = useState("");
   const [dealerFilter, setDealerFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [appliedFilters, setAppliedFilters] = useState({ keyword: "", dealerFilter: "all", statusFilter: "all" });
+  const [mappedFilter, setMappedFilter] = useState("all");
+  const [usedFilter, setUsedFilter] = useState("all");
+  const [appliedFilters, setAppliedFilters] = useState({
+    keyword: "",
+    dealerFilter: "all",
+    statusFilter: "all",
+    mappedFilter: "all",
+    usedFilter: "all",
+  });
   const [selected, setSelected] = useState<NewCarPurchaseListItem | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -545,8 +554,8 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
   useEffect(load, []);
 
   const dealerLabelMap = useMemo(() => {
-    const map = new Map(shared.dealers.map((d) => [d.detailCode, d.detailName]));
-    return (code: string) => map.get(code) ?? code;
+    const map = new Map(shared.dealers.map((d) => [d.id, d.name]));
+    return (id: number) => map.get(id) ?? String(id);
   }, [shared.dealers]);
   const brandLabelMap = useMemo(() => {
     const map = new Map(shared.brands.map((b) => [b.detailCode, b.detailName]));
@@ -565,20 +574,27 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
     const kw = appliedFilters.keyword.trim();
     return items.filter((item) => {
       const matchesKeyword = !kw || item.customerName.includes(kw) || item.vin.includes(kw.toUpperCase());
-      const matchesDealer = appliedFilters.dealerFilter === "all" || item.dealerCode === appliedFilters.dealerFilter;
+      const matchesDealer = appliedFilters.dealerFilter === "all" || item.dealerCompanyId === Number(appliedFilters.dealerFilter);
       const matchesStatus =
         appliedFilters.statusFilter === "all" || (appliedFilters.statusFilter === "confirmed" ? item.confirmed : !item.confirmed);
-      return matchesKeyword && matchesDealer && matchesStatus;
+      const matchesMapped =
+        appliedFilters.mappedFilter === "all" || (appliedFilters.mappedFilter === "mapped" ? item.isMapped : !item.isMapped);
+      const matchesUsed =
+        appliedFilters.usedFilter === "all" || (appliedFilters.usedFilter === "used" ? item.used : !item.used);
+      return matchesKeyword && matchesDealer && matchesStatus && matchesMapped && matchesUsed;
     });
   }, [items, appliedFilters]);
 
-  const handleSearch = () => setAppliedFilters({ keyword, dealerFilter, statusFilter });
+  const handleSearch = () => {
+    setAppliedFilters({ keyword, dealerFilter, statusFilter, mappedFilter, usedFilter });
+    load();
+  };
 
   const columnDefs = useMemo<ColDef<NewCarPurchaseListItem>[]>(
     () => [
       {
         headerName: "딜러사",
-        field: "dealerCode",
+        field: "dealerCompanyId",
         flex: 0.8,
         minWidth: 110,
         valueFormatter: (p) => dealerLabelMap(p.value),
@@ -615,6 +631,15 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
         minWidth: 90,
         valueGetter: (p) => (p.data ? (p.data.confirmed ? "확정" : "등록") : ""),
       },
+      {
+        headerName: "사용여부",
+        colId: "used",
+        flex: 0.7,
+        minWidth: 90,
+        valueGetter: (p) => (p.data ? (p.data.used ? "사용완료" : "미사용") : ""),
+      },
+      { headerName: "사용일", field: "usedDate", flex: 0.8, minWidth: 110, valueFormatter: (p) => p.value ?? "-" },
+      { headerName: "사용처", field: "usedShopName", flex: 1, minWidth: 130, valueFormatter: (p) => p.value ?? "-" },
     ],
     [dealerLabelMap, brandLabelMap, modelLabelMap, packageLabelMap],
   );
@@ -633,8 +658,8 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
             <select value={dealerFilter} onChange={(e) => setDealerFilter(e.target.value)} className={`${inputClass} w-32`}>
               <option value="all">전체</option>
               {shared.dealers.map((d) => (
-                <option key={d.detailCode} value={d.detailCode}>
-                  {d.detailName}
+                <option key={d.id} value={d.id}>
+                  {d.name}
                 </option>
               ))}
             </select>
@@ -658,6 +683,22 @@ function PurchaseListView({ shared }: { shared: SharedData }) {
               <option value="all">전체</option>
               <option value="registered">등록</option>
               <option value="confirmed">확정</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>매핑상태</label>
+            <select value={mappedFilter} onChange={(e) => setMappedFilter(e.target.value)} className={`${inputClass} w-32`}>
+              <option value="all">전체</option>
+              <option value="waiting">대기</option>
+              <option value="mapped">매핑완료</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>사용여부</label>
+            <select value={usedFilter} onChange={(e) => setUsedFilter(e.target.value)} className={`${inputClass} w-32`}>
+              <option value="all">전체</option>
+              <option value="unused">미사용</option>
+              <option value="used">사용완료</option>
             </select>
           </div>
         </div>
@@ -733,10 +774,10 @@ export default function NewCarPurchaseInputPage() {
   useEffect(() => {
     setLoading(true);
     setLoadError("");
-    Promise.all([getGroup("DEALER"), getGroup("CAR_BRAND"), getGroup("CAR_MODEL"), listProducts({ prodType: "PKG" }), getMe()])
-      .then(([dealerGroup, brandGroup, modelGroup, packages, me]) => {
+    Promise.all([listCompanies(), getGroup("CAR_BRAND"), getGroup("CAR_MODEL"), listProducts({ prodType: "PKG" }), getMe()])
+      .then(([companies, brandGroup, modelGroup, packages, me]) => {
         setShared({
-          dealers: [...dealerGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder),
+          dealers: companies.filter((c) => c.coType === "DEALER" && c.useYn),
           brands: [...brandGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder),
           models: [...modelGroup.details].filter((d) => d.useYn).sort((a, b) => a.sortOrder - b.sortOrder),
           packages,

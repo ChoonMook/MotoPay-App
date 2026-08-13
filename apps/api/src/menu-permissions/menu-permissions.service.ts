@@ -41,7 +41,11 @@ export class MenuPermissionsService {
         data: rows
           .filter(
             (r) =>
-              r.canAccess || r.canRead || r.canWrite || r.canDelete || r.canFile,
+              r.canAccess ||
+              r.canRead ||
+              r.canWrite ||
+              r.canDelete ||
+              r.canFile,
           )
           .map((r) => ({ ...r, permGroup })),
       }),

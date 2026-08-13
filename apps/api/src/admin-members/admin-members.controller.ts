@@ -1,12 +1,5 @@
 // GET/PATCH /admin/members(/:id) — AD-MBR-02 고객 회원 목록 화면 전용, 관리자 로그인 필요
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAdminAuthGuard } from '../admin-auth/guards/jwt-admin-auth.guard';
 import { AdminMembersService } from './admin-members.service';

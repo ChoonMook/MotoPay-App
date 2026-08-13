@@ -89,7 +89,9 @@ export class AdminCommonCodesController {
   }
 
   @Post(':code/details/:detailCode/photo')
-  @ApiOperation({ summary: '상세 코드값 대표사진 업로드(ref2에 경로 저장) — 기존 파일은 교체' })
+  @ApiOperation({
+    summary: '상세 코드값 대표사진 업로드(ref2에 경로 저장) — 기존 파일은 교체',
+  })
   uploadDetailPhoto(
     @Param('code') code: string,
     @Param('detailCode') detailCode: string,

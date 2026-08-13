@@ -5,7 +5,10 @@ import { IsArray, ValidateNested } from 'class-validator';
 import { CreateNewCarPurchaseDto } from './create-new-car-purchase.dto';
 
 export class BulkCreateNewCarPurchasesDto {
-  @ApiProperty({ type: [CreateNewCarPurchaseDto], description: '엑셀에서 파싱한 행 목록 — 행별로 개별 성공/실패 처리' })
+  @ApiProperty({
+    type: [CreateNewCarPurchaseDto],
+    description: '엑셀에서 파싱한 행 목록 — 행별로 개별 성공/실패 처리',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateNewCarPurchaseDto)

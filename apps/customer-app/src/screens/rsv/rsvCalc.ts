@@ -2,15 +2,15 @@
 import { COUPON_DEFS, POINT_BALANCE, type Bidder, type CouponDef, type RecoPlan } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
 
-export function bidTotal(items: Array<[string, number]>) {
+export function bidTotal(items: Array<[string, number, string]>) {
   return items.reduce((s, [, p]) => s + p, 0);
 }
 
-export function recoTotal(plans: Array<[string, number, number]>) {
+export function recoTotal(plans: Array<[string, number, number, string]>) {
   return plans.reduce((s, [, , offer]) => s + offer, 0);
 }
 
-export function recoRetail(plans: Array<[string, number, number]>) {
+export function recoRetail(plans: Array<[string, number, number, string]>) {
   return plans.reduce((s, [, retail]) => s + retail, 0);
 }
 

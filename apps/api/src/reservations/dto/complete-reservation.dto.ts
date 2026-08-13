@@ -18,7 +18,9 @@ export class CompleteReservationDto {
   })
   @IsArray()
   @ArrayMinSize(3, { message: '시공 사진은 최소 3장 이상 등록해야 합니다.' })
-  @ArrayMaxSize(10, { message: '시공 사진은 최대 10장까지 등록할 수 있습니다.' })
+  @ArrayMaxSize(10, {
+    message: '시공 사진은 최대 10장까지 등록할 수 있습니다.',
+  })
   @IsString({ each: true })
   @Matches(/^data:image\/(jpeg|png|webp);base64,.+$/, {
     each: true,

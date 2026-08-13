@@ -213,9 +213,14 @@ export class PartnerAuthService {
       throw new NotFoundException('파트너 계정을 찾을 수 없습니다.');
     }
 
-    const isSameAsCurrent = await bcrypt.compare(newPassword, partnerUser.passwordHash);
+    const isSameAsCurrent = await bcrypt.compare(
+      newPassword,
+      partnerUser.passwordHash,
+    );
     if (isSameAsCurrent) {
-      throw new BadRequestException('새 비밀번호는 현재 비밀번호와 달라야 합니다.');
+      throw new BadRequestException(
+        '새 비밀번호는 현재 비밀번호와 달라야 합니다.',
+      );
     }
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);

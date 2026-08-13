@@ -5,7 +5,9 @@ export interface MyCarApi {
   id: number;
   regType: "MAP" | "MANUAL";
   purchaseVin: string | null;
-  dealerCode: string | null;
+  dealerCompanyId: number | null;
+  /** 딜러사 업체명(서버가 dealerCompanyId를 조인해 미리 채워 내려줌) — 신차매핑 아니거나 딜러사 정보가 없으면 null */
+  dealerCompanyName: string | null;
   carBrandCode: string;
   carModelCode: string;
   trimName: string | null;

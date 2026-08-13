@@ -5,9 +5,13 @@ import Textarea from "../../components/ui/Textarea";
 import PhotoUploadGrid from "../../components/ui/PhotoUploadGrid";
 import PhotoLightbox from "../../components/ui/PhotoLightbox";
 import type { PackageJobItem } from "../../api/reservations";
+import type { CommonCodeDetailApi } from "../../api/commonCodes";
+import { categoryLabel, formatTintDetail } from "./ncpkData";
 
 interface NcpkDoneScreenProps {
   items: PackageJobItem[];
+  tintPositions: { position: string; level: string }[];
+  prodCatOptions: CommonCodeDetailApi[];
   checks: boolean[];
   onToggleCheck: (index: number) => void;
   photos: string[];
@@ -24,6 +28,8 @@ interface NcpkDoneScreenProps {
 
 export default function NcpkDoneScreen({
   items,
+  tintPositions,
+  prodCatOptions,
   checks,
   onToggleCheck,
   photos,
@@ -61,6 +67,8 @@ export default function NcpkDoneScreen({
           )}
           {items.map((it, i) => {
             const on = checks[i];
+            const category = categoryLabel(it.prodCat, prodCatOptions);
+            const tintDetail = it.prodCat === "TINT" ? formatTintDetail(tintPositions) : undefined;
             return (
               <div
                 key={`${it.name}-${i}`}
@@ -77,8 +85,10 @@ export default function NcpkDoneScreen({
                   {on ? "✓" : ""}
                 </span>
                 <div className="min-w-0 flex-1">
+                  {category && <div className="text-[11px] text-gray-500">{category}</div>}
                   <div className="text-sm font-bold text-gray-800">{it.name}</div>
                   {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+                  {tintDetail && <div className="mt-0.5 text-[11.5px] text-gray-500">{tintDetail}</div>}
                 </div>
               </div>
             );

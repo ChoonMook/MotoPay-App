@@ -1,6 +1,10 @@
 // 상품/패키지 조회(공개) + 관리자용 등록/수정(AD-CTLG-05 상품 관리) — 패키지 상세 조회 시 구성상품을
 // 기본상품(BASIC)/업그레이드옵션(OPTION)/추가옵션(ADD)으로 구분해 응답
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   Product,
   ProductBundleItem,
@@ -48,7 +52,10 @@ function canViewSupplyPrice(permGroup: string): boolean {
 }
 
 /** 권한 없는 관리자에게는 응답에서 supplyPrice 필드 자체를 제거(JSON 직렬화 시 undefined 키는 생략됨) */
-function maskSupplyPrice<T extends { supplyPrice: number | null }>(product: T, permGroup: string): T {
+function maskSupplyPrice<T extends { supplyPrice: number | null }>(
+  product: T,
+  permGroup: string,
+): T {
   if (canViewSupplyPrice(permGroup)) return product;
   return { ...product, supplyPrice: undefined as unknown as null };
 }
@@ -60,7 +67,10 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면에서 파트너가 카테고리별 추천 상품을 검색할 때 사용 */
-  async list(params: { prodCat?: string; prodType?: string }): Promise<Product[]> {
+  async list(params: {
+    prodCat?: string;
+    prodType?: string;
+  }): Promise<Product[]> {
     return this.prisma.product.findMany({
       where: {
         useYn: true,
@@ -119,9 +129,9 @@ export class ProductsService {
     prodType?: string;
     prodCat?: string;
     brand?: string;
-    dealerCode?: string;
-    // AD-CTLG-10 딜러사별 필터용 — Product.dealerCode(단일필드)와 달리 ProductDealerMapping 다대다 관계로 필터
-    mappedDealerCode?: string;
+    dealerCompanyId?: number;
+    // AD-CTLG-10 딜러사별 필터용 — Product.dealerCompanyId(단일필드)와 달리 ProductDealerMapping 다대다 관계로 필터
+    mappedDealerCompanyId?: number;
     useYn?: boolean;
     keyword?: string;
     permGroup: string;
@@ -132,9 +142,15 @@ export class ProductsService {
         ...(filters.prodType ? { prodType: filters.prodType } : {}),
         ...(filters.prodCat ? { prodCat: filters.prodCat } : {}),
         ...(filters.brand ? { brand: filters.brand } : {}),
-        ...(filters.dealerCode ? { dealerCode: filters.dealerCode } : {}),
-        ...(filters.mappedDealerCode
-          ? { dealerMappings: { some: { dealerCode: filters.mappedDealerCode } } }
+        ...(filters.dealerCompanyId !== undefined
+          ? { dealerCompanyId: filters.dealerCompanyId }
+          : {}),
+        ...(filters.mappedDealerCompanyId !== undefined
+          ? {
+              dealerMappings: {
+                some: { dealerCompanyId: filters.mappedDealerCompanyId },
+              },
+            }
           : {}),
         ...(filters.useYn !== undefined ? { useYn: filters.useYn } : {}),
         ...(keyword ? { name: { contains: keyword } } : {}),
@@ -160,8 +176,13 @@ export class ProductsService {
    * 상품 등록 — productCode(Shop.shopCode와 동일한 2단계 채번 방식: 임시값으로 생성 후 id 기반
    * 10자리 0-padding으로 즉시 업데이트)와 원가(supplyPrice) 권한 게이팅을 함께 처리
    */
-  async create(dto: CreateProductDto, permGroup: string): Promise<ProductWithImages> {
-    const supplyPrice = canViewSupplyPrice(permGroup) ? dto.supplyPrice : undefined;
+  async create(
+    dto: CreateProductDto,
+    permGroup: string,
+  ): Promise<ProductWithImages> {
+    const supplyPrice = canViewSupplyPrice(permGroup)
+      ? dto.supplyPrice
+      : undefined;
     return this.prisma.$transaction(async (tx) => {
       const placeholder = await tx.product.create({
         data: {
@@ -169,7 +190,7 @@ export class ProductsService {
           prodType: dto.prodType,
           brand: dto.brand,
           prodCat: dto.prodCat,
-          dealerCode: dto.dealerCode,
+          dealerCompanyId: dto.dealerCompanyId,
           name: dto.name,
           price: dto.price,
           originPrice: dto.originPrice,
@@ -183,17 +204,26 @@ export class ProductsService {
       return tx.product.update({
         where: { id: placeholder.id },
         data: { productCode: String(placeholder.id).padStart(10, '0') },
-        include: { images: { orderBy: IMAGES_ORDER_BY }, positionOptions: true },
+        include: {
+          images: { orderBy: IMAGES_ORDER_BY },
+          positionOptions: true,
+        },
       });
     });
   }
 
-  async update(id: number, dto: UpdateProductDto, permGroup: string): Promise<ProductWithImages> {
+  async update(
+    id: number,
+    dto: UpdateProductDto,
+    permGroup: string,
+  ): Promise<ProductWithImages> {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    const supplyPrice = canViewSupplyPrice(permGroup) ? dto.supplyPrice : undefined;
+    const supplyPrice = canViewSupplyPrice(permGroup)
+      ? dto.supplyPrice
+      : undefined;
     return this.prisma.product.update({
       where: { id },
       data: { ...dto, supplyPrice },
@@ -209,14 +239,27 @@ export class ProductsService {
     if (!exists) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    await this.prisma.productImage.deleteMany({ where: { productCode: exists.productCode } });
-    await this.prisma.productPositionOption.deleteMany({ where: { productCode: exists.productCode } });
-    await this.prisma.productDealerMapping.deleteMany({ where: { productCode: exists.productCode } });
-    await this.prisma.productCarModelMapping.deleteMany({ where: { productCode: exists.productCode } });
+    await this.prisma.productImage.deleteMany({
+      where: { productCode: exists.productCode },
+    });
+    await this.prisma.productPositionOption.deleteMany({
+      where: { productCode: exists.productCode },
+    });
+    await this.prisma.productDealerMapping.deleteMany({
+      where: { productCode: exists.productCode },
+    });
+    await this.prisma.productCarModelMapping.deleteMany({
+      where: { productCode: exists.productCode },
+    });
     // ProductBundleItem은 DB FK가 없어 삭제해도 막히진 않지만, 이 상품이 패키지든 구성상품이든 걸려있던
     // 매핑을 그대로 두면 고아 데이터가 되므로 함께 정리
     await this.prisma.productBundleItem.deleteMany({
-      where: { OR: [{ packageCode: exists.productCode }, { componentCode: exists.productCode }] },
+      where: {
+        OR: [
+          { packageCode: exists.productCode },
+          { componentCode: exists.productCode },
+        ],
+      },
     });
     await this.prisma.product.delete({ where: { id } });
     for (const image of exists.images) {
@@ -248,9 +291,16 @@ export class ProductsService {
         )
       : [];
     await this.prisma.$transaction([
-      this.prisma.productPositionOption.deleteMany({ where: { productCode: product.productCode } }),
-      ...(rows.length > 0 ? [this.prisma.productPositionOption.createMany({ data: rows })] : []),
-      this.prisma.product.update({ where: { id }, data: { positionOptionYn: dto.positionOptionYn } }),
+      this.prisma.productPositionOption.deleteMany({
+        where: { productCode: product.productCode },
+      }),
+      ...(rows.length > 0
+        ? [this.prisma.productPositionOption.createMany({ data: rows })]
+        : []),
+      this.prisma.product.update({
+        where: { id },
+        data: { positionOptionYn: dto.positionOptionYn },
+      }),
     ]);
     return this.adminGet(id, permGroup);
   }
@@ -263,37 +313,45 @@ export class ProductsService {
     }
     return this.prisma.productDealerMapping.findMany({
       where: { productCode: product.productCode },
-      orderBy: { dealerCode: 'asc' },
+      orderBy: { dealerCompanyId: 'asc' },
     });
   }
 
   /**
-   * AD-CTLG-08 딜러사 매핑 관리 — 체크리스트 전체 상태(dealerCodes)를 그대로 반영해 추가분만 새로 만들고
+   * AD-CTLG-08 딜러사 매핑 관리 — 체크리스트 전체 상태(dealerCompanyIds)를 그대로 반영해 추가분만 새로 만들고
    * 해제분만 지운다. 이미 매핑된 딜러사는 건드리지 않아 그때 스냅샷해둔 price가 계속 유지된다(사용자 확정 사항:
    * 디폴트 판매가는 "매핑 시점"에만 자동 부여되고 이후 Product.price 변경에 따라 자동으로 갱신되지 않음)
    */
-  async setDealerMappings(id: number, dto: SetProductDealerMappingsDto): Promise<ProductDealerMapping[]> {
+  async setDealerMappings(
+    id: number,
+    dto: SetProductDealerMappingsDto,
+  ): Promise<ProductDealerMapping[]> {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    const existing = await this.prisma.productDealerMapping.findMany({ where: { productCode: product.productCode } });
-    const existingCodes = new Set(existing.map((m) => m.dealerCode));
-    const nextCodes = new Set(dto.dealerCodes);
+    const existing = await this.prisma.productDealerMapping.findMany({
+      where: { productCode: product.productCode },
+    });
+    const existingIds = new Set(existing.map((m) => m.dealerCompanyId));
+    const nextIds = new Set(dto.dealerCompanyIds);
 
-    const toAdd = [...nextCodes].filter((code) => !existingCodes.has(code));
-    const toRemove = [...existingCodes].filter((code) => !nextCodes.has(code));
+    const toAdd = [...nextIds].filter((id) => !existingIds.has(id));
+    const toRemove = [...existingIds].filter((id) => !nextIds.has(id));
 
     if (toRemove.length > 0) {
       await this.prisma.productDealerMapping.deleteMany({
-        where: { productCode: product.productCode, dealerCode: { in: toRemove } },
+        where: {
+          productCode: product.productCode,
+          dealerCompanyId: { in: toRemove },
+        },
       });
     }
     if (toAdd.length > 0) {
       await this.prisma.productDealerMapping.createMany({
-        data: toAdd.map((dealerCode) => ({
+        data: toAdd.map((dealerCompanyId) => ({
           productCode: product.productCode,
-          dealerCode,
+          dealerCompanyId,
           price: product.price,
         })),
       });
@@ -315,15 +373,23 @@ export class ProductsService {
   }
 
   /** AD-CTLG-09 차종 매핑 관리 — 트리 체크 상태를 통째로 교체 저장(딜러사 매핑과 달리 가격 스냅샷이 없어 단순 전체 교체) */
-  async setCarModelMappings(id: number, dto: SetProductCarModelMappingsDto): Promise<string[]> {
+  async setCarModelMappings(
+    id: number,
+    dto: SetProductCarModelMappingsDto,
+  ): Promise<string[]> {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    await this.prisma.productCarModelMapping.deleteMany({ where: { productCode: product.productCode } });
+    await this.prisma.productCarModelMapping.deleteMany({
+      where: { productCode: product.productCode },
+    });
     if (dto.carModelCodes.length > 0) {
       await this.prisma.productCarModelMapping.createMany({
-        data: dto.carModelCodes.map((carModelCode) => ({ productCode: product.productCode, carModelCode })),
+        data: dto.carModelCodes.map((carModelCode) => ({
+          productCode: product.productCode,
+          carModelCode,
+        })),
       });
     }
     return this.getCarModelMappings(id);
@@ -361,12 +427,17 @@ export class ProductsService {
    * sortOrder는 화면에서 유형(BASIC/OPTION/ADD)별로 따로 편집하므로 그룹 내 상대 순서만 맞으면 되고,
    * 다른 그룹과 값이 겹쳐도 무방하다(조회 시 정렬 후 유형으로 필터링해 그룹별 순서는 항상 보존됨)
    */
-  async setBundleItems(id: number, dto: SetProductBundleItemsDto): Promise<PackageBundleItem[]> {
+  async setBundleItems(
+    id: number,
+    dto: SetProductBundleItemsDto,
+  ): Promise<PackageBundleItem[]> {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    await this.prisma.productBundleItem.deleteMany({ where: { packageCode: product.productCode } });
+    await this.prisma.productBundleItem.deleteMany({
+      where: { packageCode: product.productCode },
+    });
     if (dto.items.length > 0) {
       await this.prisma.productBundleItem.createMany({
         data: dto.items.map((item) => ({
@@ -383,14 +454,22 @@ export class ProductsService {
   }
 
   /** 상품 이미지 갤러리에 한 장 추가(최대 10장) — 첫 번째 이미지는 Product.imagePath(대표이미지)와 항상 동기화 */
-  async uploadImage(id: number, imageBase64: string, permGroup: string): Promise<ProductWithImages> {
+  async uploadImage(
+    id: number,
+    imageBase64: string,
+    permGroup: string,
+  ): Promise<ProductWithImages> {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    const count = await this.prisma.productImage.count({ where: { productCode: product.productCode } });
+    const count = await this.prisma.productImage.count({
+      where: { productCode: product.productCode },
+    });
     if (count >= MAX_PRODUCT_IMAGES) {
-      throw new BadRequestException(`상품 이미지는 최대 ${MAX_PRODUCT_IMAGES}장까지 등록할 수 있습니다.`);
+      throw new BadRequestException(
+        `상품 이미지는 최대 ${MAX_PRODUCT_IMAGES}장까지 등록할 수 있습니다.`,
+      );
     }
     const imagePath = await saveProductPhoto(imageBase64);
     await this.prisma.productImage.create({
@@ -400,12 +479,18 @@ export class ProductsService {
     return this.adminGet(id, permGroup);
   }
 
-  async deleteImage(id: number, imageId: number, permGroup: string): Promise<ProductWithImages> {
+  async deleteImage(
+    id: number,
+    imageId: number,
+    permGroup: string,
+  ): Promise<ProductWithImages> {
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
     }
-    const image = await this.prisma.productImage.findUnique({ where: { id: imageId } });
+    const image = await this.prisma.productImage.findUnique({
+      where: { id: imageId },
+    });
     if (!image || image.productCode !== product.productCode) {
       throw new NotFoundException('이미지를 찾을 수 없습니다.');
     }

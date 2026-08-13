@@ -300,6 +300,7 @@ export default function CustMbrListPage() {
 
   const handleSearch = () => {
     setAppliedFilters({ keyword, dateFrom, dateTo, statusFilter });
+    loadMembers();
   };
 
   const columnDefs = useMemo<ColDef<AdminMemberListItem>[]>(

@@ -10,9 +10,13 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({
-    summary: '상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면의 상품 검색용, prodCat/prodType으로 필터',
+    summary:
+      '상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면의 상품 검색용, prodCat/prodType으로 필터',
   })
-  list(@Query('prodCat') prodCat?: string, @Query('prodType') prodType?: string) {
+  list(
+    @Query('prodCat') prodCat?: string,
+    @Query('prodType') prodType?: string,
+  ) {
     return this.productsService.list({ prodCat, prodType });
   }
 

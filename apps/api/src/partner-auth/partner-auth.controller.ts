@@ -40,7 +40,8 @@ export class PartnerAuthController {
   @UseGuards(JwtPartnerAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '현재 로그인한 파트너 계정 정보 조회(토큰 검증용, 자동로그인 세션 복원에 사용)',
+    summary:
+      '현재 로그인한 파트너 계정 정보 조회(토큰 검증용, 자동로그인 세션 복원에 사용)',
   })
   me(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
     return partnerUser;

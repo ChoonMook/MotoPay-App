@@ -15,7 +15,8 @@ export class UploadCompanyDocumentDto {
 
   @ApiProperty({
     enum: ['BIZ_REG_CERT', 'BANKBOOK_COPY'],
-    description: '서류유형 — BIZ_REG_CERT(사업자 등록증)/BANKBOOK_COPY(통장사본)',
+    description:
+      '서류유형 — BIZ_REG_CERT(사업자 등록증)/BANKBOOK_COPY(통장사본)',
   })
   @IsIn(['BIZ_REG_CERT', 'BANKBOOK_COPY'])
   docType: 'BIZ_REG_CERT' | 'BANKBOOK_COPY';

@@ -2,16 +2,18 @@
 import BottomSheet from "../../components/ui/BottomSheet";
 import Button from "../../components/ui/Button";
 import type { PackageJobDetail } from "../../api/reservations";
-import { formatScheduleLabel, itemTagClass, itemTagLabel } from "./ncpkData";
+import type { CommonCodeDetailApi } from "../../api/commonCodes";
+import { categoryLabel, formatScheduleLabel, formatTintDetail, itemTagClass, itemTagLabel } from "./ncpkData";
 
 interface NcpkStartSheetProps {
   job: PackageJobDetail;
+  prodCatOptions: CommonCodeDetailApi[];
   onCancel: () => void;
   onConfirm: () => void;
   confirming: boolean;
 }
 
-export default function NcpkStartSheet({ job, onCancel, onConfirm, confirming }: NcpkStartSheetProps) {
+export default function NcpkStartSheet({ job, prodCatOptions, onCancel, onConfirm, confirming }: NcpkStartSheetProps) {
   const rows = [
     { k: "고객", v: `${job.customerName} · ${job.phoneMasked}` },
     { k: "차량", v: `${job.car ?? "-"} · VIN ${job.vin ?? "-"}` },
@@ -45,20 +47,26 @@ export default function NcpkStartSheet({ job, onCancel, onConfirm, confirming }:
             연결된 패키지 구성상품이 없어요
           </div>
         ) : (
-          job.items.map((it, i) => (
-            <div
-              key={`${it.name}-${i}`}
-              className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3.5 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-bold text-gray-800">{it.name}</div>
-                {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+          job.items.map((it, i) => {
+            const category = categoryLabel(it.prodCat, prodCatOptions);
+            const tintDetail = it.prodCat === "TINT" ? formatTintDetail(job.tintPositions) : undefined;
+            return (
+              <div
+                key={`${it.name}-${i}`}
+                className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3.5 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  {category && <div className="text-[11px] text-gray-500">{category}</div>}
+                  <div className="text-[13.5px] font-bold text-gray-800">{it.name}</div>
+                  {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+                  {tintDetail && <div className="mt-0.5 text-[11.5px] text-gray-500">{tintDetail}</div>}
+                </div>
+                <span className={`flex-none rounded-[5px] px-2 py-[3px] text-[10.5px] font-extrabold ${itemTagClass(it.tag)}`}>
+                  {itemTagLabel(it.tag)}
+                </span>
               </div>
-              <span className={`flex-none rounded-[5px] px-2 py-[3px] text-[10.5px] font-extrabold ${itemTagClass(it.tag)}`}>
-                {itemTagLabel(it.tag)}
-              </span>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

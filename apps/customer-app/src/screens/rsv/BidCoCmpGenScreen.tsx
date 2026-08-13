@@ -7,7 +7,7 @@ import { ClockIcon, CircleXIcon } from "./rsvIcons";
 import type { Bidder } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
 
-function bidTotal(items: Array<[string, number]>) {
+function bidTotal(items: Array<[string, number, string]>) {
   return items.reduce((s, [, p]) => s + p, 0);
 }
 

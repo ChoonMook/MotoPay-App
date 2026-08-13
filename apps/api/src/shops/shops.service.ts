@@ -1,8 +1,16 @@
 // 시공업체 조회 — 목록(시공가능 카테고리 필터·거리순 정렬)/상세(사진·시공가능 카테고리 포함)/내 업체 수정(파트너 전용)
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Shop, ShopPhoto } from '@prisma/client';
-import { deleteShopPhoto, saveShopPhoto } from '../common/storage/shop-photo-storage';
+import { maskReviewerName } from '../common/mask/mask-name';
+import {
+  deleteShopPhoto,
+  saveShopPhoto,
+} from '../common/storage/shop-photo-storage';
 import { PrismaService } from '../prisma/prisma.service';
 import type { UpdateShopDto } from './dto/update-shop.dto';
 import type { UploadShopPhotoDto } from './dto/upload-shop-photo.dto';
@@ -13,15 +21,31 @@ export interface ShopListItem extends Shop {
   mainPhoto: ShopPhoto | null;
   categories: string[]; // 시공가능 자동차 시공코드 목록
   distanceKm: number | null; // 기준 위치(lat/lng) 지정 시에만 값 존재
+  avgRating: number | null; // Review.rating 평균(소수점 1자리 반올림) — 후기가 하나도 없으면 null
+  reviewCount: number;
 }
 
 export interface ShopDetail extends Shop {
   photos: ShopPhoto[];
   categories: string[];
+  avgRating: number | null;
+  reviewCount: number;
+}
+
+// CU-NCPK-06/CU-RSVC-18 업체 프로필의 후기 목록 — 예약(Reservation)당 1건씩 작성되는 Review를 그대로 노출.
+// 작성자 실명은 개인정보라 성만 남기고 마스킹해서 내려준다(maskReviewerName)
+export interface ShopReviewItem {
+  id: number;
+  reviewerName: string;
+  rating: number;
+  content: string;
+  photos: string[]; // uploads/ 기준 상대경로
+  createdAt: string;
 }
 
 export interface ListShopsParams {
   instCodes?: string[]; // 지정하면 이 시공코드를 모두 지원하는 업체만 조회
+  dealerCompanyId?: number; // 지정하면 이 딜러사(Company.id, coType='DEALER')가 DealerShopMapping(AD-NCPK-04)으로 등록한 업체만 조회 — 신차패키지 시공업체 선택 화면 전용
   lat?: number; // 기준 위치 — lat/lng을 함께 지정하면 거리순 정렬
   lng?: number;
 }
@@ -53,7 +77,7 @@ export class ShopsService {
   ) {}
 
   async list(params: ListShopsParams): Promise<ShopListItem[]> {
-    const { instCodes, lat, lng } = params;
+    const { instCodes, dealerCompanyId, lat, lng } = params;
 
     const shops = await this.prisma.shop.findMany({
       where: {
@@ -65,6 +89,9 @@ export class ShopsService {
               })),
             }
           : {}),
+        ...(dealerCompanyId !== undefined
+          ? { dealerMappings: { some: { dealerCompanyId } } }
+          : {}),
       },
       include: {
         photos: { where: { photoType: 'MAIN' }, take: 1 },
@@ -72,6 +99,10 @@ export class ShopsService {
       },
       orderBy: { name: 'asc' },
     });
+
+    const ratingByShop = await this.aggregateRatings(
+      shops.map((shop) => shop.shopCode),
+    );
 
     const items: ShopListItem[] = shops.map((shop) => {
       const { photos, categories, ...rest } = shop;
@@ -82,11 +113,14 @@ export class ShopsService {
         shop.longitude !== null
           ? haversineKm(lat, lng, shop.latitude, shop.longitude)
           : null;
+      const rating = ratingByShop.get(shop.shopCode);
       return {
         ...rest,
         mainPhoto: photos[0] ?? null,
         categories: categories.map((c) => c.instCode),
         distanceKm,
+        avgRating: rating?.avgRating ?? null,
+        reviewCount: rating?.reviewCount ?? 0,
       };
     });
 
@@ -112,16 +146,71 @@ export class ShopsService {
     }
 
     const { categories, ...rest } = shop;
-    return { ...rest, categories: categories.map((c) => c.instCode) };
+    const rating = (await this.aggregateRatings([shopCode])).get(shopCode);
+    return {
+      ...rest,
+      categories: categories.map((c) => c.instCode),
+      avgRating: rating?.avgRating ?? null,
+      reviewCount: rating?.reviewCount ?? 0,
+    };
   }
 
-  private async resolveCoordinates(address: string): Promise<{ latitude: number | null; longitude: number | null }> {
+  /** shopCode별 평균 평점(소수점 1자리 반올림)·후기 개수 집계 — 후기가 없는 업체는 맵에 아예 안 잡힘(호출부에서 null/0 처리) */
+  private async aggregateRatings(
+    shopCodes: string[],
+  ): Promise<Map<string, { avgRating: number; reviewCount: number }>> {
+    if (shopCodes.length === 0) return new Map();
+    const grouped = await this.prisma.review.groupBy({
+      by: ['shopCode'],
+      where: { shopCode: { in: shopCodes } },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+    return new Map(
+      grouped.map((g) => [
+        g.shopCode,
+        {
+          avgRating: Math.round((g._avg.rating ?? 0) * 10) / 10,
+          reviewCount: g._count.rating,
+        },
+      ]),
+    );
+  }
+
+  /** CU-NCPK-06/CU-RSVC-18 업체 프로필 — 이 업체가 받은 후기 목록(최신순) */
+  async listReviews(shopCode: string): Promise<ShopReviewItem[]> {
+    const shop = await this.prisma.shop.findUnique({ where: { shopCode } });
+    if (!shop || !shop.useYn) {
+      throw new NotFoundException('시공업체를 찾을 수 없습니다.');
+    }
+    const reviews = await this.prisma.review.findMany({
+      where: { shopCode },
+      include: {
+        member: { select: { name: true } },
+        photos: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return reviews.map((r) => ({
+      id: r.id,
+      reviewerName: maskReviewerName(r.member.name),
+      rating: r.rating,
+      content: r.content,
+      photos: r.photos.map((p) => p.photoPath),
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  private async resolveCoordinates(
+    address: string,
+  ): Promise<{ latitude: number | null; longitude: number | null }> {
     const query = address.trim();
     if (!query) {
       return { latitude: null, longitude: null };
     }
 
-    const kakaoRestApiKey = this.configService.get<string>('KAKAO_REST_API_KEY');
+    const kakaoRestApiKey =
+      this.configService.get<string>('KAKAO_REST_API_KEY');
     if (kakaoRestApiKey) {
       const kakaoResult = await this.resolveWithKakao(query, kakaoRestApiKey);
       if (kakaoResult) {
@@ -138,18 +227,23 @@ export class ShopsService {
   ): Promise<{ latitude: number | null; longitude: number | null } | null> {
     try {
       const params = new URLSearchParams({ query });
-      const response = await fetch(`https://dapi.kakao.com/v2/local/search/address.json?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `KakaoAK ${kakaoRestApiKey}`,
+      const response = await fetch(
+        `https://dapi.kakao.com/v2/local/search/address.json?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `KakaoAK ${kakaoRestApiKey}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         return null;
       }
 
-      const data = (await response.json()) as { documents?: Array<{ x?: string; y?: string }> };
+      const data = (await response.json()) as {
+        documents?: Array<{ x?: string; y?: string }>;
+      };
       const match = data.documents?.[0];
       if (!match?.x || !match?.y) {
         return null;
@@ -174,19 +268,25 @@ export class ShopsService {
         addressdetails: '1',
         q: query,
       });
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Accept-Language': 'ko',
-          'User-Agent': 'MotoPay/1.0',
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept-Language': 'ko',
+            'User-Agent': 'MotoPay/1.0',
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         return { latitude: null, longitude: null };
       }
 
-      const data = (await response.json()) as Array<{ lat?: string; lon?: string }>;
+      const data = (await response.json()) as Array<{
+        lat?: string;
+        lon?: string;
+      }>;
       const match = data[0];
       if (!match?.lat || !match?.lon) {
         return { latitude: null, longitude: null };
@@ -216,8 +316,10 @@ export class ShopsService {
       ? await this.resolveCoordinates(addressToGeocode)
       : { latitude: null, longitude: null };
 
-    const latitude = dto.latitude ?? resolvedCoordinates.latitude ?? shop.latitude ?? null;
-    const longitude = dto.longitude ?? resolvedCoordinates.longitude ?? shop.longitude ?? null;
+    const latitude =
+      dto.latitude ?? resolvedCoordinates.latitude ?? shop.latitude ?? null;
+    const longitude =
+      dto.longitude ?? resolvedCoordinates.longitude ?? shop.longitude ?? null;
 
     await this.prisma.shop.update({
       where: { shopCode },
@@ -226,11 +328,15 @@ export class ShopsService {
         ...(dto.greeting !== undefined ? { greeting: dto.greeting } : {}),
         ...(dto.zipCode !== undefined ? { zipCode: dto.zipCode } : {}),
         ...(dto.address !== undefined ? { address: dto.address } : {}),
-        ...(dto.addressDetail !== undefined ? { addressDetail: dto.addressDetail } : {}),
+        ...(dto.addressDetail !== undefined
+          ? { addressDetail: dto.addressDetail }
+          : {}),
         latitude,
         longitude,
         ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
-        ...(dto.businessHours !== undefined ? { businessHours: dto.businessHours } : {}),
+        ...(dto.businessHours !== undefined
+          ? { businessHours: dto.businessHours }
+          : {}),
       },
     });
 

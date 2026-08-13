@@ -4,7 +4,7 @@ import { authedRequest } from "./http";
 
 export interface NewCarPurchaseListItem {
   vin: string;
-  dealerCode: string;
+  dealerCompanyId: number;
   customerName: string;
   phone: string;
   carBrandCode: string;
@@ -22,6 +22,9 @@ export interface NewCarPurchaseListItem {
   createdAt: string;
   updatedAt: string;
   componentCodes: string[];
+  used: boolean;
+  usedDate: string | null;
+  usedShopName: string | null;
 }
 
 export interface ListNewCarPurchasesParams {
@@ -39,7 +42,7 @@ export function listNewCarPurchases(params: ListNewCarPurchasesParams = {}): Pro
 
 export interface NewCarPurchaseInput {
   vin: string;
-  dealerCode: string;
+  dealerCompanyId: number;
   customerName: string;
   phone: string;
   carBrandCode: string;
@@ -71,7 +74,7 @@ export function bulkCreateNewCarPurchases(rows: NewCarPurchaseInput[]): Promise<
   });
 }
 
-export type UpdateNewCarPurchaseInput = Partial<Omit<NewCarPurchaseInput, "vin" | "dealerCode">>;
+export type UpdateNewCarPurchaseInput = Partial<Omit<NewCarPurchaseInput, "vin" | "dealerCompanyId">>;
 
 export function updateNewCarPurchase(vin: string, input: UpdateNewCarPurchaseInput): Promise<NewCarPurchaseListItem> {
   return authedRequest<NewCarPurchaseListItem>(`/admin/new-car-purchases/${vin}`, {

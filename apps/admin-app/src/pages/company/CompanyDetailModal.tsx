@@ -783,7 +783,15 @@ function CompanyBasicInfoTab({
 
 // ───────────────────────── 매장정보 탭(기본정보+사진+주소+카테고리) ─────────────────────────
 
-function ShopInfoTab({ companyId, onError }: { companyId: number; onError: (message: string) => void }) {
+function ShopInfoTab({
+  companyId,
+  company,
+  onError,
+}: {
+  companyId: number;
+  company: CompanyListItem;
+  onError: (message: string) => void;
+}) {
   const [shop, setShop] = useState<CompanyShopDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -792,6 +800,7 @@ function ShopInfoTab({ companyId, onError }: { companyId: number; onError: (mess
   const [zipCode, setZipCode] = useState("");
   const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
+  const [sameAsCompany, setSameAsCompany] = useState(false);
   const [phone, setPhone] = useState("");
   const [businessHours, setBusinessHours] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -842,6 +851,20 @@ function ShopInfoTab({ companyId, onError }: { companyId: number; onError: (mess
       },
       (message) => setError(message),
     );
+  };
+
+  // 체크 시 회사주소(기본정보 탭에 마지막으로 저장된 값)를 매장주소에 그대로 복사 — 이후 계속 연동되는
+  // 것은 아니라 체크를 해제하면 그 시점의 값을 그대로 두고 다시 직접 수정할 수 있게 둔다
+  const handleToggleSameAsCompany = () => {
+    setSameAsCompany((prev) => {
+      const next = !prev;
+      if (next) {
+        setZipCode(company.companyZipCode ?? "");
+        setAddress(company.companyAddress ?? "");
+        setAddressDetail(company.companyAddressDetail ?? "");
+      }
+      return next;
+    });
   };
 
   const toggleCategory = (detailCode: string) => {
@@ -987,13 +1010,25 @@ function ShopInfoTab({ companyId, onError }: { companyId: number; onError: (mess
       </div>
 
       <div className="space-y-1.5">
-        <label className={labelClass}>주소</label>
+        <div className="flex items-center justify-between">
+          <label className={labelClass}>주소</label>
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold text-on-surface-variant">
+            <input
+              type="checkbox"
+              checked={sameAsCompany}
+              onChange={handleToggleSameAsCompany}
+              className="h-3.5 w-3.5 rounded border-outline-variant text-primary"
+            />
+            회사주소와 동일
+          </label>
+        </div>
         <div className="flex gap-2">
           <input value={zipCode} disabled placeholder="우편번호" style={{ width: "96px" }} className={`${disabledInputClass} shrink-0`} />
           <button
             type="button"
             onClick={handleSearchAddress}
-            className="shrink-0 rounded-lg border border-primary px-3 py-2 text-[11px] font-bold whitespace-nowrap text-primary hover:bg-primary/5"
+            disabled={sameAsCompany}
+            className="shrink-0 rounded-lg border border-primary px-3 py-2 text-[11px] font-bold whitespace-nowrap text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             주소 검색
           </button>
@@ -1005,9 +1040,10 @@ function ShopInfoTab({ companyId, onError }: { companyId: number; onError: (mess
           <input
             value={addressDetail}
             onChange={(e) => setAddressDetail(e.target.value)}
+            disabled={sameAsCompany}
             placeholder="상세주소"
             style={{ width: "180px" }}
-            className={`${inputClass} shrink-0`}
+            className={`${sameAsCompany ? disabledInputClass : inputClass} shrink-0`}
           />
         </div>
       </div>
@@ -1877,7 +1913,7 @@ export default function CompanyDetailModal({
           )}
           {company && (
             <>
-              {activeTab === "shop" && isShop && <ShopInfoTab companyId={company.id} onError={setGlobalError} />}
+              {activeTab === "shop" && isShop && <ShopInfoTab companyId={company.id} company={company} onError={setGlobalError} />}
               {activeTab === "timeSlots" && isShop && <TimeSlotsTab companyId={company.id} />}
               {activeTab === "holidays" && isShop && <HolidaysTab companyId={company.id} />}
               {activeTab === "dailySlots" && isShop && <DailySlotsTab companyId={company.id} />}

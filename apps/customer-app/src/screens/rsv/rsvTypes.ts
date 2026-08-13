@@ -101,23 +101,8 @@ export const INST_CODE_BY_CAT_NAME: Record<string, string> = {
   "휠·타이어": "WHTIRE",
 };
 
-// TINT_POSITIONS(commonTypes.ts) 한글 부위명 -> CommonCodeDetail(code='BID_TINT_POSITION') 코드값
-export const TINT_POSITION_TO_CODE: Record<string, string> = {
-  "전면유리": "FRONT",
-  "측면 1열": "SIDE_1",
-  "측면 2열": "SIDE_2",
-  "후면유리": "REAR",
-  "선루프": "SUNROOF",
-};
-
-// CommonCodeDetail(code='BID_TINT_POSITION') 코드값 -> 한글 부위명(위 매핑의 역방향, 입찰 내용 상세의 제품 상세 화면 표시용)
-export const TINT_POSITION_LABELS: Record<string, string> = {
-  FRONT: "전면유리",
-  SIDE_1: "측면 1열",
-  SIDE_2: "측면 2열",
-  REAR: "후면유리",
-  SUNROOF: "선루프",
-};
+// 신차패키지(NcpkFlow)와 공유하는 부위 코드 매핑 — commonTypes.ts로 이동, 기존 import 경로 유지를 위해 재수출
+export { TINT_POSITION_TO_CODE, TINT_POSITION_LABELS } from "../common/commonTypes";
 
 // instCode -> 한글 라벨(내 요청 목록 카드 표시용, 위 매핑의 역방향)
 export const INST_CODE_LABELS: Record<string, string> = {
@@ -136,7 +121,7 @@ export interface Bidder {
   id: string;
   name: string;
   when: string;
-  items: Array<[string, number]>;
+  items: Array<[string, number, string]>; // [항목명(instCode 라벨), 가격, instCode] — instCode는 예약확정 카드에서 썬팅 항목 판별용
 }
 
 // id는 추천번호(planNo), when은 시공 예정 시각 라벨 — 평점·거리는 DB에 리뷰/좌표 데이터가 없어 Bidder와 동일하게 미표시
@@ -146,7 +131,7 @@ export interface RecoPlan {
   itemSummary: string; // "유리막 코팅" 또는 "유리막 코팅 외 1건" — 추천 상품 구성 요약
   reason: string;
   when: string;
-  plans: Array<[string, number, number]>; // [상품명, 소비자가, 제안가]
+  plans: Array<[string, number, number, string]>; // [상품명, 소비자가, 제안가, instCode]
 }
 
 export interface CouponDef {

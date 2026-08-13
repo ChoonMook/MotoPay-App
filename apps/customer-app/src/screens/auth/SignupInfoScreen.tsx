@@ -75,7 +75,9 @@ export default function SignupInfoScreen({
     : idChecked
       ? "사용 가능한 아이디예요."
       : username
-        ? "중복확인을 해주세요."
+        ? username.length < 4
+          ? "아이디는 4자 이상 입력해주세요."
+          : "중복확인을 해주세요."
         : "로그인에 사용할 아이디를 입력하세요.";
 
   return (

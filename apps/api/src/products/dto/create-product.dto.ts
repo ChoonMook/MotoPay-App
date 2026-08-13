@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsInt,
   IsOptional,
+  IsPositive,
   IsString,
   Min,
   MinLength,
@@ -18,22 +19,28 @@ export class CreateProductDto {
   @MinLength(1)
   prodType: string;
 
-  @ApiPropertyOptional({ description: '브랜드 -> CommonCodeDetail(code=PROD_BRAND)' })
+  @ApiPropertyOptional({
+    description: '브랜드 -> CommonCodeDetail(code=PROD_BRAND)',
+  })
   @IsOptional()
   @IsString()
   brand?: string;
 
-  @ApiPropertyOptional({ description: '상품분류 -> CommonCodeDetail(code=PROD_CAT)' })
+  @ApiPropertyOptional({
+    description: '상품분류 -> CommonCodeDetail(code=PROD_CAT)',
+  })
   @IsOptional()
   @IsString()
   prodCat?: string;
 
   @ApiPropertyOptional({
-    description: '딜러사 -> CommonCodeDetail(code=DEALER) — 패키지(PKG) 상품만 값을 가짐',
+    description:
+      '딜러사 -> Company.id(coType=DEALER) — 패키지(PKG) 상품만 값을 가짐',
   })
   @IsOptional()
-  @IsString()
-  dealerCode?: string;
+  @IsInt()
+  @IsPositive()
+  dealerCompanyId?: number;
 
   @ApiProperty({ description: '상품명' })
   @IsString()
@@ -52,7 +59,8 @@ export class CreateProductDto {
   originPrice?: number;
 
   @ApiPropertyOptional({
-    description: '공급가(원) — 원가. SUPER_ADMIN·SETTLEMENT 권한 관리자의 요청만 실제로 저장됨',
+    description:
+      '공급가(원) — 원가. SUPER_ADMIN·SETTLEMENT 권한 관리자의 요청만 실제로 저장됨',
   })
   @IsOptional()
   @IsInt()

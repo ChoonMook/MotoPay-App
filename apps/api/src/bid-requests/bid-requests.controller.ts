@@ -56,12 +56,18 @@ export class BidRequestsController {
 
   @Get(':id/offers')
   @ApiOperation({ summary: '요청에 도착한 입찰 목록 조회(업체 비교)' })
-  listOffers(@CurrentUser() user: SafeUser, @Param('id', ParseIntPipe) id: number) {
+  listOffers(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.bidRequestsService.listOffersForRequest(user.id, id);
   }
 
   @Patch(':id/select')
-  @ApiOperation({ summary: '입찰 중 하나를 선택 — 입찰중(OPEN) 상태만 가능, 선택 즉시 선정완료(SELECTED)로 전환' })
+  @ApiOperation({
+    summary:
+      '입찰 중 하나를 선택 — 입찰중(OPEN) 상태만 가능, 선택 즉시 선정완료(SELECTED)로 전환',
+  })
   select(
     @CurrentUser() user: SafeUser,
     @Param('id', ParseIntPipe) id: number,
@@ -71,13 +77,21 @@ export class BidRequestsController {
   }
 
   @Get(':id/plans')
-  @ApiOperation({ summary: '요청에 도착한 추천안 목록 조회(업체 비교, 전문가추천 전용)' })
-  listPlans(@CurrentUser() user: SafeUser, @Param('id', ParseIntPipe) id: number) {
+  @ApiOperation({
+    summary: '요청에 도착한 추천안 목록 조회(업체 비교, 전문가추천 전용)',
+  })
+  listPlans(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.bidRequestsService.listPlansForRequest(user.id, id);
   }
 
   @Patch(':id/select-plan')
-  @ApiOperation({ summary: '추천안 중 하나를 선택 — 입찰중(OPEN) 상태만 가능, 선택 즉시 선정완료(SELECTED)로 전환' })
+  @ApiOperation({
+    summary:
+      '추천안 중 하나를 선택 — 입찰중(OPEN) 상태만 가능, 선택 즉시 선정완료(SELECTED)로 전환',
+  })
   selectPlan(
     @CurrentUser() user: SafeUser,
     @Param('id', ParseIntPipe) id: number,

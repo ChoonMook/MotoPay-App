@@ -4,6 +4,8 @@ import shopThumb from "../../assets/images/shop.png";
 import CommonHeader from "./CommonHeader";
 import Button from "../../components/ui/Button";
 import { ChevronRightIcon, AlertCircleIcon } from "./commonIcons";
+import { nfmt } from "../ncp/ncpFormat";
+import type { PackageSelectionItemView } from "./commonTypes";
 
 export interface BookingTimelineStep {
   label: string;
@@ -19,11 +21,19 @@ interface BookingDtlScreenProps {
   /** 없으면 업체 카드가 클릭 불가(프로필 화면 없는 채널용) */
   onOpenProfile?: () => void;
   bookingRows: Array<[string, string]>;
+  /** 신차패키지(PKG)에서만 전달 — 시공 항목별 제품·가격(썬팅은 부위별 농도) 상세 카드. 없으면 표시하지 않음(예약시공 채널은 미사용) */
+  items?: PackageSelectionItemView[];
+  /** items와 함께 전달 — 시공 항목 카드 하단에 표시할 총액 */
+  priceLabel?: string;
+  /** priceLabel 행의 라벨 텍스트 — 신차패키지는 "업그레이드 차액", 예약시공은 "확정 견적" 등 채널마다 다름 */
+  priceRowLabel?: string;
   timeline: BookingTimelineStep[];
   cancelled: boolean;
   cancelReasonLabel?: string;
   cancelRefundLabel?: string;
   cancellable: boolean;
+  /** true면 업체명·시공항목 등 아직 확정되지 않은 값이 화면에 잠깐 보였다가 바뀌는 걸 막기 위해 스피너만 보여줌 */
+  loading?: boolean;
   onOpenResched: () => void;
   onOpenCancel: () => void;
 }
@@ -34,14 +44,29 @@ export default function BookingDtlScreen({
   shopMeta,
   onOpenProfile,
   bookingRows,
+  items,
+  priceLabel,
+  priceRowLabel = "업그레이드 차액",
   timeline,
   cancelled,
   cancelReasonLabel,
   cancelRefundLabel,
   cancellable,
+  loading = false,
   onOpenResched,
   onOpenCancel,
 }: BookingDtlScreenProps) {
+  if (loading) {
+    return (
+      <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
+        <CommonHeader title="예약 상세" onBack={onBack} />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-gray-200 border-t-brand" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <CommonHeader title="예약 상세" onBack={onBack} />
@@ -73,6 +98,32 @@ export default function BookingDtlScreen({
             </div>
           ))}
         </div>
+
+        {items && items.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
+            <div className="pt-3.5 pb-1 text-xs font-bold text-gray-500">시공 항목</div>
+            {items.map((it, i) => (
+              <div key={`${it.category}-${it.product}-${i}`} className="border-b border-gray-100 py-3">
+                <div className="flex items-center justify-between gap-2.5">
+                  <div className="min-w-0">
+                    {it.category && <div className="text-[11px] text-gray-500">{it.category}</div>}
+                    <div className={`text-[13px] font-bold text-gray-900 ${it.category ? "mt-0.5" : ""}`}>{it.product}</div>
+                  </div>
+                  <span className="flex-none text-[13px] font-bold text-gray-900">
+                    {it.price > 0 ? `+${nfmt(it.price)}원` : "기본 포함"}
+                  </span>
+                </div>
+                {it.tintDetail && <div className="mt-1.5 text-[11px] text-gray-500">{it.tintDetail}</div>}
+              </div>
+            ))}
+            {priceLabel && (
+              <div className="flex items-center justify-between py-3.5">
+                <span className="text-xs text-gray-500">{priceRowLabel}</span>
+                <span className="text-right text-[13px] font-bold text-gray-900">{priceLabel}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {cancelled && (
           <div className="mt-4 flex items-center gap-2.5 rounded-[14px] border border-status-danger bg-status-danger-bg px-4 py-3.5">

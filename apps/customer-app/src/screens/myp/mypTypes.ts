@@ -4,7 +4,6 @@ export type MypScreenId =
   | "cars"
   | "carreg"
   | "caredit"
-  | "cst"
   | "notisettings"
   | "infoedit"
   | "pwedit"
@@ -21,6 +20,7 @@ export interface Car {
   id: string;
   maker: string;
   model: string;
+  trimName: string | null;
   year: string;
   plate: string;
   isDefault: boolean;

@@ -81,6 +81,7 @@ export interface ShopBidRequestView {
   myOffer: {
     offerNo: string;
     items: BidOfferItem[];
+    scheduledDate: string;
     scheduledTime: string;
     memo: string | null;
   } | null;
@@ -89,6 +90,7 @@ export interface ShopBidRequestView {
     planNo: string;
     items: BidPlanItem[];
     positions: BidPlanPosition[];
+    scheduledDate: string;
     scheduledTime: string;
     reason: string;
   } | null;
@@ -97,8 +99,10 @@ export interface ShopBidRequestView {
 // 고객이 보는 응찰(입찰) 뷰 — 항목별 견적을 그대로 노출(원본 디자인의 "항목별 견적 투명 공개" 컨셉)
 export interface BidOfferView {
   offerNo: string;
+  shopCode: string;
   shopName: string;
   items: BidOfferItem[];
+  scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(파트너가 다른 날짜로 응찰한 경우)
   scheduledTime: string; // "HH:mm"
   memo: string | null;
   createdAt: string;
@@ -107,9 +111,11 @@ export interface BidOfferView {
 // 고객이 보는 추천안(EXPERT) 뷰
 export interface BidPlanView {
   planNo: string;
+  shopCode: string;
   shopName: string;
   items: BidPlanItem[];
   positions: BidPlanPosition[];
+  scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(파트너가 다른 날짜로 추천한 경우)
   scheduledTime: string; // "HH:mm"
   reason: string;
   createdAt: string;
@@ -163,6 +169,35 @@ export class BidRequestsService {
     );
 
     const created = await this.prisma.$transaction(async (tx) => {
+      // 조건을 바꿔 다시 등록하는 경우 — 이미 응찰(업체 입찰/추천안)이 붙은 이전 OPEN 요청이 있으면 등록 자체를
+      // 막고(업체가 이미 작업 중일 수 있어 조용히 취소하면 안 됨), 응찰이 하나도 없는 이전 OPEN 요청은 자동
+      // 취소하고 새 요청을 등록한다. 취소사유는 사용자가 직접 고른 게 아니라 시스템이 자동으로 정한 것이라
+      // "추후 재요청"(RE_REQUEST)을 그대로 쓰지 않고 기타(ETC) + 안내문구로 구분해서 기록한다(2026-08-14 사용자 확정)
+      // findMany로 전부 확인 — 한 회원이 OPEN 요청을 동시에 여러 건 갖고 있을 수도 있어(findFirst로 하나만
+      // 보면 다른 요청에 붙은 응찰을 놓칠 수 있음) 전체를 검사하고 전부 취소한다
+      const openRequests = await tx.bidRequest.findMany({
+        where: { memberId, status: 'OPEN' },
+        include: { _count: { select: { offers: true, plans: true } } },
+      });
+      const hasOffers = openRequests.some(
+        (r) => r._count.offers > 0 || r._count.plans > 0,
+      );
+      if (hasOffers) {
+        throw new BadRequestException(
+          '이미 응찰한 업체가 있는 진행중인 요청이 있어 새로 등록할 수 없습니다. 기존 요청을 확인해주세요.',
+        );
+      }
+      if (openRequests.length > 0) {
+        await tx.bidRequest.updateMany({
+          where: { id: { in: openRequests.map((r) => r.id) } },
+          data: {
+            status: 'CANCELLED',
+            cancelReason: 'ETC',
+            cancelReasonNote: '고객 재요청',
+          },
+        });
+      }
+
       const req = await tx.bidRequest.create({
         data: {
           requestNo: '0'.repeat(10),
@@ -311,6 +346,7 @@ export class BidRequestsService {
           ? {
               offerNo: myOffer.offerNo,
               items: myOffer.items,
+              scheduledDate: formatDateOnly(myOffer.scheduledDate ?? r.desiredDate),
               scheduledTime: formatTimeOnly(myOffer.scheduledTime),
               memo: myOffer.memo,
             }
@@ -320,6 +356,7 @@ export class BidRequestsService {
               planNo: myPlan.planNo,
               items: myPlan.items,
               positions: myPlan.positions,
+              scheduledDate: formatDateOnly(myPlan.scheduledDate ?? r.desiredDate),
               scheduledTime: formatTimeOnly(myPlan.scheduledTime),
               reason: myPlan.reason,
             }
@@ -376,10 +413,20 @@ export class BidRequestsService {
       throw new BadRequestException('요청한 시공 항목과 일치하지 않습니다.');
     }
 
+    // 희망일에 슬롯이 없으면 파트너가 다른 날짜를 지정해 응찰할 수 있음 — 생략 시 요청의 희망일 그대로 사용
+    const scheduledDate = dto.scheduledDate
+      ? parseDateOnly(dto.scheduledDate)
+      : request.desiredDate;
+    if (scheduledDate < todayUtcMidnight()) {
+      throw new BadRequestException('시공 예정일은 오늘 이후로 선택해주세요.');
+    }
     const schedule = await this.shopScheduleService.getDailySchedule(
       shopCode,
-      formatDateOnly(request.desiredDate),
+      formatDateOnly(scheduledDate),
     );
+    if (schedule.isHoliday) {
+      throw new BadRequestException('선택한 날짜는 업체 휴무일입니다.');
+    }
     const slot = schedule.slots.find((s) => s.time === dto.scheduledTime);
     if (
       !slot ||
@@ -399,6 +446,7 @@ export class BidRequestsService {
         await tx.bidOffer.update({
           where: { offerNo },
           data: {
+            scheduledDate,
             scheduledTime: parseTimeOnly(dto.scheduledTime),
             memo: dto.memo,
           },
@@ -410,6 +458,7 @@ export class BidRequestsService {
             offerNo: '0'.repeat(10),
             requestNo,
             shopCode,
+            scheduledDate,
             scheduledTime: parseTimeOnly(dto.scheduledTime),
             memo: dto.memo,
           },
@@ -494,10 +543,20 @@ export class BidRequestsService {
       );
     }
 
+    // 희망일에 슬롯이 없으면 파트너가 다른 날짜를 지정해 추천할 수 있음 — 생략 시 요청의 희망일 그대로 사용
+    const scheduledDate = dto.scheduledDate
+      ? parseDateOnly(dto.scheduledDate)
+      : request.desiredDate;
+    if (scheduledDate < todayUtcMidnight()) {
+      throw new BadRequestException('시공 예정일은 오늘 이후로 선택해주세요.');
+    }
     const schedule = await this.shopScheduleService.getDailySchedule(
       shopCode,
-      formatDateOnly(request.desiredDate),
+      formatDateOnly(scheduledDate),
     );
+    if (schedule.isHoliday) {
+      throw new BadRequestException('선택한 날짜는 업체 휴무일입니다.');
+    }
     const slot = schedule.slots.find((s) => s.time === dto.scheduledTime);
     if (
       !slot ||
@@ -517,6 +576,7 @@ export class BidRequestsService {
         await tx.bidPlan.update({
           where: { planNo },
           data: {
+            scheduledDate,
             scheduledTime: parseTimeOnly(dto.scheduledTime),
             reason: dto.reason,
           },
@@ -529,6 +589,7 @@ export class BidRequestsService {
             planNo: '0'.repeat(10),
             requestNo,
             shopCode,
+            scheduledDate,
             scheduledTime: parseTimeOnly(dto.scheduledTime),
             reason: dto.reason,
           },
@@ -575,8 +636,10 @@ export class BidRequestsService {
     });
     return offers.map((o) => ({
       offerNo: o.offerNo,
+      shopCode: o.shopCode,
       shopName: o.shop.name,
       items: o.items,
+      scheduledDate: formatDateOnly(o.scheduledDate ?? request.desiredDate),
       scheduledTime: formatTimeOnly(o.scheduledTime),
       memo: o.memo,
       createdAt: o.createdAt.toISOString(),
@@ -604,9 +667,11 @@ export class BidRequestsService {
     });
     return plans.map((p) => ({
       planNo: p.planNo,
+      shopCode: p.shopCode,
       shopName: p.shop.name,
       items: p.items,
       positions: p.positions,
+      scheduledDate: formatDateOnly(p.scheduledDate ?? request.desiredDate),
       scheduledTime: formatTimeOnly(p.scheduledTime),
       reason: p.reason,
       createdAt: p.createdAt.toISOString(),
@@ -648,10 +713,12 @@ export class BidRequestsService {
         },
       });
 
+      // 응찰 시 파트너가 희망일과 다른 날짜를 지정했을 수 있어(scheduledDate) 실제 예약은 그 날짜로 생성
+      const offerDate = offer.scheduledDate ?? request.desiredDate;
       const reservedCount = await tx.reservation.count({
         where: {
           shopCode: offer.shopCode,
-          date: request.desiredDate,
+          date: offerDate,
           time: offer.scheduledTime,
           status: 'CONFIRMED',
         },
@@ -660,7 +727,7 @@ export class BidRequestsService {
         data: {
           reservationNo: '0'.repeat(10),
           shopCode: offer.shopCode,
-          date: request.desiredDate,
+          date: offerDate,
           time: offer.scheduledTime,
           seq: reservedCount + 1,
           reservationType: 'BID',
@@ -712,10 +779,12 @@ export class BidRequestsService {
         },
       });
 
+      // 추천 시 파트너가 희망일과 다른 날짜를 지정했을 수 있어(scheduledDate) 실제 예약은 그 날짜로 생성
+      const planDate = plan.scheduledDate ?? request.desiredDate;
       const reservedCount = await tx.reservation.count({
         where: {
           shopCode: plan.shopCode,
-          date: request.desiredDate,
+          date: planDate,
           time: plan.scheduledTime,
           status: 'CONFIRMED',
         },
@@ -724,7 +793,7 @@ export class BidRequestsService {
         data: {
           reservationNo: '0'.repeat(10),
           shopCode: plan.shopCode,
-          date: request.desiredDate,
+          date: planDate,
           time: plan.scheduledTime,
           seq: reservedCount + 1,
           reservationType: 'BID',

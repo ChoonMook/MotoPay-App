@@ -78,7 +78,7 @@ model CommonCodeDetail {
   detailName String // 상세코드명
   ref1       String? // 참조1 — 예: CAR_MODEL의 소속 브랜드코드(CAR_BRAND.code)
   ref2       String? // 참조2
-  sortOrder  Int      @default(0) // 표시 순서(AD-SYS-03 공통 코드 관리 화면 전용 — 기존 공개 조회 API는 이 컬럼 추가 전과 동일하게 detailCode 기준 정렬 유지)
+  sortOrder  Int      @default(0) // 표시 순서 — 공개 조회 API(GET /common-codes/:code)도 이 값(1차) + detailCode(2차, 동점 시 기존 알파벳순 유지)로 정렬(2026-08-14부터, AD-CTLG-03 시공항목 관리처럼 정렬순서를 직접 관리하는 그룹에 반영하기 위함)
   useYn      Boolean  @default(true) // 사용여부
   createdBy  String? // 등록자 -> AdminAccount.username(FK 없음)
   createdAt  DateTime @default(now()) @db.Timestamp(3)
@@ -554,6 +554,24 @@ model Reservation {
   completedAt         DateTime? @db.Timestamp(3) // 시공 완료 처리 일시 — progressStatus가 DONE으로 바뀐 시점
   handoverConfirmedAt DateTime? @db.Timestamp(3) // 고객 인수확인 일시 — 직접 확인하거나, completedAt+3일 경과 시 자동 확정된 시점
   requestNo           String?   @db.Char(10) // reservationType='BID'인 건만 값 존재 -> BidRequest.requestNo(낙찰되어 생성된 예약)
+  // 결제 정보(2026-08-14 추가) — 업체/추천안 선정 직후가 아니라 결제 화면에서 "결제하기"를 눌러야 채워짐(null이면 결제 미확정).
+  // 쿠폰/포인트는 아직 별도 시스템이 없어(Coupon/Point 테이블 미존재) couponName은 결제 시점 이름 스냅샷, pointsUsed는 사용액(원) 그대로 기록
+  paymentMethod       String? // 결제수단 -> "BANK"(무통장입금)|"CARD"(카드결제)
+  couponName          String? // 적용한 쿠폰명 스냅샷 — 미적용이면 null
+  couponDiscount      Int? // 쿠폰 할인액(원) — 미적용이면 null
+  pointsUsed          Int? // 사용한 포인트(원) — 미사용이면 0
+  paidAmount          Int? // 최종 결제금액(원) — 결제 확정 전이면 null
+  paidAt              DateTime? @db.Timestamp(3) // 결제 확정 일시 — null이면 결제 미확정
+  // 파트너 일정변경 요청(2026-08-14 추가) — 파트너가 새 일시를 제안하면 고객이 수락/거절.
+  // 수락되면 date/time이 갱신되면서 이 필드들은 모두 null로 초기화됨. 거절되면 reschedStatus='REJECTED'로
+  // 남아있다가 파트너가 다시 요청하면 새 값으로 덮어써짐(요청은 항상 최신 1건만 유지, 이력 보관 안 함)
+  reschedStatus        String? // "REQUESTED"(응답 대기)|"REJECTED"(거절됨) — null이면 활성 요청 없음
+  reschedDate          DateTime? @db.Date // 파트너가 제안한 새 날짜
+  reschedTime          DateTime? @db.Time(0) // 파트너가 제안한 새 시각
+  reschedReason        String?   @db.Text // 파트너가 남긴 변경 사유
+  reschedRequestedAt   DateTime? @db.Timestamp(3) // 요청 등록 일시
+  reschedRejectReason  String?   @db.Text // 고객이 거절 시 남긴 사유(선택 입력) — REJECTED 상태일 때만 값 있을 수 있음
+  reschedRespondedAt   DateTime? @db.Timestamp(3) // 고객이 거절 처리한 일시(수락 시엔 필드 자체가 초기화되므로 기록 안 남음)
   createdBy           String? // 등록자 — 예약 신청한 회원 자기 자신의 User.id(FK 없음)
   createdAt           DateTime  @default(now()) @db.Timestamp(3)
   updatedBy           String? // 수정자 — 회원 자기 자신의 User.id 또는 PartnerUser.username(FK 없음, 고객 취소·파트너 시공완료처리 모두 이 테이블을 수정)
@@ -680,7 +698,10 @@ model BidOffer {
   offerNo       String   @unique @db.Char(10) // 응찰번호 — id를 10자리로 0-padding(BidRequest.requestNo와 동일 방식)
   requestNo     String   @db.Char(10) // 대상 요청 -> BidRequest.requestNo
   shopCode      String // 응찰 업체 -> Shop.shopCode
-  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — 날짜는 항상 BidRequest.desiredDate와 동일(파트너는 그 날짜의 업체 실제 슬롯 중에서만 선택 가능)
+  // 시공 예정일 — 기본은 BidRequest.desiredDate와 같지만, 그 날짜에 예약 가능한 슬롯이 없으면 파트너가 다른
+  // 날짜를 골라 응찰할 수 있음(2026-08-14 추가). null이면(이 컬럼 추가 이전 레거시 행) desiredDate와 동일하게 취급
+  scheduledDate DateTime? @db.Date
+  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
   memo          String?  @db.Text
   createdBy     String? // 등록자 — 응찰한 업체 소속 PartnerUser.username(FK 없음)
   createdAt     DateTime @default(now()) @db.Timestamp(3)
@@ -714,7 +735,9 @@ model BidPlan {
   planNo        String   @unique @db.Char(10) // 추천번호 — id를 10자리로 0-padding(BidOffer.offerNo와 동일 방식)
   requestNo     String   @db.Char(10) // 대상 요청 -> BidRequest.requestNo
   shopCode      String // 추천 업체 -> Shop.shopCode
-  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — 날짜는 항상 BidRequest.desiredDate와 동일(BidOffer와 동일 관례)
+  // 시공 예정일 — BidOffer.scheduledDate와 동일한 이유로 추가(기본은 desiredDate, 슬롯 없으면 다른 날짜로 추천 가능)
+  scheduledDate DateTime? @db.Date
+  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
   reason        String   @db.Text // 추천 사유
   createdBy     String? // 등록자 — 추천안을 제출한 업체 소속 PartnerUser.username(FK 없음)
   createdAt     DateTime @default(now()) @db.Timestamp(3)

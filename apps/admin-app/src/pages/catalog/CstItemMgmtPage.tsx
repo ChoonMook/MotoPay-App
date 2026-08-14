@@ -61,9 +61,16 @@ function resizeImageToDataUri(file: File): Promise<string> {
   });
 }
 
-function AddItemModal({ onCancel, onSubmit }: { onCancel: () => void; onSubmit: (v: { detailCode: string; detailName: string }) => Promise<void> }) {
+function AddItemModal({
+  onCancel,
+  onSubmit,
+}: {
+  onCancel: () => void;
+  onSubmit: (v: { detailCode: string; detailName: string; ref1?: string }) => Promise<void>;
+}) {
   const [detailCode, setDetailCode] = useState("");
   const [detailName, setDetailName] = useState("");
+  const [desc, setDesc] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -76,7 +83,11 @@ function AddItemModal({ onCancel, onSubmit }: { onCancel: () => void; onSubmit: 
     setSubmitting(true);
     setError("");
     try {
-      await onSubmit({ detailCode: detailCode.trim().toUpperCase(), detailName: detailName.trim() });
+      await onSubmit({
+        detailCode: detailCode.trim().toUpperCase(),
+        detailName: detailName.trim(),
+        ref1: desc.trim() || undefined,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "시공항목 추가에 실패했습니다.");
       setSubmitting(false);
@@ -100,6 +111,16 @@ function AddItemModal({ onCancel, onSubmit }: { onCancel: () => void; onSubmit: 
           <div className="space-y-1.5">
             <label className={labelClass}>항목명</label>
             <input value={detailName} onChange={(e) => setDetailName(e.target.value)} placeholder="예: 랩핑" className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>항목설명</label>
+            <input
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="예: 전면·측면·후면·선루프"
+              className={inputClass}
+            />
+            <p className="text-[11px] text-on-surface-variant">고객앱 시공항목 선택 화면에 항목명 아래 부가 설명으로 노출됩니다.</p>
           </div>
           {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
         </div>
@@ -125,11 +146,12 @@ function EditItemModal({
 }: {
   item: CommonCodeDetailApi;
   onCancel: () => void;
-  onSave: (detailName: string, useYn: boolean) => Promise<void>;
+  onSave: (detailName: string, desc: string, useYn: boolean) => Promise<void>;
   onUploadIcon: (file: File) => Promise<void>;
   onDeleteIcon: () => Promise<void>;
 }) {
   const [detailName, setDetailName] = useState(item.detailName);
+  const [desc, setDesc] = useState(item.ref1 ?? "");
   const [useYn, setUseYn] = useState(item.useYn);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -144,7 +166,7 @@ function EditItemModal({
     setSubmitting(true);
     setError("");
     try {
-      await onSave(detailName.trim(), useYn);
+      await onSave(detailName.trim(), desc.trim(), useYn);
       onCancel();
     } catch (err) {
       setError(err instanceof Error ? err.message : "저장에 실패했습니다.");
@@ -184,6 +206,11 @@ function EditItemModal({
           <div className="space-y-1.5">
             <label className={labelClass}>항목명</label>
             <input value={detailName} onChange={(e) => setDetailName(e.target.value)} className={inputClass} />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>항목설명</label>
+            <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="예: 전면·측면·후면·선루프" className={inputClass} />
+            <p className="text-[11px] text-on-surface-variant">고객앱 시공항목 선택 화면에 항목명 아래 부가 설명으로 노출됩니다.</p>
           </div>
           <div className="space-y-1.5">
             <label className={labelClass}>사용여부</label>
@@ -340,7 +367,7 @@ export default function CstItemMgmtPage() {
   const kw = keyword.trim();
   const filtered = kw ? items.filter((i) => i.detailName.includes(kw)) : items;
 
-  const handleAdd = async (v: { detailCode: string; detailName: string }) => {
+  const handleAdd = async (v: { detailCode: string; detailName: string; ref1?: string }) => {
     const created = await createDetail(GROUP, v);
     setItems((prev) => [...prev, { ...created, sortOrder: prev.length }]);
     // 새로 추가된 항목의 정렬순서를 목록 끝 번호로 명시적으로 맞춤(백엔드가 채번한 값과 화면 표시 순서 일치시킴)
@@ -349,9 +376,9 @@ export default function CstItemMgmtPage() {
     setToast("시공항목을 추가했습니다.");
   };
 
-  const handleSaveEdit = async (detailName: string, useYn: boolean) => {
+  const handleSaveEdit = async (detailName: string, desc: string, useYn: boolean) => {
     if (!editingItem) return;
-    const updated = await updateDetail(GROUP, editingItem.detailCode, { detailName, useYn });
+    const updated = await updateDetail(GROUP, editingItem.detailCode, { detailName, ref1: desc, useYn });
     setItems((prev) => prev.map((i) => (i.detailCode === updated.detailCode ? { ...updated, sortOrder: i.sortOrder } : i)));
     setToast("시공항목을 저장했습니다.");
   };
@@ -428,6 +455,13 @@ export default function CstItemMgmtPage() {
       { headerName: "아이콘", colId: "icon", width: 80, sortable: false, resizable: false, cellRenderer: IconCellRenderer },
       { headerName: "항목코드", field: "detailCode", flex: 1, minWidth: 120, cellClass: "font-mono" },
       { headerName: "항목명", field: "detailName", flex: 1.4, minWidth: 160 },
+      {
+        headerName: "항목설명",
+        field: "ref1",
+        flex: 1.8,
+        minWidth: 200,
+        valueFormatter: (p) => p.value || "-",
+      },
       {
         headerName: "사용여부",
         colId: "useYnStatus",

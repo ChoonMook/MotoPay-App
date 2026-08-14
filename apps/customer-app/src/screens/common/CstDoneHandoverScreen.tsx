@@ -17,11 +17,13 @@ export interface VehicleSummaryItem {
   prod?: string;
   sub: string;
   tag: "기본" | "업그레이드";
+  tintDetail?: string;
 }
 
 export interface VehicleSummary {
   car: string;
   vin: string;
+  packageName?: string | null;
   items: VehicleSummaryItem[];
 }
 
@@ -76,6 +78,12 @@ export default function CstDoneHandoverScreen({
               </div>
               <span className="text-[11px] font-semibold text-gray-500 tabular-nums">VIN {vehicleSummary.vin}</span>
             </div>
+            {vehicleSummary.packageName && (
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-gray-500">패키지</span>
+                <span className="text-[13px] font-bold text-gray-800">{vehicleSummary.packageName}</span>
+              </div>
+            )}
             <div className="border-t border-gray-100 pt-0.5">
               {vehicleSummary.items.map((it, i) => (
                 <div
@@ -86,6 +94,7 @@ export default function CstDoneHandoverScreen({
                     <div className="text-[13.5px] font-bold text-gray-900">{it.name}</div>
                     {it.prod && <div className="mt-0.5 text-xs font-semibold text-gray-600">{it.prod}</div>}
                     <div className="mt-px text-[11.5px] text-gray-500">{it.sub}</div>
+                    {it.tintDetail && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.tintDetail}</div>}
                   </div>
                   <span
                     className={`flex-none rounded-md px-2 py-[3px] text-[10.5px] font-extrabold ${

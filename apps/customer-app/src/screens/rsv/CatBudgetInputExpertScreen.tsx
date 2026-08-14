@@ -1,7 +1,8 @@
 // CU-RSVC-07: 카테고리+예산 입력(전문가 추천) - 카테고리 다중 선택 + 전체 예산 입력 + 요청사항(선택)
+// 카테고리 목록(catDefs)은 admin-app 기준정보 > 시공항목 관리(AD-CTLG-03)에 등록된 CAR_INST 그대로 —
+// RsvFlow.tsx가 조회해 내려준다(하드코딩된 카테고리 문구 없음)
 import Button from "../../components/ui/Button";
 import RsvHeader from "./RsvHeader";
-import { CAT_DEFS } from "./rsvTypes";
 import { nfmt, parseDigits } from "./rsvFormat";
 
 const STEP_LABELS = ["항목 선택", "조건 입력", "입찰 비교"];
@@ -12,11 +13,18 @@ const BUDGET_CHIPS: Array<[number, string]> = [
   [1000000, "100만"],
 ];
 
+export interface CatDef {
+  code: string; // -> CommonCodeDetail(code='CAR_INST')
+  name: string;
+}
+
 interface CatBudgetInputExpertScreenProps {
+  catDefs: CatDef[];
+  loading: boolean;
   catCats: Record<string, boolean>;
   budget: number;
   catReq: string;
-  onToggleCat: (name: string) => void;
+  onToggleCat: (code: string) => void;
   onBudgetChange: (n: number) => void;
   onCatReqChange: (value: string) => void;
   onBack: () => void;
@@ -24,6 +32,8 @@ interface CatBudgetInputExpertScreenProps {
 }
 
 export default function CatBudgetInputExpertScreen({
+  catDefs,
+  loading,
   catCats,
   budget,
   catReq,
@@ -47,22 +57,28 @@ export default function CatBudgetInputExpertScreen({
         <div className="mx-0.5 mb-2.5 text-sm font-extrabold text-gray-900">
           관심 카테고리 <span className="text-[11px] font-bold text-brand">· 복수 선택</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {CAT_DEFS.map((name) => {
-            const on = !!catCats[name];
-            return (
-              <span
-                key={name}
-                onClick={() => onToggleCat(name)}
-                className={`cursor-pointer rounded-full px-[15px] py-[9px] text-[13px] ${
-                  on ? "bg-brand font-extrabold text-white" : "bg-gray-100 font-semibold text-gray-600"
-                }`}
-              >
-                {name}
-              </span>
-            );
-          })}
-        </div>
+        {loading ? (
+          <div className="py-6 text-center text-sm text-gray-400">불러오는 중...</div>
+        ) : catDefs.length === 0 ? (
+          <div className="py-6 text-center text-sm text-gray-400">현재 신청 가능한 카테고리가 없어요</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {catDefs.map(({ code, name }) => {
+              const on = !!catCats[code];
+              return (
+                <span
+                  key={code}
+                  onClick={() => onToggleCat(code)}
+                  className={`cursor-pointer rounded-full px-[15px] py-[9px] text-[13px] ${
+                    on ? "bg-brand font-extrabold text-white" : "bg-gray-100 font-semibold text-gray-600"
+                  }`}
+                >
+                  {name}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mx-0.5 mt-[22px] mb-2.5 text-sm font-extrabold text-gray-900">전체 예산</div>
         <div className="flex items-center gap-2 rounded-xl border border-gray-400 bg-white px-3.5">

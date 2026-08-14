@@ -52,3 +52,15 @@
 - [x] `apps/customer-mobile`: `WebViewScreen.tsx`에 `BackHandler`로 하드웨어 백버튼 가로채기 추가 → 웹의 `window.__motoConsumeBack()`을 `injectJavaScript`로 호출해 현재 화면이 처리했는지 확인 → 처리 못 했으면(더 갈 곳 없는 화면 루트) `window.MotoBridge.postMessage({type:"nav:exit"})`로 알려주고 네이티브가 `BackHandler.exitApp()` 호출
 - [x] `apps/customer-app`: `src/native/backHandler.ts`(신규) — 화면·시트가 열려 있는 동안 뒤로가기 동작을 등록하는 스택 유틸. `App.tsx` + 7개 Flow(Auth/Rsv/Shop/Myp/Ncpk/Point/Cs) 전부에 연결해 각 화면 상단 '‹' 버튼의 기존 `onBack`/`onClose` 로직을 하드웨어 백버튼에서도 그대로 재사용하도록 미러링
 - [x] 검증: Playwright로 `window.__motoConsumeBack()`을 직접 호출해 웹 로직 전체(로그인 루트/화면 뒤로가기/시트 닫기/홈 종료) 검증 + 에뮬레이터에 디버그 빌드 설치해 실기 하드웨어 백버튼으로 3가지 케이스(홈 루트→앱 종료, 쇼핑몰→홈 복귀, 로그아웃 시트→시트만 닫힘) 전부 확인 완료
+
+## Phase 5: 푸시 알림 (계획, 2026-08-13)
+
+> 범위·트리거는 `server/checklist.md` Phase 28과 동일 결정 공유(customer-mobile 우선, 예약 확정/시공 완료부터)
+
+- [ ] `expo-notifications` 설치
+- [ ] 앱 실행(로그인 이후) 시 알림 권한 요청 → 허용 시 `getExpoPushTokenAsync()`로 토큰 발급
+- [ ] 발급된 토큰을 `POST /me/push-token`으로 서버에 등록(로그아웃 시 삭제 호출도 함께)
+- [ ] `app.json`에 Android 알림 아이콘/채널 설정 추가
+- [ ] `eas.json` 생성 + EAS에 Android(FCM)/iOS(APNs) 푸시 자격증명 등록 — Expo/Apple 개발자 계정 접근 필요, 에이전트가 대신 못 함(`server/context-notes.md` Phase 28 참고)
+- [ ] 알림 탭 시 딥링크 처리 — `protocol.ts`에 네이티브→웹 `navigate` 메시지 타입 추가, `WebViewScreen.tsx`에서 알림 데이터의 경로로 `injectJavaScript` 이동 처리
+- [ ] 에뮬레이터/실기기에서 권한 요청→토큰 발급→서버 등록→실제 알림 수신→탭 시 딥링크 이동까지 end-to-end 검증

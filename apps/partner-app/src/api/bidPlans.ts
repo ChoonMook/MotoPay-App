@@ -17,6 +17,7 @@ export interface SubmitBidPlanPositionInput {
 export interface SubmitBidPlanInput {
   items: SubmitBidPlanItemInput[];
   positions?: SubmitBidPlanPositionInput[];
+  scheduledDate?: string; // "YYYY-MM-DD" — 생략하면 요청의 희망일 그대로 사용
   scheduledTime: string; // "HH:mm"
   reason: string;
 }

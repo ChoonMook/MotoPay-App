@@ -1,6 +1,6 @@
-// apps/api의 예약 생성/조회/취소/일정변경/시공완료·인수확인/후기
-// (POST /reservations, GET /reservations/me, PATCH /reservations/:id/cancel|reschedule, GET/PATCH /reservations/:id/handover*,
-// GET/POST /reservations/:id/review) 호출 — 로그인 필요
+// apps/api의 예약 생성/조회/취소/일정변경/결제확정/일정변경요청 수락·거절/시공완료·인수확인/후기
+// (POST /reservations, GET /reservations/me, PATCH /reservations/:id/cancel|reschedule|pay|resched-accept|resched-reject,
+// GET/PATCH /reservations/:id/handover*, GET/POST /reservations/:id/review) 호출 — 로그인 필요
 import { authedRequest } from "./http";
 
 export interface ReservationApi {
@@ -21,8 +21,49 @@ export interface ReservationApi {
   completedAt: string | null; // progressStatus가 DONE으로 바뀐 시점
   handoverConfirmedAt: string | null; // 고객이 인수확인했거나(또는 completedAt+3일 경과로 자동확정된) 시점
   requestNo: string | null; // reservationType='BID'인 건만 값 존재 -> BidRequestApi.requestNo
+  paymentMethod: string | null; // "BANK"|"CARD" — 결제 확정 전이면 null
+  couponName: string | null; // 적용한 쿠폰명 스냅샷 — 미적용이면 null
+  couponDiscount: number | null; // 쿠폰 할인액(원) — 미적용이면 null
+  pointsUsed: number | null; // 사용한 포인트(원)
+  paidAmount: number | null; // 최종 결제금액(원) — 결제 확정 전이면 null
+  paidAt: string | null; // 결제 확정 일시 — 결제 확정 전이면 null
+  // 파트너 일정변경 요청(CU-RSVC-21) — "REQUESTED"(응답 대기)|"REJECTED"(거절됨)|null(활성 요청 없음)
+  reschedStatus: string | null;
+  reschedDate: string | null; // "YYYY-MM-DD" — 파트너가 제안한 새 날짜
+  reschedTime: string | null; // "HH:mm" — 파트너가 제안한 새 시각
+  reschedReason: string | null; // 파트너가 남긴 변경 사유
+  reschedRejectReason: string | null; // 내가 거절 시 남긴 사유(선택)
   createdAt: string;
   updatedAt: string;
+}
+
+/** 파트너 일정변경 요청 수락(CU-RSVC-21) — 실제 일정이 파트너가 제안한 일시로 바뀜 */
+export function acceptReservationResched(id: number): Promise<ReservationApi> {
+  return authedRequest<ReservationApi>(`/reservations/${id}/resched-accept`, { method: "PATCH" });
+}
+
+/** 파트너 일정변경 요청 거절(CU-RSVC-21) — 기존 일정 유지, 거절 사유는 선택 입력 */
+export function rejectReservationResched(id: number, reason?: string): Promise<ReservationApi> {
+  return authedRequest<ReservationApi>(`/reservations/${id}/resched-reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export interface ConfirmPaymentInput {
+  paymentMethod: "BANK" | "CARD";
+  couponName?: string;
+  couponDiscount?: number;
+  pointsUsed?: number;
+  paidAmount: number;
+}
+
+/** 결제 확정(CU-RSVC-14) — 업체/추천안 선정으로 생성된 예약에 쿠폰/포인트/결제수단/최종금액을 기록, 예약당 1회만 가능 */
+export function confirmReservationPayment(id: number, input: ConfirmPaymentInput): Promise<ReservationApi> {
+  return authedRequest<ReservationApi>(`/reservations/${id}/pay`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 export interface CreateReservationInput {
@@ -71,7 +112,9 @@ export interface HandoverDetail {
   progressStatus: string;
   car: string | null;
   vin: string | null;
+  packageName: string | null;
   items: HandoverItem[];
+  tintPositions: { position: string; level: string }[];
   photos: string[]; // uploads/ 기준 상대경로
   completionMemo: string | null;
   completedAt: string | null;

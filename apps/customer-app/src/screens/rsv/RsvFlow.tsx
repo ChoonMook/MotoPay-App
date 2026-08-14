@@ -10,11 +10,13 @@ import ReqTypeSelScreen from "./ReqTypeSelScreen";
 import CstItemSelGenScreen from "./CstItemSelGenScreen";
 import CstProdSelScreen from "./cstitems/CstProdSelScreen";
 import ProdSearchSelScreen from "./cstitems/cstprods/ProdSearchSelScreen";
-import CatBudgetInputExpertScreen from "./CatBudgetInputExpertScreen";
+import CatBudgetInputExpertScreen, { type CatDef } from "./CatBudgetInputExpertScreen";
 import SchedRadiusCondInputScreen, { RATING_LABEL_TO_VALUE } from "./SchedRadiusCondInputScreen";
 import BidRcmdReqRegDoneScreen from "./BidRcmdReqRegDoneScreen";
+import ReqRegConfirmScreen from "./ReqRegConfirmScreen";
 import BidCoCmpGenScreen from "./BidCoCmpGenScreen";
 import BidContDtlScreen from "./bidcocmp/BidContDtlScreen";
+import RsvMyReqDtlScreen from "./RsvMyReqDtlScreen";
 import PlanCmpExpertScreen from "./PlanCmpExpertScreen";
 import PlanDtlScreen from "./plancmpe/PlanDtlScreen";
 import CoPlanPickPayScreen from "./CoPlanPickPayScreen";
@@ -27,25 +29,28 @@ import CoDtlProfScreen from "../common/CoDtlProfScreen";
 import BookingDtlScreen, { type BookingTimelineStep } from "../common/BookingDtlScreen";
 import BookingReschedScreen from "../common/BookingReschedScreen";
 import BookingCancelScreen, { CANCEL_REASONS } from "../common/BookingCancelScreen";
+import ReschedRejectSheet from "../common/ReschedRejectSheet";
 
 import {
-  ITEM_DEFS,
+  ITEM_KEYS,
   COUPON_DEFS,
   INST_CODE_BY_ITEM_KEY,
-  INST_CODE_BY_CAT_NAME,
+  PROD_CAT_BY_ITEM_KEY,
+  PROD_CAT_BY_INST_CODE,
   TINT_POSITION_TO_CODE,
   INST_CODE_LABELS,
   type RsvScreen,
   type RsvSheet,
   type RsvFlowKind,
+  type ItemDef,
   type ItemKey,
   type ProdItemKey,
   type PayMethodKey,
   type Bidder,
   type RecoPlan,
 } from "./rsvTypes";
-import { selectedEntry } from "./rsvCalc";
-import { nfmt } from "./rsvFormat";
+import { selectedEntry, computePayBreakdown } from "./rsvCalc";
+import { nfmt, formatDateOnlyLabel } from "./rsvFormat";
 import {
   TINT_POSITIONS,
   TINT_POSITION_LABELS,
@@ -72,22 +77,22 @@ import {
   createReview,
   rescheduleReservation,
   cancelReservation,
+  confirmReservationPayment,
+  acceptReservationResched,
+  rejectReservationResched,
   type ReservationApi,
   type HandoverDetail,
   type ReviewApi,
 } from "../../api/reservations";
-import { listShops } from "../../api/shops";
+import { listShops, listShopReviews, type ShopListItemApi, type ShopReviewApi } from "../../api/shops";
 import { listShopHolidays, getDailySchedule, type DailyScheduleApi } from "../../api/shopSchedule";
+import { listBidProducts, type ProductApi } from "../../api/products";
 import { API_BASE_URL } from "../../api/config";
 
-const INITIAL_ITEMS: Record<ItemKey, boolean> = { tint: true, blackbox: true, glass: false, under: false, ppf: false, detail: false };
-const INITIAL_PROD: Record<ProdItemKey, string> = {
-  blackbox: "아이나비 QXD3000",
-  glass: "크리스탈 세라믹 2년",
-  under: "방청 언더코팅",
-  ppf: "프론트 풀",
-  detail: "외장 광택",
-};
+// 기본 선택 없음 — 사용자가 직접 골라야 함(2026-08-14 사용자 확정)
+const INITIAL_ITEMS: Record<ItemKey, boolean> = { tint: false, blackbox: false, glass: false, under: false, ppf: false, detail: false };
+// 제품명은 이제 실제 카탈로그 조회 결과로 채워짐(RsvFlow의 제품 목록 fetch 참고) — 로딩 전까지는 빈 값
+const INITIAL_PROD: Record<ProdItemKey, string> = { blackbox: "", glass: "", under: "", ppf: "", detail: "" };
 const INITIAL_POS_LEVELS: Record<string, TintLevel> = Object.fromEntries(TINT_POSITIONS.map((p) => [p, "15"]));
 
 interface RsvFlowProps {
@@ -110,17 +115,25 @@ export default function RsvFlow({
   const [flow, setFlow] = useState<RsvFlowKind>("gen");
 
   const [items, setItems] = useState<Record<ItemKey, boolean>>(INITIAL_ITEMS);
-  const [prodTint, setProdTint] = useState("루마 버텍스 300");
+  const [prodTint, setProdTint] = useState("");
   const [prod, setProd] = useState<Record<ProdItemKey, string>>(INITIAL_PROD);
-  const [prodDrop, setProdDrop] = useState<ProdItemKey | null>(null);
+  // CU-RSVC-04→05 — 어떤 항목의 제품 검색 팝업이 열려있는지(모든 항목이 동일한 검색 팝업을 공유, null이면 닫힘)
+  const [searchKey, setSearchKey] = useState<ItemKey | null>(null);
   const [search, setSearch] = useState("");
   const [brand, setBrand] = useState("all");
+  // CU-RSVC-04/05 제품 선택·검색 — 실제 카탈로그(Product, bidApplicable=true)에서 조회. admin 수정사항이 바로
+  // 반영돼야 해서 캐시하지 않고 prodsel 화면 진입마다 재조회함(loadingProducts가 이 재조회 상태를 나타냄)
+  const [tintProducts, setTintProducts] = useState<ProductApi[]>([]);
+  const [otherProducts, setOtherProducts] = useState<Partial<Record<ProdItemKey, ProductApi[]>>>({});
+  const [prodBrandCodes, setProdBrandCodes] = useState<CommonCodeDetailApi[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   const [posLevels, setPosLevels] = useState<Record<string, TintLevel>>(INITIAL_POS_LEVELS);
-  const [posBulk, setPosBulk] = useState(true);
+  const [posBulk, setPosBulk] = useState(false); // 기본값: 전체 일괄 적용 꺼짐(NcpkFlow.tsx의 tintBulk와 동일 컨벤션, 2026-08-14 사용자 확인)
   const [posOff, setPosOff] = useState<Record<string, boolean>>({});
 
-  const [catCats, setCatCats] = useState<Record<string, boolean>>({ 외장수리: true });
+  // 기본 선택 없음 — 사용자가 직접 골라야 함(일반입찰 시공항목과 동일 컨벤션, 2026-08-14 사용자 확정)
+  const [catCats, setCatCats] = useState<Record<string, boolean>>({});
   const [budget, setBudget] = useState(300000);
   const [catReq, setCatReq] = useState("");
 
@@ -141,7 +154,13 @@ export default function RsvFlow({
   const [reqReservation, setReqReservation] = useState<Record<string, ReservationApi>>({});
   // shopCode -> 업체명 — 인수확인 화면 타이틀 표시용
   const [shopNameByCode, setShopNameByCode] = useState<Record<string, string>>({});
+  // 입찰/추천 카드·상세·프로필(CU-RSVC-10~13/18)에서 실제 업체 사진·주소·위경도·평점을 보여주기 위한 원본 목록
+  const [shopsApi, setShopsApi] = useState<ShopListItemApi[]>([]);
+  // CU-RSVC-18 업체 프로필의 후기 목록 — 프로필 화면 진입 시(shopCode 확정 시점)마다 조회
+  const [shopReviews, setShopReviews] = useState<ShopReviewApi[]>([]);
   const [submittingRequest, setSubmittingRequest] = useState(false);
+  // CU-RSVC-08→09 요청 등록 전 확인 시트 — 시공 항목을 상세히 보여주고 명시적으로 확인해야 저장됨(2026-08-14 사용자 확인)
+  const [showRegConfirm, setShowRegConfirm] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<BidRequestApi | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [bidCancelReason, setBidCancelReason] = useState<string | null>(null);
@@ -149,6 +168,9 @@ export default function RsvFlow({
   // 요청 카드·등록완료 화면에 차종(브랜드+모델)을 라벨로 보여주기 위한 코드값 조회
   const [carBrandCodes, setCarBrandCodes] = useState<CommonCodeDetailApi[]>([]);
   const [carModelCodes, setCarModelCodes] = useState<CommonCodeDetailApi[]>([]);
+  // CU-RSVC-03 시공항목 선택 — admin-app 기준정보 > 시공항목 관리(AD-CTLG-03)에 등록·활성화된 CAR_INST만 노출
+  const [carInstCodes, setCarInstCodes] = useState<CommonCodeDetailApi[]>([]);
+  const [loadingCarInst, setLoadingCarInst] = useState(true);
   const [lastCreatedRequest, setLastCreatedRequest] = useState<BidRequestApi | null>(null);
 
   const [selId, setSelId] = useState("b1");
@@ -158,6 +180,9 @@ export default function RsvFlow({
   const [loadingOffers, setLoadingOffers] = useState(false);
   // 비교·상세 화면이 참조하는 원본 요청 — status/selectedOfferNo로 이미 선정완료된 요청인지 판단해 "선택" 버튼을 비활성화
   const [activeBidRequest, setActiveBidRequest] = useState<BidRequestApi | null>(null);
+  // 내 요청 상세(RsvMyReqDtlScreen)에서 요청 시점 제품명의 참고 판매가를 보여주기 위한 실 카탈로그 조회 결과(제품명 -> 가격)
+  const [myReqDtlPrices, setMyReqDtlPrices] = useState<Record<string, number>>({});
+  const [loadingMyReqDtl, setLoadingMyReqDtl] = useState(false);
   // 입찰 내용 상세에서 "제품 상세"로 들어갈 때 보여줄 정보(고객이 요청한 제품명·부위별 농도) — GENERAL만 값 설정, EXPERT는 null 유지(기존 목업)
   const [activeProdInfo, setActiveProdInfo] = useState<ProdDtlInfo | null>(null);
   const [returnTo, setReturnTo] = useState<RsvScreen>("bidcmp");
@@ -166,6 +191,10 @@ export default function RsvFlow({
 
   const [pointUse, setPointUse] = useState(0);
   const [couponSel, setCouponSel] = useState<string | null>(null);
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+  // CU-RSVC-21 업체 일정변경 요청 수락/거절
+  const [respondingReschedRequest, setRespondingReschedRequest] = useState(false);
+  const [rejectReschedReasonDraft, setRejectReschedReasonDraft] = useState("");
 
   const [reviewStar, setReviewStar] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -216,10 +245,21 @@ export default function RsvFlow({
       })
       .catch(() => {}); // 실패해도 선정완료로 폴백 표시되므로 별도 에러 토스트 불필요
     listShops()
-      .then((shops) => setShopNameByCode(Object.fromEntries(shops.map((s) => [s.shopCode, s.name]))))
+      .then((shops) => {
+        setShopNameByCode(Object.fromEntries(shops.map((s) => [s.shopCode, s.name])));
+        setShopsApi(shops);
+      })
       .catch(() => {});
     getCommonCodeDetails("CAR_BRAND").then(setCarBrandCodes).catch(() => {});
     getCommonCodeDetails("CAR_MODEL").then(setCarModelCodes).catch(() => {});
+    getCommonCodeDetails("CAR_INST")
+      .then(setCarInstCodes)
+      .catch(() => {})
+      .finally(() => setLoadingCarInst(false));
+    // 썬팅 제품·브랜드 코드는 요청 등록(제품 선택·검색)뿐 아니라 입찰 내용 상세(제품 상세)에서도 필요해 마운트 시
+    // 우선 한 번 조회해둠(prodsel 화면에 들어가면 최신 값으로 다시 조회됨 — 아래 CU-RSVC-04 effect 참고)
+    getCommonCodeDetails("PROD_BRAND").then(setProdBrandCodes).catch(() => {});
+    listBidProducts("TINT").then(setTintProducts).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -260,6 +300,43 @@ export default function RsvFlow({
     return car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`;
   };
 
+  // 상품 브랜드 코드 -> 한글 라벨 — 제품 검색·상세(CU-RSVC-05/11)에서 실제 카탈로그의 brand(코드값)를 표시용으로 변환
+  const prodBrandLabel = (code: string): string => prodBrandCodes.find((d) => d.detailCode === code)?.detailName ?? code;
+
+  // 시공항목 선택(CU-RSVC-03)에 노출할 항목 — admin-app 시공항목 관리(AD-CTLG-03)에 등록한 CAR_INST만, 그
+  // detailName/ref1을 그대로 항목명/설명으로 사용(하드코딩 문구 없음). GET /common-codes/:code가 서버에서
+  // 이미 useYn=true만 반환하므로(공개용 조회 공통) 여기서 별도 필터 불필요
+  const activeInstCodes = new Set(carInstCodes.map((c) => c.detailCode));
+  const visibleItemDefs: ItemDef[] = ITEM_KEYS.flatMap((key) => {
+    const detail = carInstCodes.find((c) => c.detailCode === INST_CODE_BY_ITEM_KEY[key]);
+    return detail ? [{ key, name: detail.detailName, desc: detail.ref1 ?? "" }] : [];
+  });
+
+  // 전문가추천 "관심 카테고리"(CU-RSVC-07)도 동일하게 등록된 CAR_INST 전체를 그대로 사용 — 일반입찰(ItemKey)과
+  // 달리 6개로 제한된 고정 하위집합이 없어 carInstCodes를 그대로 매핑. code(=instCode)를 catCats의 키로 써서
+  // 이름 변경에 안전하게 하고, 라벨은 detailName을 그대로 사용
+  const visibleCatDefs: CatDef[] = carInstCodes.map((c) => ({ code: c.detailCode, name: c.detailName }));
+  const catLabel = (code: string): string => carInstCodes.find((c) => c.detailCode === code)?.detailName ?? code;
+
+  // CU-RSVC-05 제품 검색 팝업 — 모든 항목이 공유(searchKey로 어떤 항목인지 구분). 기본 선택 없음(사용자 확정) —
+  // 검색 결과에서 직접 고르기 전까지 선택값은 비어 있는 채로 둔다
+  const searchProducts = searchKey === "tint" ? tintProducts : searchKey ? (otherProducts[searchKey as ProdItemKey] ?? []) : [];
+  const searchSelectedName = searchKey === "tint" ? prodTint : searchKey ? prod[searchKey as ProdItemKey] : "";
+  const searchLoading = loadingProducts;
+  const searchTitle = visibleItemDefs.find((it) => it.key === searchKey)?.name ?? "";
+  const searchBrandDefs: Array<[string, string]> = [
+    ["all", "전체"],
+    ...prodBrandCodes
+      .filter((c) => searchProducts.some((p) => p.brand === c.detailCode))
+      .map((c): [string, string] => [c.detailCode, c.detailName]),
+  ];
+  const openProductSearch = (key: ItemKey) => {
+    setSearchKey(key);
+    setSearch("");
+    setBrand("all");
+    setScreen("prodsearch");
+  };
+
   const goMain = () => {
     setScreen("main");
     setSheet(null);
@@ -270,9 +347,37 @@ export default function RsvFlow({
   };
   const isExpert = flow === "expert";
   const { isRec, bidder: selBidder, reco: selReco, name: selName, total: selTotal } = selectedEntry(selId, isExpert, bidOffers, recoPlans);
-  // GENERAL 응찰·EXPERT 추천안 모두 DB에 리뷰/좌표 데이터가 없어 평점·거리 미제공
-  const selRating = "";
+  // 프로필(CoDtlProfScreen)·카드 사진 등에 쓸 선택(또는 조회중) 업체의 실 카탈로그 정보 — 거리는 고객 좌표를 안 받아 항상 미제공
+  const selShopCode = isRec ? selReco?.shopCode : selBidder?.shopCode;
+  const selShopApi = shopsApi.find((s) => s.shopCode === selShopCode);
+  const selRating = selShopApi?.avgRating != null ? selShopApi.avgRating.toFixed(1) : "";
   const selDist = "";
+  const selPhotoUrl = selShopApi?.mainPhoto ? `${API_BASE_URL}/uploads/${selShopApi.mainPhoto.photoPath}` : null;
+  const selAddress = selShopApi ? [selShopApi.address, selShopApi.addressDetail].filter(Boolean).join(" · ") : "";
+  const selCategories = selShopApi?.categories.map((code) => catLabel(code));
+  const selReviewViews = shopReviews.map((r) => ({ name: r.reviewerName, stars: "★".repeat(r.rating), text: r.content }));
+  // 업체 카드(견적서 도착 목록)에서 응찰·추천 업체별 사진을 찾기 위한 조회용 맵
+  const photoUrlByShopCode: Record<string, string | null> = Object.fromEntries(
+    shopsApi.map((s) => [s.shopCode, s.mainPhoto ? `${API_BASE_URL}/uploads/${s.mainPhoto.photoPath}` : null]),
+  );
+
+  // CU-RSVC-18 업체 프로필 진입 시(선택된 업체의 shopCode가 확정된 시점) 후기 목록을 새로 조회
+  useEffect(() => {
+    if (screen !== "copro" || !selShopCode) {
+      setShopReviews([]);
+      return;
+    }
+    listShopReviews(selShopCode).then(setShopReviews).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, selShopCode]);
+
+  // 업체 프로필의 "시공 가능 카테고리"는 carInstCodes(admin 시공항목 관리)로 라벨을 붙이는데, 이 목록도
+  // 마운트 시 한 번만 조회해두던 상태라 admin이 그 사이 항목을 추가/활성화해도 반영이 안 됐음 — 프로필
+  // 진입마다 새로 조회(2026-08-14 버그 리포트로 추가, tintProducts 재조회 정책과 동일)
+  useEffect(() => {
+    if (screen !== "copro") return;
+    getCommonCodeDetails("CAR_INST").then(setCarInstCodes).catch(() => {});
+  }, [screen]);
 
   const handoverStatus: HandoverStatus = handoverDetail?.handoverStatus === "confirmed" ? "done" : "pending";
   const handoverPhotoUrls = (handoverDetail?.photos ?? []).map((p) => `${API_BASE_URL}/uploads/${p}`);
@@ -302,6 +407,26 @@ export default function RsvFlow({
     ? `${reschedCalY}.${String(reschedCalM).padStart(2, "0")}.${String(reschedDay).padStart(2, "0")} ${reschedTime}`
     : bookingBaseVisitLabel;
   const bookingRows: Array<[string, string]> = [["예약 일시", bookingVisitLabel]];
+  // 결제 확정된 예약이면(paidAt 존재) 실제 결제 내역을 함께 표시 — 쿠폰/포인트는 적용했을 때만 행을 추가
+  if (activeReservation?.paidAt) {
+    if (activeReservation.couponName) {
+      const discountLabel = activeReservation.couponDiscount ? ` (-${nfmt(activeReservation.couponDiscount)}원)` : "";
+      bookingRows.push(["적용 쿠폰", `${activeReservation.couponName}${discountLabel}`]);
+    }
+    if (activeReservation.pointsUsed) {
+      bookingRows.push(["포인트 사용", `-${nfmt(activeReservation.pointsUsed)}원`]);
+    }
+    bookingRows.push(["결제 수단", activeReservation.paymentMethod === "BANK" ? "무통장 입금" : "카드결제"]);
+    bookingRows.push(["결제 금액", `${nfmt(activeReservation.paidAmount ?? 0)}원`]);
+  }
+  // 업체가 보낸 일정변경 요청(응답 대기중인 것만 배너로 노출 — 이미 거절한 요청은 다시 뜨지 않음)
+  const reschedRequestView =
+    activeReservation?.reschedStatus === "REQUESTED" && activeReservation.reschedDate && activeReservation.reschedTime
+      ? {
+          dateLabel: `${formatDateOnlyLabel(activeReservation.reschedDate)} ${activeReservation.reschedTime}`,
+          reason: activeReservation.reschedReason ?? "",
+        }
+      : null;
   const bookingProgress = activeReservation?.progressStatus ?? "APPLIED";
   // 취소 여부는 별도 로컬 플래그가 아니라 activeReservation.status를 그대로 반영 — 취소 후 화면을 나갔다 다시 들어와도
   // (openMyRequest가 서버에서 다시 조회한 실제 상태를 담아오므로) 취소 상태가 그대로 유지됨
@@ -355,6 +480,8 @@ export default function RsvFlow({
         return pushBackAction(goMain);
       case "biddtl":
         return pushBackAction(() => setScreen("bidcmp"));
+      case "myreqdtl":
+        return pushBackAction(() => setScreen(activeBidRequest?.reqType === "EXPERT" ? "plancmp" : "bidcmp"));
       case "plancmp":
         return pushBackAction(goMain);
       case "plandtl":
@@ -375,7 +502,56 @@ export default function RsvFlow({
       default:
         return;
     }
-  }, [screen, sheet, isExpert, isRec, returnTo, prodReturn]);
+  }, [screen, sheet, isExpert, isRec, returnTo, prodReturn, activeBidRequest]);
+
+  // CAR_INST 조회가 끝난 뒤 비활성화된 항목이 있으면 기본 선택값(INITIAL_ITEMS)에서 켜둔 값을 꺼서
+  // 화면에 보이지 않는 항목이 요청에 몰래 포함되는 일이 없게 함
+  useEffect(() => {
+    if (loadingCarInst) return;
+    setItems((cur) => {
+      const next = { ...cur };
+      let changed = false;
+      (Object.keys(next) as ItemKey[]).forEach((key) => {
+        if (next[key] && !activeInstCodes.has(INST_CODE_BY_ITEM_KEY[key])) {
+          next[key] = false;
+          changed = true;
+        }
+      });
+      return changed ? next : cur;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingCarInst, carInstCodes]);
+
+  // CU-RSVC-04 제품 선택 화면 진입 시 선택된 항목들의 실제 카탈로그(bidApplicable=true)를 매번 새로 조회 —
+  // admin이 상품 정보를 수정하면 이 화면을 다시 열 때 바로 반영돼야 해서 캐시하지 않고 진입할 때마다 재조회함
+  // (2026-08-14 사용자 확인). 제품 종류가 다양해 임의로 하나를 기본 선택하면 오히려 오해를 줄 수 있어 기본
+  // 선택은 하지 않음 — 등록된 제품이 없는 분류는 빈 값 그대로 둠
+  useEffect(() => {
+    if (screen !== "prodsel") return;
+    const nonTintKeys = (Object.keys(items) as ItemKey[]).filter((k) => items[k] && k !== "tint") as ProdItemKey[];
+    const fetches: Promise<unknown>[] = [
+      ...(items.tint ? [listBidProducts("TINT").then(setTintProducts)] : []),
+      ...nonTintKeys.map((key) =>
+        listBidProducts(PROD_CAT_BY_ITEM_KEY[key]).then((rows) => {
+          setOtherProducts((prev) => ({ ...prev, [key]: rows }));
+        }),
+      ),
+    ];
+    if (fetches.length === 0) return;
+    setLoadingProducts(true);
+    Promise.all(fetches)
+      .catch((err) => showToast(err instanceof Error ? err.message : "제품 목록을 불러오지 못했어요", "danger"))
+      .finally(() => setLoadingProducts(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
+  // 입찰 내용 상세(biddtl)에 진입할 때마다 썬팅 카탈로그를 새로 조회 — "제품 상세" 팝업이 이 화면에 이미 불러온
+  // tintProducts로 빌드되므로(buildProdDtlInfo), 마운트 시 한 번만 조회해두면 admin이 그 사이 상품 정보를
+  // 수정해도 반영이 안 됨(2026-08-14 버그 리포트로 추가, prodsel 화면의 재조회 정책과 동일)
+  useEffect(() => {
+    if (screen !== "biddtl") return;
+    listBidProducts("TINT").then(setTintProducts).catch(() => {});
+  }, [screen]);
 
   const selectPosLevel = (position: string, level: TintLevel) => {
     if (posBulk) {
@@ -399,13 +575,13 @@ export default function RsvFlow({
       const desiredDate = `${condCalY}-${String(condCalM).padStart(2, "0")}-${String(condDate).padStart(2, "0")}`;
       const reqItems = isExpert
         ? Object.keys(catCats)
-            .filter((name) => catCats[name])
-            .map((name) => ({ instCode: INST_CODE_BY_CAT_NAME[name] }))
+            .filter((code) => catCats[code])
+            .map((code) => ({ instCode: code }))
         : (Object.keys(items) as ItemKey[])
             .filter((key) => items[key])
             .map((key) => ({
               instCode: INST_CODE_BY_ITEM_KEY[key],
-              productName: key === "tint" ? prodTint : prod[key as ProdItemKey],
+              productName: (key === "tint" ? prodTint : prod[key as ProdItemKey]) || undefined,
             }));
       // 틴팅 미선택 요청엔 부위·농도를 아예 싣지 않음 — posLevels/posOff는 화면 진입 시 이미 5부위로 채워져 있어 필터링 없이 그대로 보내면 안 됨
       const reqPositions =
@@ -430,6 +606,7 @@ export default function RsvFlow({
       const created = await createBidRequest(input);
       setMyRequests((prev) => [created, ...prev]);
       setLastCreatedRequest(created);
+      setShowRegConfirm(false);
       setScreen("regdone");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "요청 등록에 실패했습니다", "danger");
@@ -446,22 +623,28 @@ export default function RsvFlow({
   };
 
   // GET /bid-requests/:id/offers 응답을 화면 표시용 Bidder로 변환
-  const mapOffer = (o: BidOfferApi, desiredDate: string): Bidder => ({
+  // 업체가 희망일에 슬롯이 없어 다른 날짜로 응찰했을 수 있어(scheduledDate) 요청의 희망일이 아니라 업체가 실제 잡은 날짜로 표시
+  const mapOffer = (o: BidOfferApi): Bidder => ({
     id: o.offerNo,
+    shopCode: o.shopCode,
     name: o.shopName,
-    when: formatWhenLabel(desiredDate, o.scheduledTime),
+    when: formatWhenLabel(o.scheduledDate, o.scheduledTime),
+    date: o.scheduledDate,
+    memo: o.memo,
     items: o.items.map((it): [string, number, string] => [INST_CODE_LABELS[it.instCode] ?? it.instCode, it.price, it.instCode]),
   });
 
-  // GET /bid-requests/:id/plans 응답을 화면 표시용 RecoPlan으로 변환
-  const mapPlan = (p: BidPlanApi, desiredDate: string): RecoPlan => {
+  // GET /bid-requests/:id/plans 응답을 화면 표시용 RecoPlan으로 변환(마찬가지로 업체가 실제 잡은 날짜로 표시)
+  const mapPlan = (p: BidPlanApi): RecoPlan => {
     const names = p.items.map((it) => INST_CODE_LABELS[it.instCode] ?? it.instCode);
     return {
       id: p.planNo,
+      shopCode: p.shopCode,
       name: p.shopName,
       itemSummary: names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : (names[0] ?? "-"),
       reason: p.reason,
-      when: formatWhenLabel(desiredDate, p.scheduledTime),
+      when: formatWhenLabel(p.scheduledDate, p.scheduledTime),
+      date: p.scheduledDate,
       plans: p.items.map((it): [string, number, number, string] => [it.productName, it.retailPrice, it.offerPrice, it.instCode]),
     };
   };
@@ -523,16 +706,38 @@ export default function RsvFlow({
     setLoadingOffers(true);
     if (request.reqType === "EXPERT") {
       getBidPlans(request.id)
-        .then((plans) => setRecoPlans(plans.map((p) => mapPlan(p, request.desiredDate))))
+        .then((plans) => setRecoPlans(plans.map(mapPlan)))
         .catch((err) => showToast(err instanceof Error ? err.message : "추천안 목록을 불러오지 못했어요", "danger"))
         .finally(() => setLoadingOffers(false));
     } else {
       getBidOffers(request.id)
-        .then((offers) => setBidOffers(offers.map((o) => mapOffer(o, request.desiredDate))))
+        .then((offers) => setBidOffers(offers.map(mapOffer)))
         .catch((err) => showToast(err instanceof Error ? err.message : "입찰 목록을 불러오지 못했어요", "danger"))
         .finally(() => setLoadingOffers(false));
     }
     setScreen(isSelected ? "bookingdtl" : request.reqType === "EXPERT" ? "plancmp" : "bidcmp");
+  };
+
+  // 내 요청 상세 진입 — 입찰/추천 도착 여부와 무관하게 언제든 볼 수 있어야 해서 비교 화면(bidcmp/plancmp)에서 별도로 연다.
+  // 요청 시점에 고른 제품명이 있으면(일반입찰만) 그 카테고리의 실 카탈로그를 조회해 참고 판매가를 채워둔다
+  const openMyReqDtl = () => {
+    if (!activeBidRequest) return;
+    setScreen("myreqdtl");
+    const namedItems = activeBidRequest.items.filter((it) => it.productName);
+    if (namedItems.length === 0) {
+      setMyReqDtlPrices({});
+      return;
+    }
+    const prodCats = [...new Set(namedItems.map((it) => PROD_CAT_BY_INST_CODE[it.instCode]).filter((c): c is string => !!c))];
+    setLoadingMyReqDtl(true);
+    Promise.all(prodCats.map((cat) => listBidProducts(cat)))
+      .then((lists) => {
+        const map: Record<string, number> = {};
+        lists.flat().forEach((p) => (map[p.name] = p.price));
+        setMyReqDtlPrices(map);
+      })
+      .catch(() => {}) // 참고용 가격 표시라 실패해도 화면 진입을 막지 않고 조용히 무시
+      .finally(() => setLoadingMyReqDtl(false));
   };
 
   // 요청 취소 시트 열기 — 이전 요청에서 남은 취소사유 선택 상태를 초기화
@@ -562,9 +767,37 @@ export default function RsvFlow({
     }
   };
 
+  // CU-RSVC-08→09 요청 등록 확인 시트에 표시할 시공 항목 상세 — 신차패키지 예약확정 요약(RsvCfmScreen.tsx)과
+  // 동일하게 항목별로 풀어서 보여줌(일반입찰은 선택 제품·썬팅 부위농도까지, 전문가추천은 관심 카테고리만)
+  const cfmItems = isExpert
+    ? Object.keys(catCats)
+        .filter((code) => catCats[code])
+        .map((code) => ({ name: catLabel(code), product: null as string | null, tintDetail: undefined as string | undefined }))
+    : visibleItemDefs
+        .filter((it) => items[it.key])
+        .map((it) => {
+          const product = (it.key === "tint" ? prodTint : prod[it.key as ProdItemKey]) || null;
+          // TINT_POSITIONS는 이미 한글 부위명("전면유리" 등)이라 TINT_POSITION_LABELS(코드->한글) 변환이 필요 없음
+          const tintDetail =
+            it.key === "tint"
+              ? TINT_POSITIONS.filter((p) => !posOff[p])
+                  .map((p) => `${p} ${posLevels[p]}%`)
+                  .join(" · ")
+              : undefined;
+          return { name: it.name, product, tintDetail };
+        });
+
+  const cfmRows = [
+    { k: "요청 유형", v: isExpert ? "전문가 추천" : "일반 입찰" },
+    ...(isExpert ? [{ k: "희망 예산", v: `${nfmt(budget)}원` }] : []),
+    { k: "검색 반경", v: `${condRadius}km · 평점 ${condRating}` },
+    { k: "희망 일자", v: condDateLabel || "미선택" },
+    ...(isExpert && catReq.trim() ? [{ k: "요청사항", v: catReq.trim() }] : []),
+  ];
+
   const regRows = (() => {
-    const catNames = Object.keys(catCats).filter((n) => catCats[n]);
-    const genItemNames = ITEM_DEFS.filter((it) => items[it.key]).map((it) => it.name.replace(/ \(.*\)/, ""));
+    const catNames = Object.keys(catCats).filter((n) => catCats[n]).map(catLabel);
+    const genItemNames = visibleItemDefs.filter((it) => items[it.key]).map((it) => it.name);
     const summaryItems = isExpert
       ? catNames.length
         ? catNames[0] + (catNames.length > 1 ? ` 외 ${catNames.length - 1}건` : "")
@@ -607,6 +840,8 @@ export default function RsvFlow({
       {screen === "itemsel" && (
         <CstItemSelGenScreen
           items={items}
+          itemDefs={visibleItemDefs}
+          loading={loadingCarInst}
           onToggleItem={(key) => setItems((cur) => ({ ...cur, [key]: !cur[key] }))}
           onBack={goMain}
           onNext={() => setScreen("prodsel")}
@@ -616,15 +851,10 @@ export default function RsvFlow({
       {screen === "prodsel" && (
         <CstProdSelScreen
           items={items}
+          itemDefs={visibleItemDefs}
           prodTint={prodTint}
           prod={prod}
-          prodDrop={prodDrop}
-          onOpenSearch={() => setScreen("prodsearch")}
-          onToggleDrop={(key) => setProdDrop((cur) => (cur === key ? null : key))}
-          onSelectProd={(key, value) => {
-            setProd((cur) => ({ ...cur, [key]: value }));
-            setProdDrop(null);
-          }}
+          onOpenSearch={openProductSearch}
           onBack={() => setScreen("itemsel")}
           onNext={() => (items.tint ? setSheet("poslvl") : setScreen("condinput"))}
         />
@@ -632,13 +862,18 @@ export default function RsvFlow({
 
       {screen === "prodsearch" && (
         <ProdSearchSelScreen
+          title={searchTitle}
           search={search}
           brand={brand}
-          selectedName={prodTint}
+          selectedName={searchSelectedName}
+          products={searchProducts}
+          brandDefs={searchBrandDefs}
+          loading={searchLoading}
           onSearchChange={setSearch}
           onBrandChange={setBrand}
           onSelect={(name) => {
-            setProdTint(name);
+            if (searchKey === "tint") setProdTint(name);
+            else if (searchKey) setProd((cur) => ({ ...cur, [searchKey as ProdItemKey]: name }));
             setScreen("prodsel");
             showToast(`${name} 선택됨`, "success");
           }}
@@ -648,10 +883,12 @@ export default function RsvFlow({
 
       {screen === "catbudget" && (
         <CatBudgetInputExpertScreen
+          catDefs={visibleCatDefs}
+          loading={loadingCarInst}
           catCats={catCats}
           budget={budget}
           catReq={catReq}
-          onToggleCat={(name) => setCatCats((cur) => ({ ...cur, [name]: !cur[name] }))}
+          onToggleCat={(code) => setCatCats((cur) => ({ ...cur, [code]: !cur[code] }))}
           onBudgetChange={setBudget}
           onCatReqChange={setCatReq}
           onBack={openReqType}
@@ -689,7 +926,7 @@ export default function RsvFlow({
             }
           }}
           onBack={() => setScreen(isExpert ? "catbudget" : "prodsel")}
-          onNext={submitBidRequest}
+          onNext={() => setShowRegConfirm(true)}
           submitting={submittingRequest}
         />
       )}
@@ -709,6 +946,8 @@ export default function RsvFlow({
         <BidCoCmpGenScreen
           bidders={bidOffers}
           loading={loadingOffers}
+          desiredDate={activeBidRequest?.desiredDate ?? ""}
+          photoUrlByShopCode={photoUrlByShopCode}
           onSelectBid={(id) => {
             setScreen("biddtl");
             setSelId(id);
@@ -717,7 +956,23 @@ export default function RsvFlow({
             showToast("요청유형 선택으로 이동해요");
             openReqType();
           }}
+          onOpenMyReq={openMyReqDtl}
           onBack={goMain}
+        />
+      )}
+
+      {screen === "myreqdtl" && activeBidRequest && (
+        <RsvMyReqDtlScreen
+          reqType={activeBidRequest.reqType}
+          items={activeBidRequest.items}
+          positions={activeBidRequest.positions}
+          budget={activeBidRequest.budget}
+          radiusKm={activeBidRequest.radiusKm}
+          minRating={activeBidRequest.minRating}
+          desiredDate={activeBidRequest.desiredDate}
+          priceByProductName={myReqDtlPrices}
+          loadingPrices={loadingMyReqDtl}
+          onBack={() => setScreen(activeBidRequest.reqType === "EXPERT" ? "plancmp" : "bidcmp")}
         />
       )}
 
@@ -725,8 +980,12 @@ export default function RsvFlow({
         <BidContDtlScreen
           selId={selId}
           bidders={bidOffers}
+          desiredDate={activeBidRequest?.desiredDate ?? ""}
+          photoUrlByShopCode={photoUrlByShopCode}
           requestItems={activeBidRequest?.items ?? []}
           requestPositions={activeBidRequest?.positions ?? []}
+          tintProducts={tintProducts}
+          brandLabel={prodBrandLabel}
           decided={!!activeBidRequest && activeBidRequest.status !== "OPEN"}
           selectedOfferNo={activeBidRequest?.selectedOfferNo ?? null}
           onBack={() => setScreen("bidcmp")}
@@ -759,6 +1018,8 @@ export default function RsvFlow({
           recos={recoPlans}
           loading={loadingOffers}
           budgetLabel={`${nfmt(activeBidRequest?.budget ?? 0)}원`}
+          desiredDate={activeBidRequest?.desiredDate ?? ""}
+          photoUrlByShopCode={photoUrlByShopCode}
           onSelectReco={(id) => {
             setScreen("plandtl");
             setSelId(id);
@@ -767,6 +1028,7 @@ export default function RsvFlow({
             showToast("요청유형 선택으로 이동해요");
             openReqType();
           }}
+          onOpenMyReq={openMyReqDtl}
           onBack={goMain}
         />
       )}
@@ -774,6 +1036,8 @@ export default function RsvFlow({
       {screen === "plandtl" && (
         <PlanDtlScreen
           reco={recoPlans.find((r) => r.id === selId) ?? recoPlans[0]}
+          desiredDate={activeBidRequest?.desiredDate ?? ""}
+          photoUrlByShopCode={photoUrlByShopCode}
           onBack={() => setScreen("plancmp")}
           onOpenProfile={() => {
             setReturnTo("plandtl");
@@ -820,7 +1084,28 @@ export default function RsvFlow({
             showToast(c ? `${c.name} 쿠폰이 적용됐어요` : "쿠폰 적용이 해제됐어요", "success");
           }}
           onBack={() => setScreen(isRec ? "plandtl" : "biddtl")}
-          onPay={() => setScreen("paydone")}
+          submitting={submittingPayment}
+          onPay={async () => {
+            if (!activeReservation || submittingPayment) return;
+            setSubmittingPayment(true);
+            try {
+              const breakdown = computePayBreakdown(selId, isExpert, couponSel, pointUse, bidOffers, recoPlans);
+              const coupon = COUPON_DEFS.find((d) => d.id === couponSel);
+              const updated = await confirmReservationPayment(activeReservation.id, {
+                paymentMethod: payMethod === "bank" ? "BANK" : "CARD",
+                couponName: coupon?.name,
+                couponDiscount: breakdown.couponDiscount || undefined,
+                pointsUsed: breakdown.pointsUsed || undefined,
+                paidAmount: breakdown.payRemain,
+              });
+              setActiveReservation(updated);
+              setScreen("paydone");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "결제 확정에 실패했어요", "danger");
+            } finally {
+              setSubmittingPayment(false);
+            }
+          }}
         />
       )}
 
@@ -872,7 +1157,21 @@ export default function RsvFlow({
       )}
 
       {screen === "copro" && (
-        <CoDtlProfScreen name={selName} rating={selRating} dist={selDist} onBack={() => setScreen(returnTo || "bidcmp")} />
+        <CoDtlProfScreen
+          name={selName}
+          rating={selRating}
+          dist={selDist}
+          reviewCount={selShopApi ? nfmt(selShopApi.reviewCount) : undefined}
+          categories={selCategories}
+          intro={selShopApi?.intro ?? undefined}
+          greeting={selShopApi?.greeting ?? undefined}
+          address={selAddress || undefined}
+          lat={selShopApi?.latitude}
+          lng={selShopApi?.longitude}
+          reviews={selReviewViews}
+          photoUrl={selPhotoUrl}
+          onBack={() => setScreen(returnTo || "bidcmp")}
+        />
       )}
 
       {screen === "proddtl" && <ProdDtlScreen info={activeProdInfo} onBack={() => setScreen(prodReturn || "biddtl")} />}
@@ -897,6 +1196,25 @@ export default function RsvFlow({
           cancellable={bookingCancellable}
           onOpenResched={() => setScreen("resched")}
           onOpenCancel={() => setScreen("cancel")}
+          reschedRequest={reschedRequestView}
+          respondingReschedRequest={respondingReschedRequest}
+          onAcceptReschedRequest={async () => {
+            if (!activeReservation || respondingReschedRequest) return;
+            setRespondingReschedRequest(true);
+            try {
+              const updated = await acceptReservationResched(activeReservation.id);
+              setActiveReservation(updated);
+              showToast("일정 변경을 수락했어요", "success");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "처리에 실패했어요", "danger");
+            } finally {
+              setRespondingReschedRequest(false);
+            }
+          }}
+          onOpenRejectReschedRequest={() => {
+            setRejectReschedReasonDraft("");
+            setSheet("reschedReject");
+          }}
         />
       )}
 
@@ -1020,6 +1338,29 @@ export default function RsvFlow({
         />
       )}
 
+      {sheet === "reschedReject" && (
+        <ReschedRejectSheet
+          reason={rejectReschedReasonDraft}
+          onChangeReason={setRejectReschedReasonDraft}
+          submitting={respondingReschedRequest}
+          onClose={() => setSheet(null)}
+          onConfirm={async () => {
+            if (!activeReservation || respondingReschedRequest) return;
+            setRespondingReschedRequest(true);
+            try {
+              const updated = await rejectReservationResched(activeReservation.id, rejectReschedReasonDraft.trim() || undefined);
+              setActiveReservation(updated);
+              setSheet(null);
+              showToast("일정 변경을 거절했어요", "success");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "처리에 실패했어요", "danger");
+            } finally {
+              setRespondingReschedRequest(false);
+            }
+          }}
+        />
+      )}
+
       {sheet === "review" && (
         <ReviewWriteScreen
           selName={handoverShopName}
@@ -1050,6 +1391,17 @@ export default function RsvFlow({
               setSubmittingReview(false);
             }
           }}
+        />
+      )}
+
+      {showRegConfirm && (
+        <ReqRegConfirmScreen
+          rows={cfmRows}
+          items={cfmItems}
+          itemsLabel={isExpert ? "관심 카테고리" : "시공 항목"}
+          submitting={submittingRequest}
+          onCancel={() => setShowRegConfirm(false)}
+          onConfirm={submitBidRequest}
         />
       )}
 

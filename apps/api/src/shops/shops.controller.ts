@@ -1,5 +1,6 @@
 // GET /shops(목록)/GET /shops/:shopCode(상세)/GET /shops/:shopCode/reviews(후기 목록) — 로그인 불필요, 시공업체 조회용
-// GET·PATCH /shops/me, POST·DELETE /shops/me/photos — 파트너 로그인 계정 전용(반드시 :shopCode 라우트보다 먼저 선언)
+// GET·PATCH /shops/me, POST·DELETE /shops/me/photos, GET /shops/me/reviews(PT-STL-03) — 파트너 로그인 계정 전용
+// (반드시 :shopCode 라우트보다 먼저 선언)
 import {
   Body,
   Controller,
@@ -94,6 +95,27 @@ export class ShopsController {
     @Param('photoId', ParseIntPipe) photoId: number,
   ) {
     return this.shopsService.deletePhoto(partnerUser.shopCode, photoId);
+  }
+
+  @Get('me/reviews')
+  @UseGuards(JwtPartnerAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      '내 업체가 받은 후기 목록 조회(PT-STL-03, 파트너 로그인 전용) — 차종 포함, offset/limit 페이징',
+  })
+  listMyReviews(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Query('offset') offset?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const offsetNum = offset !== undefined ? Number(offset) : 0;
+    const limitNum = limit !== undefined ? Number(limit) : 5;
+    return this.shopsService.listReviewsForMe(
+      partnerUser.shopCode,
+      Number.isFinite(offsetNum) ? offsetNum : 0,
+      Number.isFinite(limitNum) ? limitNum : 5,
+    );
   }
 
   @Get(':shopCode')

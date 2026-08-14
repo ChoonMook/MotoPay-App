@@ -5,7 +5,6 @@ import shopThumb from "../../assets/images/shop.png";
 import { loadKakaoMaps, type KakaoNamespace } from "../../lib/kakaoMap";
 import { BackIcon, StarIcon, PinIcon } from "./commonIcons";
 
-const DEFAULT_CATS = ["썬팅", "유리막 코팅", "PPF", "블랙박스", "광택·디테일링"];
 const DEFAULT_INTRO =
   "10년 경력의 전문 시공팀이 상주하며, 수입차·전기차 전용 시공 라인을 갖추고 있어요. 시공 전후 사진을 모두 기록해 드리고, 시공 이력은 앱에서 언제든 확인할 수 있습니다.";
 const DEFAULT_ADDRESS = "주소 정보가 없습니다";
@@ -141,7 +140,7 @@ export default function CoDtlProfScreen({
   rating,
   dist,
   reviewCount = DEFAULT_REVIEW_COUNT,
-  categories = DEFAULT_CATS,
+  categories = [],
   intro = DEFAULT_INTRO,
   greeting,
   address = DEFAULT_ADDRESS,
@@ -187,14 +186,18 @@ export default function CoDtlProfScreen({
             {greeting || `안녕하세요, ${name}입니다. 정품 시공과 투명한 견적, 1년 A/S 보증으로 오너님의 차를 정성껏 시공해 드릴게요 :)`}
           </div>
 
-          <div className="mx-0.5 mt-5 mb-2 text-[13px] font-extrabold text-gray-900">시공 가능 카테고리</div>
-          <div className="flex flex-wrap gap-[7px]">
-            {categories.map((c) => (
-              <span key={c} className="rounded-full bg-gray-100 px-3.5 py-[7px] text-xs font-bold text-gray-600">
-                {c}
-              </span>
-            ))}
-          </div>
+          {categories.length > 0 && (
+            <>
+              <div className="mx-0.5 mt-5 mb-2 text-[13px] font-extrabold text-gray-900">시공 가능 카테고리</div>
+              <div className="flex flex-wrap gap-[7px]">
+                {categories.map((c) => (
+                  <span key={c} className="rounded-full bg-gray-100 px-3.5 py-[7px] text-xs font-bold text-gray-600">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
 
           <div className="mx-0.5 mt-[22px] mb-2.5 text-[13px] font-extrabold text-gray-900">소개</div>
           <div className="text-[13px] leading-relaxed text-gray-600">{intro}</div>

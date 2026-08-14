@@ -10,9 +10,11 @@ export interface ProductApi {
   name: string;
   price: number;
   originPrice: number | null;
+  description: string | null;
+  imagePath: string | null;
 }
 
-/** 카테고리(prodCat)별 상품 카탈로그 조회 */
+/** 카테고리(prodCat)별 상품 카탈로그 조회 — bidApplicable=true(예약시공 적용 상품)만 노출 */
 export function getProducts(prodCat: string): Promise<ProductApi[]> {
-  return apiRequest<ProductApi[]>(`/products?prodCat=${encodeURIComponent(prodCat)}`);
+  return apiRequest<ProductApi[]>(`/products?prodCat=${encodeURIComponent(prodCat)}&bidApplicable=true`);
 }

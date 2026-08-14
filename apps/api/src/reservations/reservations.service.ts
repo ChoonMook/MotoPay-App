@@ -18,6 +18,7 @@ import { ProductsService } from '../products/products.service';
 import type { CompleteReservationDto } from './dto/complete-reservation.dto';
 import type { CreateCallLogDto } from './dto/create-call-log.dto';
 import type { CreateReviewDto } from './dto/create-review.dto';
+import type { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import {
   formatDateOnly,
   formatTimeOnly,
@@ -51,14 +52,23 @@ export interface RescheduleReservationParams {
   time: string; // "HH:mm"
 }
 
-export interface ReservationView extends Omit<Reservation, 'date' | 'time'> {
+export interface ReservationView
+  extends Omit<Reservation, 'date' | 'time' | 'reschedDate' | 'reschedTime'> {
   date: string; // "YYYY-MM-DD"
   time: string; // "HH:mm"
+  reschedDate: string | null; // "YYYY-MM-DD" — 활성 일정변경요청이 없으면 null
+  reschedTime: string | null; // "HH:mm"
 }
 
 function toView(reservation: Reservation): ReservationView {
-  const { date, time, ...rest } = reservation;
-  return { ...rest, date: formatDateOnly(date), time: formatTimeOnly(time) };
+  const { date, time, reschedDate, reschedTime, ...rest } = reservation;
+  return {
+    ...rest,
+    date: formatDateOnly(date),
+    time: formatTimeOnly(time),
+    reschedDate: reschedDate ? formatDateOnly(reschedDate) : null,
+    reschedTime: reschedTime ? formatTimeOnly(reschedTime) : null,
+  };
 }
 
 // PT-HOME-01 "오늘의 시공 일정" 카드 응답 — 예약에 서비스(시공항목)·차종 연결 컬럼이 없어
@@ -69,8 +79,9 @@ export interface TodayReservationView {
   customerName: string;
   reservationType: string; // -> CommonCodeDetail(code='RESERVATION_TYPE')
   progressStatus: string; // -> CommonCodeDetail(code='RESERVATION_PROGRESS')
-  car: string | null;
-  plate: string | null;
+  carBrandCode: string | null; // -> CommonCodeDetail(code='CAR_BRAND') — 라벨 변환은 프론트(HomeScreen)에서 처리
+  carModelCode: string | null; // -> CommonCodeDetail(code='CAR_MODEL')
+  trimName: string | null;
 }
 
 export interface PackageProgressStats {
@@ -137,9 +148,16 @@ export interface BidJobView {
     carModelCode: string;
     trimName: string | null;
   } | null;
+  vin: string | null; // -> BidRequest.myCarId -> MyCar.vin — 대표차량 미등록 회원은 null
   progressStatus: string;
   items: BidRequestItem[];
   positions: BidRequestPosition[];
+  // 파트너 일정변경 요청 상태(PT-RSVC-12) — "REQUESTED"(응답 대기)|"REJECTED"(거절됨)|null(활성 요청 없음)
+  reschedStatus: string | null;
+  reschedDate: string | null; // 파트너가 제안한 새 날짜("YYYY-MM-DD")
+  reschedTime: string | null; // 파트너가 제안한 새 시각("HH:mm")
+  reschedReason: string | null;
+  reschedRejectReason: string | null; // 고객이 거절 시 남긴 사유(선택)
 }
 
 // PT-RSVC-11 예약시공 완료건 상세("인수확인 현황") — 시공 항목/차량 등은 목록(BidJobView)에 이미 있어
@@ -158,7 +176,9 @@ export interface HandoverDetailView {
   progressStatus: string;
   car: string | null;
   vin: string | null;
+  packageName: string | null;
   items: PackageJobItem[];
+  tintPositions: { position: string; level: string }[];
   photos: string[]; // uploads/ 기준 상대경로
   completionMemo: string | null;
   completedAt: string | null;
@@ -357,34 +377,13 @@ export class ReservationsService {
     return toView(updated);
   }
 
-  /**
-   * 일정 변경 — 확정(CONFIRMED) 상태·시공 시작 전(progressStatus='APPLIED')만 가능,
-   * 새 일시도 휴무일·정원·잠금을 create()와 동일하게 검증.
-   * 같은 행의 date/time을 갱신하는 방식이라 기존 시간대는 정원 계산에서 자동으로 빠짐(별도 해제 처리 불필요).
-   */
-  async reschedule(
-    memberId: string,
-    id: number,
-    params: RescheduleReservationParams,
-  ): Promise<ReservationView> {
-    const reservation = await this.findOwnedOrThrow(memberId, id);
-    if (reservation.status !== 'CONFIRMED') {
-      throw new BadRequestException('취소되었거나 변경할 수 없는 예약입니다.');
-    }
-    if (reservation.progressStatus !== 'APPLIED') {
-      throw new BadRequestException(
-        '시공이 시작된 예약은 일정을 변경할 수 없습니다.',
-      );
-    }
-    if (reservation.date < todayUtcMidnight()) {
-      throw new BadRequestException(
-        '이미 지난 예약은 일정을 변경할 수 없습니다.',
-      );
-    }
-
-    const { shopCode } = reservation;
-    const targetDate = parseDateOnly(params.date);
-    const targetTime = parseTimeOnly(params.time);
+  /** 새 일시가 휴무일·정원·잠금 조건을 만족하는지 검증(고객 일정변경/파트너 일정변경요청·수락이 공유) — 통과 시 그 시간대의 현재 예약 수를 반환 */
+  private async validateSlot(
+    shopCode: string,
+    targetDate: Date,
+    targetTime: Date,
+    excludeReservationId?: number,
+  ): Promise<number> {
     if (targetDate <= todayUtcMidnight()) {
       throw new BadRequestException('오늘 이후 날짜로만 변경할 수 있습니다.');
     }
@@ -414,7 +413,7 @@ export class ReservationsService {
           date: targetDate,
           time: targetTime,
           status: 'CONFIRMED',
-          id: { not: id },
+          ...(excludeReservationId ? { id: { not: excludeReservationId } } : {}),
         },
       }),
     ]);
@@ -429,10 +428,180 @@ export class ReservationsService {
     if (reservedCount >= capacity) {
       throw new BadRequestException('예약 가능 인원이 마감되었습니다.');
     }
+    return reservedCount;
+  }
+
+  /**
+   * 일정 변경(고객 직접 변경) — 확정(CONFIRMED) 상태·시공 시작 전(progressStatus='APPLIED')만 가능,
+   * 새 일시도 휴무일·정원·잠금을 create()와 동일하게 검증.
+   * 같은 행의 date/time을 갱신하는 방식이라 기존 시간대는 정원 계산에서 자동으로 빠짐(별도 해제 처리 불필요).
+   */
+  async reschedule(
+    memberId: string,
+    id: number,
+    params: RescheduleReservationParams,
+  ): Promise<ReservationView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.status !== 'CONFIRMED') {
+      throw new BadRequestException('취소되었거나 변경할 수 없는 예약입니다.');
+    }
+    if (reservation.progressStatus !== 'APPLIED') {
+      throw new BadRequestException(
+        '시공이 시작된 예약은 일정을 변경할 수 없습니다.',
+      );
+    }
+    if (reservation.date < todayUtcMidnight()) {
+      throw new BadRequestException(
+        '이미 지난 예약은 일정을 변경할 수 없습니다.',
+      );
+    }
+
+    const targetDate = parseDateOnly(params.date);
+    const targetTime = parseTimeOnly(params.time);
+    const reservedCount = await this.validateSlot(
+      reservation.shopCode,
+      targetDate,
+      targetTime,
+      id,
+    );
 
     const updated = await this.prisma.reservation.update({
       where: { id },
       data: { date: targetDate, time: targetTime, seq: reservedCount + 1 },
+    });
+    return toView(updated);
+  }
+
+  /**
+   * 파트너 일정변경 요청(PT-RSVC-12) — 확정(CONFIRMED)·시공 시작 전(APPLIED)인 예약에 한해, 파트너가 제안하는
+   * 새 일시가 실제로 예약 가능한지 요청 시점에 미리 검증해둔다(고객이 수락할 때 다시 한번 검증).
+   * 이미 진행중인 요청이 있어도 최신 요청으로 덮어씀(이력 보관 없음).
+   */
+  async requestResched(
+    shopCode: string,
+    reservationNo: string,
+    dto: { date: string; time: string; reason: string },
+  ): Promise<void> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+    });
+    if (!reservation || reservation.shopCode !== shopCode) {
+      throw new NotFoundException('예약을 찾을 수 없습니다.');
+    }
+    if (reservation.status !== 'CONFIRMED') {
+      throw new BadRequestException('취소된 예약은 일정을 변경할 수 없습니다.');
+    }
+    if (reservation.progressStatus !== 'APPLIED') {
+      throw new BadRequestException(
+        '시공이 시작된 예약은 일정을 변경할 수 없습니다.',
+      );
+    }
+
+    const targetDate = parseDateOnly(dto.date);
+    const targetTime = parseTimeOnly(dto.time);
+    await this.validateSlot(shopCode, targetDate, targetTime, reservation.id);
+
+    await this.prisma.reservation.update({
+      where: { reservationNo },
+      data: {
+        reschedStatus: 'REQUESTED',
+        reschedDate: targetDate,
+        reschedTime: targetTime,
+        reschedReason: dto.reason,
+        reschedRequestedAt: new Date(),
+        reschedRejectReason: null,
+        reschedRespondedAt: null,
+      },
+    });
+  }
+
+  /**
+   * 고객이 파트너의 일정변경 요청을 수락(CU-RSVC-21) — 수락 시점에 슬롯을 다시 검증(요청 이후 휴무일 지정 등으로
+   * 바뀌었을 수 있음). 수락되면 실제 date/time을 갱신하고 요청 관련 필드는 전부 초기화한다.
+   */
+  async acceptResched(memberId: string, id: number): Promise<ReservationView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.reschedStatus !== 'REQUESTED') {
+      throw new BadRequestException('응답할 일정변경 요청이 없습니다.');
+    }
+    const targetDate = reservation.reschedDate!;
+    const targetTime = reservation.reschedTime!;
+    const reservedCount = await this.validateSlot(
+      reservation.shopCode,
+      targetDate,
+      targetTime,
+      id,
+    );
+
+    const updated = await this.prisma.reservation.update({
+      where: { id },
+      data: {
+        date: targetDate,
+        time: targetTime,
+        seq: reservedCount + 1,
+        reschedStatus: null,
+        reschedDate: null,
+        reschedTime: null,
+        reschedReason: null,
+        reschedRequestedAt: null,
+        reschedRejectReason: null,
+        reschedRespondedAt: null,
+      },
+    });
+    return toView(updated);
+  }
+
+  /** 고객이 파트너의 일정변경 요청을 거절(CU-RSVC-21) — 기존 일정은 그대로 유지, 거절 사유(선택)만 기록 */
+  async rejectResched(
+    memberId: string,
+    id: number,
+    reason?: string,
+  ): Promise<ReservationView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.reschedStatus !== 'REQUESTED') {
+      throw new BadRequestException('응답할 일정변경 요청이 없습니다.');
+    }
+
+    const updated = await this.prisma.reservation.update({
+      where: { id },
+      data: {
+        reschedStatus: 'REJECTED',
+        reschedRejectReason: reason ?? null,
+        reschedRespondedAt: new Date(),
+      },
+    });
+    return toView(updated);
+  }
+
+  /**
+   * 결제 확정(CU-RSVC-14) — 업체/추천안 선정으로 예약이 이미 생성된 뒤, 결제 화면에서 "결제하기"를 눌렀을 때
+   * 쿠폰/포인트/결제수단/최종 결제금액을 기록. 확정(CONFIRMED) 상태에서만 가능하고, 이미 결제가 확정된 예약은
+   * 재결제할 수 없음(paidAt으로 판단). 쿠폰/포인트 자체는 별도 시스템이 없어(Coupon/Point 테이블 미존재) 이 시점의
+   * 스냅샷만 그대로 저장한다.
+   */
+  async confirmPayment(
+    memberId: string,
+    id: number,
+    dto: ConfirmPaymentDto,
+  ): Promise<ReservationView> {
+    const reservation = await this.findOwnedOrThrow(memberId, id);
+    if (reservation.status !== 'CONFIRMED') {
+      throw new BadRequestException('결제할 수 없는 예약입니다.');
+    }
+    if (reservation.paidAt) {
+      throw new BadRequestException('이미 결제가 확정된 예약입니다.');
+    }
+
+    const updated = await this.prisma.reservation.update({
+      where: { id },
+      data: {
+        paymentMethod: dto.paymentMethod,
+        couponName: dto.couponName ?? null,
+        couponDiscount: dto.couponDiscount ?? null,
+        pointsUsed: dto.pointsUsed ?? 0,
+        paidAmount: dto.paidAmount,
+        paidAt: new Date(),
+      },
     });
     return toView(updated);
   }
@@ -464,8 +633,9 @@ export class ReservationsService {
         customerName: r.member.name,
         reservationType: r.reservationType,
         progressStatus: r.progressStatus,
-        car: car?.trimName ?? car?.carModelCode ?? null,
-        plate: car?.plateNumber ?? null,
+        carBrandCode: car?.carBrandCode ?? null,
+        carModelCode: car?.carModelCode ?? null,
+        trimName: car?.trimName ?? null,
       };
     });
   }
@@ -644,12 +814,13 @@ export class ReservationsService {
                 carBrandCode: true,
                 carModelCode: true,
                 trimName: true,
+                vin: true,
               },
             },
           },
         },
       },
-      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+      orderBy: { createdAt: 'desc' }, // 예약관리 홈·시공대기목록 모두 최신 등록건이 맨 위(2026-08-14 사용자 확인)
     });
 
     return reservations.map((r) => {
@@ -664,10 +835,22 @@ export class ReservationsService {
         customerName: r.member.name,
         phoneMasked: phone ? maskPhone(phone) : '-',
         phone,
-        car: r.request?.myCar ?? null,
+        car: r.request?.myCar
+          ? {
+              carBrandCode: r.request.myCar.carBrandCode,
+              carModelCode: r.request.myCar.carModelCode,
+              trimName: r.request.myCar.trimName,
+            }
+          : null,
+        vin: r.request?.myCar?.vin ?? null,
         progressStatus: r.progressStatus,
         items: r.request?.items ?? [],
         positions: r.request?.positions ?? [],
+        reschedStatus: r.reschedStatus,
+        reschedDate: r.reschedDate ? formatDateOnly(r.reschedDate) : null,
+        reschedTime: r.reschedTime ? formatTimeOnly(r.reschedTime) : null,
+        reschedReason: r.reschedReason,
+        reschedRejectReason: r.reschedRejectReason,
       };
     });
   }
@@ -776,7 +959,9 @@ export class ReservationsService {
     }
 
     // 차량브랜드+차종 라벨로 표기(PT-NCPK-01~03) — trimName은 자유텍스트(예: "E 200")라 브랜드가 안 드러나므로
-    // CommonCodeDetail(CAR_BRAND/CAR_MODEL)에서 실제 이름을 조회해 조합. 코드에 대응하는 상세가 없으면 코드값 그대로 표기
+    // CommonCodeDetail(CAR_BRAND/CAR_MODEL)에서 실제 이름을 조회해 조합. 코드에 대응하는 상세가 없으면 코드값 그대로 표기.
+    // trimName이 있으면 "벤츠 E-Class E200"처럼 뒤에 붙여 세부차종명까지 표기(apps/customer-app·partner-app의
+    // 다른 carLabel 조합 로직과 동일 규칙)
     const [brandDetail, modelDetail] = await Promise.all([
       this.prisma.commonCodeDetail.findUnique({
         where: {
@@ -789,8 +974,9 @@ export class ReservationsService {
         },
       }),
     ]);
+    const brandModelLabel = `${brandDetail?.detailName ?? car.carBrandCode} ${modelDetail?.detailName ?? car.carModelCode}`;
     const carView = {
-      name: `${brandDetail?.detailName ?? car.carBrandCode} ${modelDetail?.detailName ?? car.carModelCode}`,
+      name: car.trimName ? `${brandModelLabel} ${car.trimName}` : brandModelLabel,
       vin: car.vin,
       photo: modelDetail?.ref2 ?? null, // 차종 대표사진(AD-CTLG-02에서 관리자가 등록) — uploads/ 기준 상대경로
     };
@@ -866,21 +1052,24 @@ export class ReservationsService {
       throw new BadRequestException('아직 시공이 완료되지 않은 예약입니다.');
     }
 
-    const [{ car, items }, photos, handoverConfirmedAt] = await Promise.all([
-      this.resolveMemberPackage(memberId),
-      this.prisma.reservationPhoto.findMany({
-        where: { reservationNo: reservation.reservationNo },
-        orderBy: { sortOrder: 'asc' },
-      }),
-      this.resolveHandoverConfirmation(reservation),
-    ]);
+    const [{ car, packageName, items, tintPositions }, photos, handoverConfirmedAt] =
+      await Promise.all([
+        this.resolveMemberPackage(memberId),
+        this.prisma.reservationPhoto.findMany({
+          where: { reservationNo: reservation.reservationNo },
+          orderBy: { sortOrder: 'asc' },
+        }),
+        this.resolveHandoverConfirmation(reservation),
+      ]);
 
     return {
       reservationNo: reservation.reservationNo,
       progressStatus: reservation.progressStatus,
       car: car?.name ?? null,
       vin: car?.vin ?? null,
+      packageName,
       items,
+      tintPositions,
       photos: photos.map((p) => p.photoPath),
       completionMemo: reservation.completionMemo,
       completedAt: reservation.completedAt?.toISOString() ?? null,

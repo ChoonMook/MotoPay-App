@@ -50,12 +50,19 @@ export interface ShopBidRequestApi {
   /** 고객이 최종 선택한 추천번호(EXPERT, 없으면 null) — myPlan.planNo와 비교해 낙찰 여부 판단 */
   selectedPlanNo: string | null;
   /** 내 업체가 이미 제출한 입찰(없으면 null) — 요청이 OPEN인 동안은 재제출로 수정 가능 */
-  myOffer: { offerNo: string; items: ShopBidOfferItemApi[]; scheduledTime: string; memo: string | null } | null;
+  myOffer: {
+    offerNo: string;
+    items: ShopBidOfferItemApi[];
+    scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(다른 날짜로 응찰한 경우)
+    scheduledTime: string;
+    memo: string | null;
+  } | null;
   /** 내 업체가 이미 제출한 추천안(없으면 null) — 요청이 OPEN인 동안은 재제출로 수정 가능 */
   myPlan: {
     planNo: string;
     items: ShopBidPlanItemApi[];
     positions: ShopBidRequestPositionApi[];
+    scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(다른 날짜로 추천한 경우)
     scheduledTime: string;
     reason: string;
   } | null;

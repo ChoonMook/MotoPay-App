@@ -3,9 +3,9 @@
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import Button from "../../components/ui/Button";
-import { ClockIcon, CircleXIcon } from "./rsvIcons";
+import { ClockIcon, CircleXIcon, ChevronRightIcon } from "./rsvIcons";
 import type { Bidder } from "./rsvTypes";
-import { nfmt } from "./rsvFormat";
+import { nfmt, formatDateOnlyLabel } from "./rsvFormat";
 
 function bidTotal(items: Array<[string, number, string]>) {
   return items.reduce((s, [, p]) => s + p, 0);
@@ -14,12 +14,26 @@ function bidTotal(items: Array<[string, number, string]>) {
 interface BidCoCmpGenScreenProps {
   bidders: Bidder[];
   loading: boolean;
+  /** 요청의 희망일("YYYY-MM-DD") — 업체가 다른 날짜로 응찰했으면 카드에 함께 표시 */
+  desiredDate: string;
+  /** shopCode -> 실제 업체 사진 URL(없으면 null) — GET /shops 응답 기반 */
+  photoUrlByShopCode: Record<string, string | null>;
   onSelectBid: (id: string) => void;
   onReRequest: () => void;
+  onOpenMyReq: () => void;
   onBack: () => void;
 }
 
-export default function BidCoCmpGenScreen({ bidders, loading, onSelectBid, onReRequest, onBack }: BidCoCmpGenScreenProps) {
+export default function BidCoCmpGenScreen({
+  bidders,
+  loading,
+  desiredDate,
+  photoUrlByShopCode,
+  onSelectBid,
+  onReRequest,
+  onOpenMyReq,
+  onBack,
+}: BidCoCmpGenScreenProps) {
   const sorted = [...bidders].sort((a, b) => bidTotal(a.items) - bidTotal(b.items));
   const lowestTotal = sorted.length ? bidTotal(sorted[0].items) : 0;
   const showEmpty = !loading && sorted.length === 0;
@@ -28,12 +42,16 @@ export default function BidCoCmpGenScreen({ bidders, loading, onSelectBid, onReR
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <RsvHeader title="입찰 업체 비교" onBack={onBack} />
 
-      <div className="flex-none border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
+      <div className="flex-none flex items-center justify-between border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
           <span className="[&>svg]:h-3.5 [&>svg]:w-3.5">
             <ClockIcon />
           </span>
           입찰 진행중 · 마감 D-1
+        </span>
+        <span onClick={onOpenMyReq} className="inline-flex cursor-pointer items-center gap-0.5 text-[11.5px] font-bold text-brand">
+          내 요청 내용
+          <ChevronRightIcon color="var(--color-brand)" />
         </span>
       </div>
 
@@ -69,7 +87,14 @@ export default function BidCoCmpGenScreen({ bidders, loading, onSelectBid, onReR
                 <div key={b.id} onClick={() => onSelectBid(b.id)} className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-[15px] shadow-sm">
                   <div className="flex items-center gap-2.5">
                     <span className="h-[46px] w-[46px] flex-none overflow-hidden rounded-xl bg-gray-100">
-                      <img src={shopThumb} alt={b.name} className="h-full w-full object-cover" />
+                      <img
+                        src={photoUrlByShopCode[b.shopCode] ?? shopThumb}
+                        alt={b.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = shopThumb;
+                        }}
+                      />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -77,6 +102,9 @@ export default function BidCoCmpGenScreen({ bidders, loading, onSelectBid, onReR
                         {best && <span className="flex-none rounded bg-accent-subtle px-1.5 py-0.5 text-[9.5px] font-extrabold text-accent-strong">최저가</span>}
                       </div>
                       <div className="mt-[3px] text-[11.5px] text-gray-500">{b.when}</div>
+                      {b.date !== desiredDate && (
+                        <div className="mt-0.5 text-[11px] text-gray-400">내 희망일 {formatDateOnlyLabel(desiredDate)}</div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3">

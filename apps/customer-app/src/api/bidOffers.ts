@@ -9,8 +9,10 @@ export interface BidOfferItemApi {
 
 export interface BidOfferApi {
   offerNo: string;
+  shopCode: string;
   shopName: string;
   items: BidOfferItemApi[];
+  scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(업체가 다른 날짜로 응찰한 경우)
   scheduledTime: string; // "HH:mm"
   memo: string | null;
   createdAt: string;

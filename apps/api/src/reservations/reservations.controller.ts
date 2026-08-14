@@ -1,4 +1,5 @@
 // POST /reservations(예약 생성)/GET /reservations/me(내 예약 목록)/PATCH /reservations/:id/cancel(취소)/PATCH /reservations/:id/reschedule(일정변경)
+// /PATCH /reservations/:id/pay(결제 확정)/PATCH /reservations/:id/resched-accept·resched-reject(파트너 일정변경요청 수락·거절)
 // /GET /reservations/:id/handover(시공완료·인수확인 상세)/PATCH /reservations/:id/handover-confirm(인수확인)
 // /GET·POST /reservations/:id/review(후기 조회·등록) — 로그인 필요
 import {
@@ -17,6 +18,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { SafeUser } from '../auth/auth.types';
 import { ReservationsService } from './reservations.service';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
+import { RejectReschedDto } from './dto/reject-resched.dto';
 
 @ApiTags('reservations')
 @ApiBearerAuth()
@@ -82,6 +85,40 @@ export class ReservationsController {
     @Body('time') time: string,
   ) {
     return this.reservationsService.reschedule(user.id, id, { date, time });
+  }
+
+  @Patch(':id/pay')
+  @ApiOperation({
+    summary:
+      '결제 확정(CU-RSVC-14) — 업체/추천안 선정으로 생성된 예약에 쿠폰/포인트/결제수단/최종금액을 기록, 예약당 1회만 가능',
+  })
+  confirmPayment(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ConfirmPaymentDto,
+  ) {
+    return this.reservationsService.confirmPayment(user.id, id, dto);
+  }
+
+  @Patch(':id/resched-accept')
+  @ApiOperation({
+    summary:
+      '파트너 일정변경 요청 수락(CU-RSVC-21) — 실제 일정을 파트너가 제안한 일시로 변경',
+  })
+  acceptResched(@CurrentUser() user: SafeUser, @Param('id', ParseIntPipe) id: number) {
+    return this.reservationsService.acceptResched(user.id, id);
+  }
+
+  @Patch(':id/resched-reject')
+  @ApiOperation({
+    summary: '파트너 일정변경 요청 거절(CU-RSVC-21) — 기존 일정 유지, 거절 사유는 선택 입력',
+  })
+  rejectResched(
+    @CurrentUser() user: SafeUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RejectReschedDto,
+  ) {
+    return this.reservationsService.rejectResched(user.id, id, dto.reason);
   }
 
   @Get(':id/package-items')

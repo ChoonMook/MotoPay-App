@@ -91,9 +91,9 @@ export function mapRequestItems(
     if (it.instCode === "TINT" && positions.length) {
       const posSummary = positions.map((p) => `${TINT_POS_LABELS[p.position] ?? p.position} ${p.level}%`).join(" · ");
       const spec = it.productName ? `${it.productName} · ${posSummary}` : posSummary;
-      return { name, spec, instCode: it.instCode };
+      return { name, spec, instCode: it.instCode, productName: it.productName };
     }
-    return { name, spec: it.productName ?? "", instCode: it.instCode };
+    return { name, spec: it.productName ?? "", instCode: it.instCode, productName: it.productName };
   });
 }
 
@@ -119,6 +119,7 @@ export function mapBidRequest(req: ShopBidRequestApi, carLabel: (car: ShopBidReq
     myOffer: req.myOffer
       ? {
           prices: Object.fromEntries(req.myOffer.items.map((it) => [it.instCode, String(it.price)])),
+          date: req.myOffer.scheduledDate,
           time: req.myOffer.scheduledTime,
           memo: req.myOffer.memo ?? "",
         }
@@ -128,6 +129,7 @@ export function mapBidRequest(req: ShopBidRequestApi, carLabel: (car: ShopBidReq
           planNo: req.myPlan.planNo,
           items: mapRequestItems(req.myPlan.items, req.myPlan.positions),
           totalOffer: req.myPlan.items.reduce((sum, it) => sum + it.offerPrice, 0),
+          scheduledDate: req.myPlan.scheduledDate,
           scheduledTime: req.myPlan.scheduledTime,
           reason: req.myPlan.reason,
         }
@@ -161,56 +163,73 @@ export function mapBidJob(job: BidJob, carLabel: (car: ShopBidRequestCarApi | nu
     customer: job.customerName,
     phone: job.phone,
     car: carLabel(job.car) ?? "-",
-    vin: "-", // 예약시공(입찰) 요청엔 VIN 데이터가 없음(신차패키지와 달리 실물 차량 매핑이 없음)
+    vin: job.vin ?? "-", // -> BidRequest.myCarId -> MyCar.vin(대표차량 미등록 회원은 "-")
     status: JOB_PROGRESS_LABELS[job.progressStatus] ?? "착수전",
     schedule: `${job.date.replace(/-/g, ".")} ${job.time}`,
     items: mapRequestItems(job.items, job.positions),
     doneCheck: {},
     photos: [],
     memo: "",
-    reschedStatus: "none",
-    reschedReason: "",
-    reschedDt: "",
+    reschedStatus: job.reschedStatus === "REQUESTED" ? "sent" : job.reschedStatus === "REJECTED" ? "rejected" : "none",
+    reschedReason: job.reschedReason ?? "",
+    reschedDate: job.reschedDate ?? "",
+    reschedTime: job.reschedTime ?? "",
+    reschedRejectReason: job.reschedRejectReason ?? "",
   };
 }
 
 export const POS_NAMES = ["전면유리", "측면 1열", "측면 2열", "후면유리", "선루프"];
 
-/** 카탈로그(GET /products) 결과 3건 넘게 있으면 검색 화면으로, 아니면 드롭다운으로 바로 고르게 함 */
-export function searchable(products: RsvcProduct[]): boolean {
-  return products.length > 3;
-}
-
 export function hasPos(instCode: string): boolean {
   return instCode === "TINT";
 }
 
-export function won(n: number | string | undefined): string {
+export function won(n: number | string | null | undefined): string {
   return `${Number(n || 0).toLocaleString("ko-KR")}원`;
+}
+
+/** 고객이 요청한 제품명을 실 카탈로그(productsByInstCode)에서 이름으로 찾아 판매가를 참고용으로 반환(없으면 null) */
+export function findRequestedProductPrice(
+  productsByInstCode: Record<string, RsvcProduct[]>,
+  instCode: string | undefined,
+  productName: string | null | undefined,
+): number | null {
+  if (!instCode || !productName) return null;
+  return (productsByInstCode[instCode] ?? []).find((p) => p.name === productName)?.price ?? null;
 }
 
 /**
  * 요청 항목별 실 카탈로그(productsByInstCode, instCode -> GET /products 결과)로 초안 추천 라인 생성.
  * 카탈로그에 상품이 하나도 없는 항목은(실무상 발생하지 않아야 함 — 8개 CAR_INST 전부 최소 1개 이상 시딩됨) 제외한다.
  */
-export function buildPlanDraft(req: BidReq, productsByInstCode: Record<string, RsvcProduct[]>): PlanLine[] {
+/** instCodeOrder는 admin-app 시공항목 관리(AD-CTLG-03)에 등록된 순서 그대로(carInstCodes를 조회한 순서) —
+ * 없는 코드는 뒤로 밀어서(정렬순서 개념이 없는 값이라도) 항목이 누락되지 않게 함 */
+export function buildPlanDraft(
+  req: BidReq,
+  productsByInstCode: Record<string, RsvcProduct[]>,
+  instCodeOrder: string[] = [],
+): PlanLine[] {
+  const orderIndex = new Map(instCodeOrder.map((code, i) => [code, i]));
   return req.items
     .filter((it) => it.instCode && (productsByInstCode[it.instCode]?.length ?? 0) > 0)
+    .slice()
+    .sort((a, b) => (orderIndex.get(a.instCode!) ?? Infinity) - (orderIndex.get(b.instCode!) ?? Infinity))
     .map((it) => {
       const instCode = it.instCode!;
-      const p = productsByInstCode[instCode][0];
-      const posLevels: Record<string, string> = {};
-      if (hasPos(instCode)) POS_NAMES.forEach((n) => (posLevels[n] = "15"));
+      // 부위·농도 기본값 없음 — 전 부위를 우선 꺼둔 채로 시작해 파트너가 직접 부위를 켜고 농도를 골라야 함
+      // (제품 기본 선택 제거와 동일한 이유, 2026-08-14 사용자 확정)
+      const posOff: Record<string, boolean> = {};
+      if (hasPos(instCode)) POS_NAMES.forEach((n) => (posOff[n] = true));
       return {
         name: it.name,
         instCode,
         spec: it.spec,
-        productCode: p.productCode,
-        productName: p.name,
-        retailPrice: p.price,
-        offer: String(Math.round((p.price * 0.9) / 10000) * 10000),
-        posOff: {},
-        posLevels,
+        productCode: null,
+        productName: null,
+        retailPrice: null,
+        offer: "",
+        posOff,
+        posLevels: {},
         posBulk: false,
       };
     });
@@ -238,11 +257,13 @@ export function reqInfoRows(req: BidReq): { k: string; v: string }[] {
   return req.type === "general"
     ? [
         { k: "요청 유형", v: "일반입찰" },
+        { k: "희망 시공일", v: formatDesiredDateLabel(req.desiredDate) },
         { k: "검색 조건", v: req.budgetLabel },
         { k: "마감", v: req.deadlineLabel },
       ]
     : [
         { k: "요청 유형", v: "전문가추천" },
+        { k: "희망 시공일", v: formatDesiredDateLabel(req.desiredDate) },
         { k: "카테고리", v: req.category ?? "-" },
         { k: "예산", v: req.budgetLabel },
         { k: "마감", v: req.deadlineLabel },

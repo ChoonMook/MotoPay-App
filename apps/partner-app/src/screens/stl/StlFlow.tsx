@@ -1,14 +1,33 @@
 // PT-STL-01~03 정산·후기 상태 컨테이너 - 허브↔정산내역조회/후기조회 흐름을 엮음
-// 백엔드에 정산/후기 모델이 아직 없어 로컬 state 목업으로만 시연 (rsvc 모듈과 동일한 패턴)
+// 후기 조회(PT-STL-03)는 /shops/me/reviews 실 API 연동, 정산내역조회는 백엔드에 정산 모델이 아직 없어 로컬 state 목업 유지
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
-import { INITIAL_REVIEWS, INITIAL_SETTLEMENTS } from "./stlData";
+import { listMyReviews, type ShopReviewItem as ApiReview } from "../../api/shops";
+import { INITIAL_SETTLEMENTS } from "./stlData";
+import type { Review } from "./stlTypes";
 import StlMainScreen from "./StlMainScreen";
 import StlHistScreen from "./StlHistScreen";
 import StlReviewScreen from "./StlReviewScreen";
 import StlDateRangeSheet from "./StlDateRangeSheet";
+
+const REVIEW_PAGE_SIZE = 5;
+
+function formatReviewDate(iso: string): string {
+  return iso.slice(0, 10).replace(/-/g, ".");
+}
+
+function toReviewRow(r: ApiReview): Review {
+  return {
+    id: String(r.id),
+    rating: r.rating,
+    content: r.content,
+    customer: r.reviewerName,
+    car: r.car ?? "-",
+    date: formatReviewDate(r.createdAt),
+  };
+}
 
 type Screen = "main" | "hist" | "review";
 type PeriodFilter = "all" | "this" | "last" | "custom";
@@ -25,14 +44,26 @@ export default function StlFlow({ onExit, onOpenRsvc, onOpenMyPage }: StlFlowPro
   const [screen, setScreen] = useState<Screen>("main");
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [reviewShown, setReviewShown] = useState(3);
   const [showDatePop, setShowDatePop] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [customLabel, setCustomLabel] = useState("");
 
   const [settlements] = useState(INITIAL_SETTLEMENTS);
-  const [reviews] = useState(INITIAL_REVIEWS);
+  const [reviewRows, setReviewRows] = useState<Review[]>([]);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const [avgRatingNum, setAvgRatingNum] = useState(0);
+
+  useEffect(() => {
+    listMyReviews(0, REVIEW_PAGE_SIZE)
+      .then((page) => {
+        setReviewRows(page.items.map(toReviewRow));
+        setReviewTotal(page.total);
+        setAvgRatingNum(page.avgRating ?? 0);
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : "후기를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const done = settlements.filter((s) => s.status === "done" && s.period === "this");
   const wait = settlements.filter((s) => s.status === "wait" && s.period === "this");
@@ -40,12 +71,10 @@ export default function StlFlow({ onExit, onOpenRsvc, onOpenMyPage }: StlFlowPro
   const doneAmount = done.reduce((a, s) => a + s.amount, 0);
   const waitAmount = wait.reduce((a, s) => a + s.amount, 0);
 
-  const avgRatingNum = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : 0;
   const avgRating = avgRatingNum.toFixed(1);
-  const reviewCount = reviews.length;
+  const reviewCount = reviewTotal;
 
   const histRows = settlements.filter((s) => (period === "all" || s.period === period) && (status === "all" || s.status === status));
-  const reviewRows = reviews.slice(0, reviewShown);
 
   // 하드웨어 백버튼: 화면 상단 '‹' 버튼의 onBack과 동일한 대상으로 이동. 루트 화면(main)에서는 등록하지 않아
   // 상위(App.tsx)의 "홈으로" 처리로 자연스럽게 넘어감
@@ -109,12 +138,17 @@ export default function StlFlow({ onExit, onOpenRsvc, onOpenMyPage }: StlFlowPro
           reviewCount={reviewCount}
           reviewRows={reviewRows}
           onBack={() => setScreen("main")}
-          onLoadMore={() => {
-            if (reviewShown >= reviews.length) {
+          onLoadMore={async () => {
+            if (reviewRows.length >= reviewTotal) {
               showToast("더 이상 후기가 없어요");
               return;
             }
-            setReviewShown((prev) => Math.min(prev + 2, reviews.length));
+            try {
+              const page = await listMyReviews(reviewRows.length, REVIEW_PAGE_SIZE);
+              setReviewRows((prev) => [...prev, ...page.items.map(toReviewRow)]);
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "후기를 더 불러오지 못했어요", "danger");
+            }
           }}
         />
       )}

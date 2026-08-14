@@ -15,12 +15,15 @@ export function formatTimeOnly(value: Date): string {
   return value.toISOString().slice(11, 16);
 }
 
-/** 오늘(UTC 자정 기준) — @db.Date 컬럼이 UTC 자정으로 저장되므로 동일 기준으로 비교해야 함 */
+/** 오늘(한국시간 기준 달력 날짜를 UTC 자정으로 인코딩) — @db.Date 컬럼은 사용자가 고른 한국(KST) 달력 날짜를
+ * UTC 자정으로 저장하므로(parseDateOnly 참고), "오늘"도 서버 프로세스의 시스템 타임존과 무관하게 반드시
+ * Asia/Seoul 기준으로 계산해야 함. (버그였던 이전 구현: 서버가 UTC 달력 날짜를 그대로 썼는데, 한국시간
+ * 00:00~08:59 사이에는 UTC 날짜가 아직 전날이라 "오늘"이 하루 전으로 잘못 계산됐음 — 2026-08-14 발견) */
 export function todayUtcMidnight(): Date {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
+  const kstDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+  }).format(new Date()); // "YYYY-MM-DD"
+  return parseDateOnly(kstDateStr);
 }
 
 export type ShopDayType = 'WEEKDAY' | 'SAT' | 'SUN';

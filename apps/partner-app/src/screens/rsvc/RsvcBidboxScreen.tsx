@@ -1,5 +1,5 @@
 // PT-RSVC-04: 입찰함 - 신규·진행중·마감 탭별 요청 카드 목록, 마감 임박 건은 카운트다운 뱃지로 강조
-import { reqTypeChipClass, reqTypeLabel, reqUrgent, itemSummary } from "./rsvcData";
+import { formatDesiredDateLabel, reqTypeChipClass, reqTypeLabel, reqUrgent, itemSummary } from "./rsvcData";
 import type { BidReq, ReqStatus } from "./rsvcTypes";
 
 export type BidTab = "new" | "active" | "closed";
@@ -79,6 +79,7 @@ export default function RsvcBidboxScreen({ reqs, loading, tab, onChangeTab, onBa
                     )}
                   </div>
                   <div className="mb-[3px] text-[13.5px] text-gray-800">{r.car}</div>
+                  <div className="mb-[3px] text-[12.5px] text-gray-500">희망시공일 {formatDesiredDateLabel(r.desiredDate)}</div>
                   <div className="mb-[9px] text-[12.5px] text-gray-500">
                     {itemSummary(r.items)} · {r.distance}
                   </div>

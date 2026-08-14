@@ -36,6 +36,11 @@ interface BookingDtlScreenProps {
   loading?: boolean;
   onOpenResched: () => void;
   onOpenCancel: () => void;
+  /** 업체가 보낸 일정변경 요청(응답 대기중인 것만) — 없으면 배너 미표시(예약시공 채널 전용, 신차패키지는 미사용) */
+  reschedRequest?: { dateLabel: string; reason: string } | null;
+  onAcceptReschedRequest?: () => void;
+  onOpenRejectReschedRequest?: () => void;
+  respondingReschedRequest?: boolean;
 }
 
 export default function BookingDtlScreen({
@@ -55,6 +60,10 @@ export default function BookingDtlScreen({
   loading = false,
   onOpenResched,
   onOpenCancel,
+  reschedRequest,
+  onAcceptReschedRequest,
+  onOpenRejectReschedRequest,
+  respondingReschedRequest = false,
 }: BookingDtlScreenProps) {
   if (loading) {
     return (
@@ -72,6 +81,31 @@ export default function BookingDtlScreen({
       <CommonHeader title="예약 상세" onBack={onBack} />
 
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-[18px] pb-6">
+        {reschedRequest && (
+          <div className="mb-4 rounded-[14px] border border-brand bg-brand-subtle px-4 py-3.5">
+            <div className="text-sm font-extrabold text-brand">업체가 일정 변경을 요청했어요</div>
+            <div className="mt-1.5 text-[13px] font-bold text-gray-900">{reschedRequest.dateLabel}</div>
+            <div className="mt-0.5 text-[12.5px] text-gray-600">사유: {reschedRequest.reason}</div>
+            <div className="mt-3 flex gap-2">
+              <div className="flex-1">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={respondingReschedRequest}
+                  onClick={onOpenRejectReschedRequest}
+                >
+                  거절
+                </Button>
+              </div>
+              <div className="flex-1">
+                <Button size="lg" disabled={respondingReschedRequest} onClick={onAcceptReschedRequest}>
+                  {respondingReschedRequest ? "처리 중..." : "수락"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div
           onClick={onOpenProfile}
           className={`flex items-center gap-3 rounded-[14px] border border-gray-200 bg-white p-3.5 shadow-sm ${onOpenProfile ? "cursor-pointer" : ""}`}

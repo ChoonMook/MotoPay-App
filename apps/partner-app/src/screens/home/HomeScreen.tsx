@@ -70,6 +70,8 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
   const [reservationTypes, setReservationTypes] = useState<CommonCodeDetailApi[]>([]);
   const [todayResv, setTodayResv] = useState<TodayReservation[]>([]);
   const [loadingToday, setLoadingToday] = useState(true);
+  const [carBrandCodes, setCarBrandCodes] = useState<CommonCodeDetailApi[]>([]);
+  const [carModelCodes, setCarModelCodes] = useState<CommonCodeDetailApi[]>([]);
   const [pkgStats, setPkgStats] = useState<PackageProgressStats | null>(null);
   const [bidStats, setBidStats] = useState<BidStats>({ newCount: 0, activeCount: 0, waitCount: 0 });
 
@@ -79,6 +81,12 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
       .catch((err) => showToast(err instanceof Error ? err.message : "계정 정보를 불러오지 못했어요", "danger"));
     getCommonCodeDetails("RESERVATION_TYPE")
       .then(setReservationTypes)
+      .catch(() => {});
+    getCommonCodeDetails("CAR_BRAND")
+      .then(setCarBrandCodes)
+      .catch(() => {});
+    getCommonCodeDetails("CAR_MODEL")
+      .then(setCarModelCodes)
       .catch(() => {});
     getTodayReservations()
       .then(setTodayResv)
@@ -110,6 +118,8 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
 
   const reservationTypeLabel = (code: string) =>
     reservationTypes.find((t) => t.detailCode === code)?.detailName ?? code;
+  const carBrandLabel = (code: string) => carBrandCodes.find((t) => t.detailCode === code)?.detailName ?? code;
+  const carModelLabel = (code: string) => carModelCodes.find((t) => t.detailCode === code)?.detailName ?? code;
 
   const pkgStatItems: PkgStatItem[] = [
     { value: pkgStats?.applied ?? 0, label: "착수대기", colorClass: "text-accent-strong", tab: "wait" },
@@ -243,7 +253,14 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
                     </span>
                   </div>
                   <div className="mt-1.5 text-[13px] text-gray-500">
-                    {[r.customerName, r.car, r.plate].filter(Boolean).join(" · ")}
+                    {[
+                      r.customerName,
+                      r.carBrandCode ? carBrandLabel(r.carBrandCode) : null,
+                      r.carModelCode ? carModelLabel(r.carModelCode) : null,
+                      r.trimName,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </div>
                 </div>
               );

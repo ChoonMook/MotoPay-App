@@ -41,7 +41,7 @@ export default function RsvcPlanPosSheet({ line, onTogglePos, onSetLevel, onTogg
       <div className="mp-scroll flex flex-col gap-2.5 overflow-y-auto">
         {POS_NAMES.map((name) => {
           const off = !!line.posOff[name];
-          const lvl = line.posLevels[name] ?? "15";
+          const lvl = line.posLevels[name];
           return (
             <div key={name} className={`rounded-xl border px-3.5 py-3 ${off ? "border-gray-200 opacity-60" : "border-gray-400"}`}>
               <div className="mb-2.5 flex items-center gap-2.5">

@@ -1,4 +1,4 @@
-// apps/api의 패키지 상세 조회(GET /products/packages/:packageCode) 호출 — 로그인 불필요
+// apps/api의 상품 카탈로그 조회(GET /products), 패키지 상세 조회(GET /products/packages/:packageCode) 호출 — 로그인 불필요
 import { apiRequest } from "./http";
 
 export interface ProductApi {
@@ -38,4 +38,9 @@ export interface PackageDetailApi {
 
 export function getPackageDetail(packageCode: string): Promise<PackageDetailApi> {
   return apiRequest<PackageDetailApi>(`/products/packages/${packageCode}`);
+}
+
+/** 예약시공(입찰) 요청 등록(CU-RSVC-04/05) 제품 선택·검색용 — bidApplicable=true인 상품만 조회 */
+export function listBidProducts(prodCat: string): Promise<ProductApi[]> {
+  return apiRequest<ProductApi[]>(`/products?prodCat=${prodCat}&bidApplicable=true`);
 }

@@ -24,7 +24,9 @@ export class CommonCodesService {
   async getDetails(code: string): Promise<CommonCodeDetail[]> {
     return this.prisma.commonCodeDetail.findMany({
       where: { code, useYn: true },
-      orderBy: { detailCode: 'asc' },
+      // sortOrder를 관리하지 않는(값이 전부 0인) 그룹은 detailCode가 그대로 2차 정렬 기준이 돼 기존 알파벳순
+      // 동작이 그대로 유지된다 — AD-CTLG-03(시공항목 관리)처럼 sortOrder를 관리자가 직접 바꾸는 그룹만 그 순서를 따름
+      orderBy: [{ sortOrder: 'asc' }, { detailCode: 'asc' }],
     });
   }
 

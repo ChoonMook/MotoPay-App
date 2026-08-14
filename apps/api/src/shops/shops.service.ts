@@ -43,6 +43,17 @@ export interface ShopReviewItem {
   createdAt: string;
 }
 
+// PT-STL-03 후기 조회 — 파트너 전용. 공개용 ShopReviewItem에 차종을 더해 페이징으로 응답
+export interface ShopReviewPageItem extends ShopReviewItem {
+  car: string | null;
+}
+
+export interface ShopReviewPage {
+  items: ShopReviewPageItem[];
+  total: number;
+  avgRating: number | null;
+}
+
 export interface ListShopsParams {
   instCodes?: string[]; // 지정하면 이 시공코드를 모두 지원하는 업체만 조회
   dealerCompanyId?: number; // 지정하면 이 딜러사(Company.id, coType='DEALER')가 DealerShopMapping(AD-NCPK-04)으로 등록한 업체만 조회 — 신차패키지 시공업체 선택 화면 전용
@@ -199,6 +210,91 @@ export class ShopsService {
       photos: r.photos.map((p) => p.photoPath),
       createdAt: r.createdAt.toISOString(),
     }));
+  }
+
+  /** PT-STL-03 후기 조회(파트너 로그인 전용) — 공개 목록에 차종을 더하고 페이징 지원 */
+  async listReviewsForMe(
+    shopCode: string,
+    offset: number,
+    limit: number,
+  ): Promise<ShopReviewPage> {
+    const [total, avg, reviews] = await Promise.all([
+      this.prisma.review.count({ where: { shopCode } }),
+      this.prisma.review.aggregate({
+        where: { shopCode },
+        _avg: { rating: true },
+      }),
+      this.prisma.review.findMany({
+        where: { shopCode },
+        include: {
+          member: { select: { name: true } },
+          photos: { orderBy: { sortOrder: 'asc' } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    const memberIds = [...new Set(reviews.map((r) => r.memberId))];
+    const carLabels = await this.resolveMemberCarLabels(memberIds);
+
+    return {
+      total,
+      avgRating: avg._avg.rating != null ? Math.round(avg._avg.rating * 10) / 10 : null,
+      items: reviews.map((r) => ({
+        id: r.id,
+        reviewerName: maskReviewerName(r.member.name),
+        rating: r.rating,
+        content: r.content,
+        photos: r.photos.map((p) => p.photoPath),
+        createdAt: r.createdAt.toISOString(),
+        car: carLabels.get(r.memberId) ?? null,
+      })),
+    };
+  }
+
+  // 후기는 예약(Reservation)에 차량 연결 컬럼이 없어 작성 회원의 대표차량(없으면 최근 등록차량)을 차종으로
+  // 사용(근사치) — listTodayForShop/resolveMemberPackage(reservations.service.ts)와 동일한 방식.
+  // 여러 회원의 후기를 한 번에 조회하므로 N+1을 피하려고 배치로 조회
+  private async resolveMemberCarLabels(
+    memberIds: string[],
+  ): Promise<Map<string, string>> {
+    const labels = new Map<string, string>();
+    if (memberIds.length === 0) {
+      return labels;
+    }
+    const cars = await this.prisma.myCar.findMany({
+      where: { memberId: { in: memberIds } },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+    const carByMember = new Map<string, (typeof cars)[number]>();
+    for (const car of cars) {
+      if (!carByMember.has(car.memberId)) {
+        carByMember.set(car.memberId, car);
+      }
+    }
+    const brandCodes = [...new Set(cars.map((c) => c.carBrandCode))];
+    const modelCodes = [...new Set(cars.map((c) => c.carModelCode))];
+    const [brands, models] = await Promise.all([
+      this.prisma.commonCodeDetail.findMany({
+        where: { code: 'CAR_BRAND', detailCode: { in: brandCodes } },
+      }),
+      this.prisma.commonCodeDetail.findMany({
+        where: { code: 'CAR_MODEL', detailCode: { in: modelCodes } },
+      }),
+    ]);
+    const brandNameByCode = new Map(brands.map((b) => [b.detailCode, b.detailName]));
+    const modelNameByCode = new Map(models.map((m) => [m.detailCode, m.detailName]));
+    for (const [memberId, car] of carByMember) {
+      const brand = brandNameByCode.get(car.carBrandCode) ?? car.carBrandCode;
+      const model = modelNameByCode.get(car.carModelCode) ?? car.carModelCode;
+      labels.set(
+        memberId,
+        car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`,
+      );
+    }
+    return labels;
   }
 
   private async resolveCoordinates(

@@ -83,16 +83,17 @@ const DETAILS: DetailRow[] = [
   { code: 'VLT', detailCode: '15', detailName: '15' },
   { code: 'VLT', detailCode: '30', detailName: '30' },
 
-  // CAR_INST
-  { code: 'CAR_INST', detailCode: 'TINT', detailName: '썬팅(틴팅)' },
-  { code: 'CAR_INST', detailCode: 'PPF', detailName: 'PPF' },
-  { code: 'CAR_INST', detailCode: 'CCA', detailName: '유리막 코팅' },
-  { code: 'CAR_INST', detailCode: 'BBOX', detailName: '블랙박스' },
-  { code: 'CAR_INST', detailCode: 'CLEAN', detailName: '실내크리닝' },
-  { code: 'CAR_INST', detailCode: 'UCOAT', detailName: '언더코팅' },
+  // CAR_INST — ref1은 항목설명(AD-CTLG-03 시공항목 관리에서 관리, 고객앱 시공항목 선택 화면에 항목명 아래
+  // 부가 설명으로 노출됨). 2026-08-14: 하드코딩돼 있던 고객앱 desc 문구를 이쪽으로 이관
+  { code: 'CAR_INST', detailCode: 'TINT', detailName: '썬팅(틴팅)', ref1: '전면·측면·후면·선루프' },
+  { code: 'CAR_INST', detailCode: 'PPF', detailName: 'PPF', ref1: '프론트·풀바디 부분 선택' },
+  { code: 'CAR_INST', detailCode: 'CCA', detailName: '유리막 코팅', ref1: '외장 광택 보호' },
+  { code: 'CAR_INST', detailCode: 'BBOX', detailName: '블랙박스', ref1: '상시 녹화 · 주차 감시' },
+  { code: 'CAR_INST', detailCode: 'CLEAN', detailName: '실내크리닝', ref1: '실내외 클리닝' },
+  { code: 'CAR_INST', detailCode: 'UCOAT', detailName: '언더코팅', ref1: '부식 · 소음 방지' },
   // 예약시공(입찰) 카테고리 중 기존 6개와 겹치지 않는 2개 추가(외장수리/휠·타이어)
-  { code: 'CAR_INST', detailCode: 'EXTREP', detailName: '외장수리' },
-  { code: 'CAR_INST', detailCode: 'WHTIRE', detailName: '휠·타이어' },
+  { code: 'CAR_INST', detailCode: 'EXTREP', detailName: '외장수리', ref1: '판금·도색·범퍼 수리' },
+  { code: 'CAR_INST', detailCode: 'WHTIRE', detailName: '휠·타이어', ref1: '휠 교체 · 타이어 장착' },
 
   // PROD_TYPE — 모토페이가 실물상품(쇼핑몰)과 시공서비스(예약시공)를 함께 취급하는 걸 반영해 3종으로 구분(제안값)
   { code: 'PROD_TYPE', detailCode: 'GOODS', detailName: '실물상품' },

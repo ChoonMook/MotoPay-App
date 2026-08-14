@@ -5,7 +5,7 @@ import Button from "../../../components/ui/Button";
 import RsvHeader from "../RsvHeader";
 import { ChevronRightIcon } from "../rsvIcons";
 import type { RecoPlan } from "../rsvTypes";
-import { nfmt } from "../rsvFormat";
+import { nfmt, formatDateOnlyLabel } from "../rsvFormat";
 
 const RecoStarIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-brand)" stroke="none">
@@ -15,13 +15,17 @@ const RecoStarIcon = () => (
 
 interface PlanDtlScreenProps {
   reco: RecoPlan;
+  /** 요청의 희망일("YYYY-MM-DD") — 업체가 다른 날짜로 추천했으면 함께 표시 */
+  desiredDate: string;
+  /** shopCode -> 실제 업체 사진 URL(없으면 null) — GET /shops 응답 기반 */
+  photoUrlByShopCode: Record<string, string | null>;
   onBack: () => void;
   onOpenProfile: () => void;
   onOpenProdDtl: () => void;
   onPick: () => void;
 }
 
-export default function PlanDtlScreen({ reco, onBack, onOpenProfile, onOpenProdDtl, onPick }: PlanDtlScreenProps) {
+export default function PlanDtlScreen({ reco, desiredDate, photoUrlByShopCode, onBack, onOpenProfile, onOpenProdDtl, onPick }: PlanDtlScreenProps) {
   const total = reco.plans.reduce((s, [, , offer]) => s + offer, 0);
   const retail = reco.plans.reduce((s, [, r]) => s + r, 0);
 
@@ -32,11 +36,21 @@ export default function PlanDtlScreen({ reco, onBack, onOpenProfile, onOpenProdD
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-[18px] pb-6">
         <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-sm">
           <span className="h-12 w-12 flex-none overflow-hidden rounded-xl bg-gray-100">
-            <img src={shopThumb} alt={reco.name} className="h-full w-full object-cover" />
+            <img
+              src={photoUrlByShopCode[reco.shopCode] ?? shopThumb}
+              alt={reco.name}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = shopThumb;
+              }}
+            />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-[15px] font-extrabold text-gray-900">{reco.name}</div>
             <div className="mt-[3px] text-[11.5px] text-gray-500">{reco.when}</div>
+            {reco.date !== desiredDate && (
+              <div className="mt-0.5 text-[11px] text-gray-400">내 희망일 {formatDateOnlyLabel(desiredDate)}</div>
+            )}
           </div>
           <span onClick={onOpenProfile} className="flex-none cursor-pointer text-[11.5px] font-bold text-brand">
             프로필 ›

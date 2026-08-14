@@ -12,6 +12,7 @@ import { listShops } from "../../api/shops";
 import { listMyBidRequests } from "../../api/bidRequests";
 import { getBidOffers } from "../../api/bidOffers";
 import { getBidPlans } from "../../api/bidPlans";
+import { API_BASE_URL } from "../../api/config";
 import { INST_CODE_LABELS } from "../rsv/rsvTypes";
 import type { ReqStatusFilter } from "../rsv/BookingScreen";
 import { nfmt } from "../rsv/rsvFormat";
@@ -40,6 +41,7 @@ interface NcpkBooking {
 interface QuotePreview {
   shopName: string;
   price: number;
+  photoUrl: string | null;
 }
 
 interface BidQuoteCard {
@@ -185,6 +187,10 @@ export default function HomeScreen({
         const openRequests = bidRequests
           .filter((r) => r.status === "OPEN")
           .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        const photoUrlByShopCode = (shopCode: string): string | null => {
+          const mainPhoto = shops.find((s) => s.shopCode === shopCode)?.mainPhoto;
+          return mainPhoto ? `${API_BASE_URL}/uploads/${mainPhoto.photoPath}` : null;
+        };
         const fetchQuoteFor = (request: (typeof openRequests)[number]): Promise<BidQuoteCard | null> => {
           const elapsedHours = Math.max(0, Math.floor((Date.now() - new Date(request.createdAt).getTime()) / 3600000));
           const build = (offerCount: number, quotes: QuotePreview[]): BidQuoteCard | null =>
@@ -194,7 +200,11 @@ export default function HomeScreen({
                 build(
                   offers.length,
                   offers
-                    .map((o) => ({ shopName: o.shopName, price: o.items.reduce((sum, it) => sum + it.price, 0) }))
+                    .map((o) => ({
+                      shopName: o.shopName,
+                      price: o.items.reduce((sum, it) => sum + it.price, 0),
+                      photoUrl: photoUrlByShopCode(o.shopCode),
+                    }))
                     .sort((a, b) => a.price - b.price)
                     .slice(0, 3),
                 ),
@@ -203,7 +213,11 @@ export default function HomeScreen({
                 build(
                   plans.length,
                   plans
-                    .map((p) => ({ shopName: p.shopName, price: p.items.reduce((sum, it) => sum + it.offerPrice, 0) }))
+                    .map((p) => ({
+                      shopName: p.shopName,
+                      price: p.items.reduce((sum, it) => sum + it.offerPrice, 0),
+                      photoUrl: photoUrlByShopCode(p.shopCode),
+                    }))
                     .sort((a, b) => a.price - b.price)
                     .slice(0, 3),
                 ),
@@ -373,7 +387,14 @@ export default function HomeScreen({
                   }`}
                 >
                   <span className="h-9 w-9 flex-none overflow-hidden rounded-[10px] bg-gray-100">
-                    <img src={shopThumb} alt={q.shopName} className="block h-full w-full object-cover" />
+                    <img
+                      src={q.photoUrl ?? shopThumb}
+                      alt={q.shopName}
+                      className="block h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = shopThumb;
+                      }}
+                    />
                   </span>
                   <div className="min-w-0 flex-1">
                     <span className="truncate text-[13.5px] font-bold text-gray-900">{q.shopName}</span>

@@ -76,7 +76,12 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
     setSelectedJob(null);
     setLoadingDetail(true);
     getPackageJobDetail(job.reservationNo)
-      .then(setSelectedJob)
+      .then((detail) => {
+        setSelectedJob(detail);
+        // 목록으로 돌아갔을 때 이 job이 보이는 탭과 항상 맞춰둠(홈 "오늘의 시공 일정"처럼 목록을 거치지 않고
+        // 바로 들어온 경우에도 실제 진행상태에 맞는 탭이 보여야 함 — RsvcFlow.openJob과 동일 패턴)
+        setTab(progressToTab(detail.progressStatus));
+      })
       .catch((err) => {
         showToast(err instanceof Error ? err.message : "시공 상세를 불러오지 못했어요", "danger");
         setScreen("list");

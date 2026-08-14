@@ -12,8 +12,9 @@ export interface TodayReservation {
   customerName: string;
   reservationType: string; // -> CommonCodeDetail(code='RESERVATION_TYPE')
   progressStatus: string; // -> CommonCodeDetail(code='RESERVATION_PROGRESS')
-  car: string | null;
-  plate: string | null;
+  carBrandCode: string | null; // -> CommonCodeDetail(code='CAR_BRAND')
+  carModelCode: string | null; // -> CommonCodeDetail(code='CAR_MODEL')
+  trimName: string | null;
 }
 
 export interface PackageProgressStats {
@@ -70,9 +71,16 @@ export interface BidJob {
   phoneMasked: string;
   phone: string | null; // 해피콜 발신용 실번호("010-1234-5678") — 화면 표시는 phoneMasked만 사용
   car: ShopBidRequestCarApi | null;
+  vin: string | null; // 대표차량 미등록 회원은 null
   progressStatus: string; // APPLIED/IN_PROGRESS/DONE -> CommonCodeDetail(code='RESERVATION_PROGRESS')
   items: ShopBidRequestItemApi[];
   positions: ShopBidRequestPositionApi[];
+  // 파트너 일정변경 요청(PT-RSVC-12) — "REQUESTED"(응답 대기)|"REJECTED"(거절됨)|null(활성 요청 없음)
+  reschedStatus: string | null;
+  reschedDate: string | null; // "YYYY-MM-DD" — 제안한 새 날짜
+  reschedTime: string | null; // "HH:mm" — 제안한 새 시각
+  reschedReason: string | null;
+  reschedRejectReason: string | null; // 고객이 거절 시 남긴 사유(선택)
 }
 
 export interface BidJobDetail {
@@ -137,6 +145,17 @@ export function completeReservationJob(
   params: { photos: string[]; memo?: string },
 ): Promise<void> {
   return authedRequest<void>(`/shops/me/reservations/${reservationNo}/complete`, {
+    method: "PATCH",
+    body: JSON.stringify(params),
+  });
+}
+
+/** 일정변경 요청(PT-RSVC-12) — 확정·시공 시작 전 예약에 한해 새 일시를 제안, 고객이 수락해야 실제 일정이 바뀜 */
+export function requestResched(
+  reservationNo: string,
+  params: { date: string; time: string; reason: string },
+): Promise<void> {
+  return authedRequest<void>(`/shops/me/reservations/${reservationNo}/resched-request`, {
     method: "PATCH",
     body: JSON.stringify(params),
   });

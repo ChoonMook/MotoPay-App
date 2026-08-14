@@ -204,3 +204,28 @@
 ### 미해결/후속
 - 대표사진/소개사진 업로드, PT-PROF-03~06(휴무일/예약가능시간/예약현황/알림함) 화면은 스코프 밖으로 남겨둠 — 관련 테이블(`ShopPhoto`/`ShopHoliday`/`ShopTimeSlot`/`ShopDailySlot`)은 이미 스키마에 다 있어 다음 작업 때 바로 활용 가능.
 - "주소" 필드는 원본 디자인 그대로 비활성 상태(실제 주소 검색 API 연동 전까지는 값 변경 불가) — 실제 주소 검색(카카오/다음 우편번호 API 등) 도입 시 함께 다뤄야 함.
+
+## 컨텍스트 노트 — 푸시 알림 인프라 (Phase 28, 2026-08-13)
+
+### 배경 및 스코프 확정
+- "푸쉬 기능 추가하려면 어떻게 해야 하는지 설명해줘"라는 질문으로 시작 — 아직 코드 작업 요청이 아니라 아키텍처 설명 요청이었음. 먼저 `agreedMarketingPush`(User 모델에 이미 있던 필드)로 미루어 푸시가 기획상 예정돼 있었다는 것과, 실제 발송 인프라(토큰 저장/발송 API/클라이언트 SDK)는 전혀 없다는 것을 확인한 뒤 설명함.
+- AskUserQuestion으로 두 가지를 확정: ① 적용 범위 — customer-mobile을 우선 구현하되 PushToken 모델은 partner-app으로 나중에 확장 가능하게 설계, ② 첫 발송 트리거 — 인프라부터 구축하고 예약 확정/시공 완료 같은 서비스 알림을 첫 트리거로 연결(마케팅성 알림은 후순위).
+- CLAUDE.md 규칙(비트리비얼 작업은 착수 전 Plan+checklist+context-notes)에 따라 실제 구현 착수 전에 이 문서부터 먼저 작성 — 아직 실제 코드 변경은 없음(계획 단계).
+
+### 아키텍처 선택 — Web Push가 아니라 Expo Push Notification Service
+- customer-mobile이 순수 웹뷰 셸(RN 자체 UI 없음, `mobile/context-notes.md`의 "웹뷰 하이브리드" 결정 참고)이라, 표준 Web Push(Service Worker) 대신 **Expo Push Notification Service**를 경유하는 구조를 선택. Expo가 FCM(Android)/APNs(iOS) 연동을 대신 처리해줘서 두 플랫폼 자격증명을 백엔드가 직접 다룰 필요가 없음.
+- 발송 흐름: `NestJS API`(이벤트 발생) → `Expo Push API`(HTTP POST, `expo-server-sdk`로 래핑) → `FCM/APNs` → 기기.
+
+### PushToken 모델 — 다형(polymorphic) 설계 이유
+- 로그인 계정 테이블이 `User`(고객)/`PartnerUser`(시공업체)/`AdminAccount`(딜러·운영사) 3개로 이미 분리돼 있어 단일 FK로 걸 수 없음. `ownerType`('USER'|'PARTNER') + `ownerId`(FK 없는 문자열) 조합으로 다형 참조를 하기로 함 — 지금은 `ownerType='USER'` 경로만 실제로 씀.
+- 시스템 컬럼 규칙(CLAUDE.md 7번) 검토: 이 테이블은 관리자가 직접 수정하는 CRUD 대상이 아니라 클라이언트가 자동으로 upsert하는 시스템 테이블이라 `createdBy`/`updatedBy`는 두지 않기로 함 — "행위자" 개념이 없는 자기 자신의 기기 등록이라 CLAUDE.md의 매핑/로그성 테이블 제외 사유와 같은 논리.
+
+### 트리거 분류 — 서비스 필수 vs 마케팅
+- `agreedMarketingPush`는 회원가입 시 받는 "마케팅 푸시 수신 동의"(선택 항목)라, 예약 확정/시공 완료처럼 거래 자체의 진행 상태를 알리는 서비스 필수 알림에는 적용하지 않기로 함(동의 여부와 무관하게 발송). 프로모션성 알림을 나중에 추가할 때만 이 필드로 체크 분기 필요.
+
+### 확인된 제약 — EAS 자격증명은 내가 대신 할 수 없는 부분
+- `apps/customer-mobile`에 `eas.json`이 아직 없음 — Android는 FCM 서버 키(또는 EAS가 관리하는 FCM V1), iOS는 APNs 키를 EAS 계정에 등록해야 실제 푸시 발송이 동작함. 이건 Expo/Apple 개발자 계정 접근이 필요해 에이전트가 대신 처리할 수 없고, 사용자가 직접 진행하거나 필요한 키 값을 전달해줘야 함 — 이 항목이 없으면 나머지 코드가 다 완성돼도 실제 알림이 기기에 도착하지 않음.
+
+### 미해결/후속
+- `ownerType='PARTNER'`(partner-app) 발급/등록 흐름은 이번 범위 밖 — 테이블 구조만 재사용 가능하게 설계해뒀고, 실제 partner-app 클라이언트 연동은 후속 작업.
+- 발송 트리거를 예약 확정/시공 완료 2건 이상으로 넓힐지(입찰 마감 임박 등)는 아직 기획 확정 전 — 인프라(모델/서비스/엔드포인트)만 먼저 갖추고 트리거는 요청 시 추가하기로 함.

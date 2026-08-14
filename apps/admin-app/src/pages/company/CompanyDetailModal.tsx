@@ -1417,7 +1417,11 @@ function HolidaysTab({ companyId }: { companyId: number }) {
 // ───────────────────────── 일별슬롯 탭 ─────────────────────────
 
 function DailySlotsTab({ companyId }: { companyId: number }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // new Date().toISOString()은 UTC 기준 날짜라 한국시간 00:00~08:59 사이엔 하루 전 날짜가 나옴(toDateKey로 로컬 달력 날짜 사용)
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    return toDateKey(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  });
   const [schedule, setSchedule] = useState<DailySchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

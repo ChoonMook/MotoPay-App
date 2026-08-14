@@ -1,7 +1,7 @@
 // PT-RSVC-01~13 예약시공관리(입찰) 상태 컨테이너 - 입찰함↔요청상세↔입찰참여/추천안작성 및 시공대기↔착수↔완료↔일정변경 흐름을 엮음
 // 입찰함(신규 요청 목록)·입찰 참여·추천안 작성/제출·상품 카탈로그·시공 착수/완료·해피콜 이력 모두 실API 연동.
 // 일정변경 요청만 아직 백엔드 모델이 없어 로컬 state 목업으로 시연
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
@@ -19,6 +19,7 @@ import {
   getBidJobs,
   getCallLogs,
   updateReservationProgress,
+  requestResched,
   type BidJobDetail,
   type CallLog,
 } from "../../api/reservations";
@@ -36,6 +37,7 @@ import RsvcPlanPosSheet from "./RsvcPlanPosSheet";
 import RsvcPickResultScreen from "./RsvcPickResultScreen";
 import RsvcStartSheet from "./RsvcStartSheet";
 import RsvcBidSubmitConfirmSheet from "./RsvcBidSubmitConfirmSheet";
+import RsvcDatePickSheet from "./RsvcDatePickSheet";
 import RsvcDoneScreen from "./RsvcDoneScreen";
 import RsvcHandoverScreen from "./RsvcHandoverScreen";
 import RsvcReschedScreen from "./RsvcReschedScreen";
@@ -74,13 +76,17 @@ export default function RsvcFlow({
   const { toast, showToast } = useToast();
 
   const [screen, setScreen] = useState<Screen>(initialScreen);
-  const [sheet, setSheet] = useState<"callLog" | "start" | "bidSubmit" | null>(null);
+  const [sheet, setSheet] = useState<"callLog" | "start" | "bidSubmit" | "datePick" | "reschedDatePick" | null>(null);
   const [startingJob, setStartingJob] = useState(false);
   const [completingJob, setCompletingJob] = useState(false);
 
   const [reqs, setReqs] = useState<BidReq[]>([]);
   const [loadingReqs, setLoadingReqs] = useState(true);
   const [shopCode, setShopCode] = useState("");
+  const [carBrandCodes, setCarBrandCodes] = useState<CommonCodeDetailApi[]>([]);
+  const [carModelCodes, setCarModelCodes] = useState<CommonCodeDetailApi[]>([]);
+  // 추천안 작성(PT-RSVC-07) 시공항목 정렬 순서 — admin-app 시공항목 관리(AD-CTLG-03)에 등록된 순서를 그대로 따름
+  const [carInstCodes, setCarInstCodes] = useState<CommonCodeDetailApi[]>([]);
   const [jobs, setJobs] = useState<RsvcJob[]>([]);
   const [activeReqId, setActiveReqId] = useState("");
   const [activeJobId, setActiveJobId] = useState("");
@@ -90,10 +96,11 @@ export default function RsvcFlow({
       getMyBidRequests(),
       getCommonCodeDetails("CAR_BRAND"),
       getCommonCodeDetails("CAR_MODEL"),
+      getCommonCodeDetails("CAR_INST"),
       getMyShop(),
       getBidJobs(),
     ])
-      .then(([rows, carBrandCodes, carModelCodes, shop, bidJobs]) => {
+      .then(([rows, carBrandCodes, carModelCodes, carInstCodes, shop, bidJobs]) => {
         // 차종 코드 -> 한글 라벨(예: "벤츠 E-Class" 또는 세부차종명이 있으면 "벤츠 E-Class E 200"), apps/customer-app의 carLabel과 동일 방식
         const carLabel = (car: ShopBidRequestCarApi | null): string | null => {
           if (!car) return null;
@@ -103,6 +110,9 @@ export default function RsvcFlow({
         };
         setReqs(rows.map((r) => mapBidRequest(r, carLabel)));
         setShopCode(shop.shopCode);
+        setCarBrandCodes(carBrandCodes);
+        setCarModelCodes(carModelCodes);
+        setCarInstCodes(carInstCodes);
         const mappedJobs = bidJobs.map((j) => mapBidJob(j, carLabel));
         setJobs(mappedJobs);
         // 홈 "오늘의 시공 일정"에서 진입한 경우 목록 대신 그 건을 바로 연다(착수전이면 착수 시트, 시공중이면 완료 화면)
@@ -115,14 +125,49 @@ export default function RsvcFlow({
       .finally(() => setLoadingReqs(false));
   }, []);
 
+  // 입찰함(bidbox) 등 다른 화면에서 뒤로가기로 예약시공관리 홈(main)에 다시 들어올 때마다 입찰함·시공대기 목록을
+  // 새로 조회 — 마운트 시 최초 조회는 위 effect가 이미 하므로 여기서는 "main으로 되돌아온" 경우만 처리한다
+  const prevRsvcScreenRef = useRef(screen);
+  useEffect(() => {
+    const prevScreen = prevRsvcScreenRef.current;
+    prevRsvcScreenRef.current = screen;
+    if (screen !== "main" || prevScreen === "main" || carBrandCodes.length === 0) return;
+    const carLabel = (car: ShopBidRequestCarApi | null): string | null => {
+      if (!car) return null;
+      const brand = carBrandCodes.find((d) => d.detailCode === car.carBrandCode)?.detailName ?? car.carBrandCode;
+      const model = carModelCodes.find((d) => d.detailCode === car.carModelCode)?.detailName ?? car.carModelCode;
+      return car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`;
+    };
+    Promise.all([getMyBidRequests(), getBidJobs()])
+      .then(([rows, bidJobs]) => {
+        setReqs(rows.map((r) => mapBidRequest(r, carLabel)));
+        setJobs(bidJobs.map((j) => mapBidJob(j, carLabel)));
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : "목록을 다시 불러오지 못했습니다", "danger"));
+  }, [screen, carBrandCodes, carModelCodes]);
+
   const [bidTab, setBidTab] = useState<BidTab>(initialBidTab);
   const [waitlistTab, setWaitlistTab] = useState<JobStatus>("착수전");
   const [bidPrices, setBidPrices] = useState<Record<string, string>>({}); // key=instCode — 시공 항목별 견적가
   const [bidMemo, setBidMemo] = useState("");
   const [submittingOffer, setSubmittingOffer] = useState(false);
-  const [bidTime, setBidTime] = useState(""); // 선택한 시공 가능 시간("HH:mm") — 고객 희망일(req.desiredDate) 기준 업체 실제 스케줄에서 선택
+  const [bidTime, setBidTime] = useState(""); // 선택한 시공 가능 시간("HH:mm") — schedDate 기준 업체 실제 스케줄에서 선택
   const [daySlots, setDaySlots] = useState<DailySlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  // 시공 가능 시간 조회 기준 날짜 — 기본은 고객 희망일(req.desiredDate), 그 날짜에 슬롯이 없으면 파트너가 직접 다른 날짜로 변경 가능(bidjoin·planwrite 공용, 2026-08-14 추가)
+  const [schedDate, setSchedDate] = useState("");
+  const [datePickYear, setDatePickYear] = useState(new Date().getFullYear());
+  const [datePickMonth, setDatePickMonth] = useState(new Date().getMonth() + 1);
+
+  // PT-RSVC-12 일정변경 요청 작성 — 화면 진입 시마다 빈 값으로 시작(이전에 거절된 요청이 있어도 새로 작성)
+  const [reschedReasonDraft, setReschedReasonDraft] = useState("");
+  const [reschedDateDraft, setReschedDateDraft] = useState("");
+  const [reschedTimeDraft, setReschedTimeDraft] = useState("");
+  const [reschedDaySlots, setReschedDaySlots] = useState<DailySlot[]>([]);
+  const [loadingReschedSlots, setLoadingReschedSlots] = useState(false);
+  const [reschedDatePickYear, setReschedDatePickYear] = useState(new Date().getFullYear());
+  const [reschedDatePickMonth, setReschedDatePickMonth] = useState(new Date().getMonth() + 1);
+  const [submittingResched, setSubmittingResched] = useState(false);
 
   const [jobDetail, setJobDetail] = useState<BidJobDetail | null>(null);
   const [loadingJobDetail, setLoadingJobDetail] = useState(false);
@@ -138,7 +183,6 @@ export default function RsvcFlow({
   const [planMemo, setPlanMemo] = useState("");
   const [planTime, setPlanTime] = useState(""); // 선택한 시공 가능 시간("HH:mm") — bidTime과 동일하게 실제 스케줄에서 선택
   const [submittingPlan, setSubmittingPlan] = useState(false);
-  const [dropOpenIndex, setDropOpenIndex] = useState<number | null>(null);
   const [planSearchIdx, setPlanSearchIdx] = useState<number | null>(null);
   const [planSearch, setPlanSearch] = useState("");
   const [planBrand, setPlanBrand] = useState("all");
@@ -173,7 +217,9 @@ export default function RsvcFlow({
     memo: "",
     reschedStatus: "none",
     reschedReason: "",
-    reschedDt: "",
+    reschedDate: "",
+    reschedTime: "",
+    reschedRejectReason: "",
   };
   const curReq = reqs.find((r) => r.id === activeReqId) ?? reqs[0] ?? emptyReq;
   const curJob = jobs.find((j) => j.id === activeJobId) ?? jobs[0] ?? emptyJob;
@@ -188,24 +234,79 @@ export default function RsvcFlow({
     setPlanDraft((prev) => prev.map((ln, idx) => (idx === i ? { ...ln, ...patch } : ln)));
   };
 
+  // 요청 상세 진입 — 고객이 요청한 제품의 참고 판매가를 보여주기 위해 실 카탈로그(GET /products)도 함께 조회해둔다
+  // (요청 상세·입찰 참여·추천안 작성 화면이 모두 이 productsByInstCode를 공유해서 씀, 2026-08-14 요청으로 추가)
   const openReq = (req: BidReq) => {
     setActiveReqId(req.id);
     setScreen("reqdetail");
+    const instCodes = [...new Set(req.items.map((it) => it.instCode).filter((c): c is string => !!c))];
+    if (instCodes.length === 0) return;
+    Promise.all(instCodes.map((code) => getProducts(CAR_INST_TO_PROD_CAT[code] ?? code)))
+      .then((productLists) => {
+        const byInstCode: Record<string, RsvcProduct[]> = {};
+        instCodes.forEach((code, i) => (byInstCode[code] = productLists[i]));
+        setProductsByInstCode(byInstCode);
+      })
+      .catch(() => {}); // 참고용 가격 표시라 실패해도 화면 진입을 막지 않고 조용히 무시
+  };
+
+  // 시공 가능 시간 조회 — 업체가 그 날짜에 휴무일이면 슬롯 템플릿과 무관하게 예약 불가이므로
+  // 백엔드가 내려주는 isHoliday를 확인해 슬롯을 강제로 빈 목록으로 취급(2026-08-14 버그 리포트로 추가)
+  const loadDailySlots = (date: string) => {
+    setDaySlots([]);
+    setLoadingSlots(true);
+    getDailySchedule(shopCode, date)
+      .then((schedule) => setDaySlots(schedule.isHoliday ? [] : schedule.slots))
+      .catch((err) => showToast(err instanceof Error ? err.message : "시공 가능 시간을 불러오지 못했습니다", "danger"))
+      .finally(() => setLoadingSlots(false));
   };
 
   // 입찰 참여(수정) 화면 진입 — 이미 제출한 입찰이 있으면(myOffer) 기존값을 채워 수정 모드로 열고,
-  // 고객 희망일(req.desiredDate) 기준 내 업체의 실제 예약 가능 시간대를 조회
+  // 기준 날짜(이미 다른 날짜로 응찰했으면 그 날짜, 아니면 고객 희망일) 기준 내 업체의 실제 예약 가능 시간대를 조회
   const openBidJoin = (req: BidReq) => {
     setBidPrices(req.myOffer?.prices ?? {});
     setBidMemo(req.myOffer?.memo ?? "");
     setBidTime(req.myOffer?.time ?? "");
-    setDaySlots([]);
+    const date = req.myOffer?.date ?? req.desiredDate;
+    setSchedDate(date);
     setScreen("bidjoin");
-    setLoadingSlots(true);
-    getDailySchedule(shopCode, req.desiredDate)
-      .then((schedule) => setDaySlots(schedule.slots))
+    loadDailySlots(date);
+  };
+
+  // 시공 가능 시간이 없어 다른 날짜로 변경할 때 공용으로 사용 — bidjoin·planwrite 어느 화면에서 열었든 동일하게 동작
+  const openDatePick = () => {
+    const d = new Date(`${schedDate}T00:00:00`);
+    setDatePickYear(d.getFullYear());
+    setDatePickMonth(d.getMonth() + 1);
+    setSheet("datePick");
+  };
+
+  const changeSchedDate = (newDate: string) => {
+    setSchedDate(newDate);
+    setBidTime("");
+    setPlanTime("");
+    setSheet(null);
+    loadDailySlots(newDate);
+  };
+
+  // PT-RSVC-12 일정변경 요청 — 날짜 선택 캘린더를 열고, 날짜를 고르면 그 날짜의 실제 예약 가능 시간을 조회
+  const openReschedDatePick = () => {
+    const d = reschedDateDraft ? new Date(`${reschedDateDraft}T00:00:00`) : new Date();
+    setReschedDatePickYear(d.getFullYear());
+    setReschedDatePickMonth(d.getMonth() + 1);
+    setSheet("reschedDatePick");
+  };
+
+  const selectReschedDate = (date: string) => {
+    setReschedDateDraft(date);
+    setReschedTimeDraft("");
+    setSheet(null);
+    setReschedDaySlots([]);
+    setLoadingReschedSlots(true);
+    getDailySchedule(shopCode, date)
+      .then((schedule) => setReschedDaySlots(schedule.isHoliday ? [] : schedule.slots))
       .catch((err) => showToast(err instanceof Error ? err.message : "시공 가능 시간을 불러오지 못했습니다", "danger"))
-      .finally(() => setLoadingSlots(false));
+      .finally(() => setLoadingReschedSlots(false));
   };
 
   const openJob = (job: RsvcJob) => {
@@ -268,14 +369,15 @@ export default function RsvcFlow({
   }, [pendingCallJob]);
 
   // 추천안 작성 화면 진입 — 요청 항목별 실 카탈로그(GET /products)를 조회해 초안을 만들고,
-  // 고객 희망일(req.desiredDate) 기준 내 업체의 실제 예약 가능 시간대도 함께 조회(RsvcBidJoinScreen과 동일 패턴)
+  // 기준 날짜(이미 다른 날짜로 추천했으면 그 날짜, 아니면 고객 희망일) 기준 내 업체의 실제 예약 가능 시간대도 함께 조회(RsvcBidJoinScreen과 동일 패턴)
   const openPlan = (reqId: string) => {
     const req = reqs.find((r) => r.id === reqId);
     if (!req) return;
     setActiveReqId(reqId);
     setPlanMemo(req.myPlan?.reason ?? "");
     setPlanTime(req.myPlan?.scheduledTime ?? "");
-    setDropOpenIndex(null);
+    const date = req.myPlan?.scheduledDate ?? req.desiredDate;
+    setSchedDate(date);
     setPlanPosIdx(null);
     setPlanSearchIdx(null);
     setPlanDraft([]);
@@ -286,14 +388,14 @@ export default function RsvcFlow({
     setLoadingSlots(true);
     Promise.all([
       Promise.all(instCodes.map((code) => getProducts(CAR_INST_TO_PROD_CAT[code] ?? code))),
-      getDailySchedule(shopCode, req.desiredDate),
+      getDailySchedule(shopCode, date),
     ])
       .then(([productLists, schedule]) => {
         const byInstCode: Record<string, RsvcProduct[]> = {};
         instCodes.forEach((code, i) => (byInstCode[code] = productLists[i]));
         setProductsByInstCode(byInstCode);
-        setPlanDraft(buildPlanDraft(req, byInstCode));
-        setDaySlots(schedule.slots);
+        setPlanDraft(buildPlanDraft(req, byInstCode, carInstCodes.map((c) => c.detailCode)));
+        setDaySlots(schedule.isHoliday ? [] : schedule.slots);
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "추천안 작성 정보를 불러오지 못했습니다", "danger"))
       .finally(() => setLoadingSlots(false));
@@ -379,6 +481,10 @@ export default function RsvcFlow({
           onCall={startCall}
           onResched={(job) => {
             setActiveJobId(job.id);
+            setReschedReasonDraft("");
+            setReschedDateDraft("");
+            setReschedTimeDraft("");
+            setReschedDaySlots([]);
             setScreen("resched");
           }}
           onOpenHome={onExit}
@@ -402,6 +508,7 @@ export default function RsvcFlow({
       {screen === "reqdetail" && (
         <RsvcReqDetailScreen
           req={curReq}
+          productsByInstCode={productsByInstCode}
           onBack={() => setScreen("bidbox")}
           onGoResult={() => setScreen("pickresult")}
           onGoBidJoin={() => openBidJoin(curReq)}
@@ -413,8 +520,11 @@ export default function RsvcFlow({
         <RsvcBidJoinScreen
           req={curReq}
           activeGeneralCount={activeGeneralCount}
+          productsByInstCode={productsByInstCode}
           bidPrices={bidPrices}
           onChangePrice={(instCode, value) => setBidPrices((prev) => ({ ...prev, [instCode]: value }))}
+          schedDate={schedDate}
+          onChangeDate={openDatePick}
           daySlots={daySlots}
           loadingSlots={loadingSlots}
           bidTime={bidTime}
@@ -431,12 +541,6 @@ export default function RsvcFlow({
           req={curReq}
           draft={planDraft}
           productsByInstCode={productsByInstCode}
-          dropOpenIndex={dropOpenIndex}
-          onToggleDropdown={(i) => setDropOpenIndex((prev) => (prev === i ? null : i))}
-          onPickProduct={(i, productCode) => {
-            pickProduct(i, productCode);
-            setDropOpenIndex(null);
-          }}
           onOpenSearch={(i) => {
             setPlanSearchIdx(i);
             setPlanSearch("");
@@ -445,6 +549,8 @@ export default function RsvcFlow({
           }}
           onOpenPos={(i) => setPlanPosIdx(i)}
           onChangeOffer={(i, value) => setLine(i, { offer: value })}
+          schedDate={schedDate}
+          onChangeDate={openDatePick}
           daySlots={daySlots}
           loadingSlots={loadingSlots}
           planTime={planTime}
@@ -456,22 +562,25 @@ export default function RsvcFlow({
             if (submittingPlan) return;
             setSubmittingPlan(true);
             try {
+              // planReady(버튼 활성화 조건)가 이미 모든 라인의 productCode·켜진 부위의 농도 존재를 검증했으므로
+              // non-null 단언 안전(부위·농도는 기본값이 없어 여기서 임의로 채우지 않음)
               const tintLine = planDraft.find((ln) => ln.instCode === "TINT");
               const positions = tintLine
                 ? POS_NAMES.filter((n) => !tintLine.posOff[n]).map((n) => ({
                     position: posNameToCode(n),
-                    level: tintLine.posLevels[n] ?? "15",
+                    level: tintLine.posLevels[n]!,
                   }))
                 : undefined;
               await submitBidPlan(curReq.id, {
                 items: planDraft.map((ln) => ({
                   instCode: ln.instCode,
-                  productCode: ln.productCode,
-                  productName: ln.productName,
-                  retailPrice: ln.retailPrice,
+                  productCode: ln.productCode!,
+                  productName: ln.productName!,
+                  retailPrice: ln.retailPrice!,
                   offerPrice: Number(ln.offer) || 0,
                 })),
                 positions,
+                scheduledDate: schedDate,
                 scheduledTime: planTime,
                 reason: planMemo,
               });
@@ -479,8 +588,9 @@ export default function RsvcFlow({
                 status: "active",
                 myPlan: {
                   planNo: curReq.myPlan?.planNo ?? "",
-                  items: planDraft.map((ln) => ({ name: ln.name, spec: ln.productName, instCode: ln.instCode })),
+                  items: planDraft.map((ln) => ({ name: ln.name, spec: ln.productName!, instCode: ln.instCode })),
                   totalOffer: planDraft.reduce((sum, ln) => sum + (Number(ln.offer) || 0), 0),
+                  scheduledDate: schedDate,
                   scheduledTime: planTime,
                   reason: planMemo,
                 },
@@ -569,13 +679,68 @@ export default function RsvcFlow({
       {screen === "resched" && (
         <RsvcReschedScreen
           job={curJob}
-          onChangeReason={(reschedReason) => patchJob(curJob.id, { reschedReason })}
-          onChangeDt={(reschedDt) => patchJob(curJob.id, { reschedDt })}
+          reasonDraft={reschedReasonDraft}
+          onChangeReason={setReschedReasonDraft}
+          dateDraft={reschedDateDraft}
+          onOpenDatePick={openReschedDatePick}
+          timeDraft={reschedTimeDraft}
+          onChangeTime={setReschedTimeDraft}
+          daySlots={reschedDaySlots}
+          loadingSlots={loadingReschedSlots}
+          submitting={submittingResched}
           onBack={() => setScreen("waitlist")}
-          onSubmit={() => {
-            patchJob(curJob.id, { reschedStatus: "sent" });
-            showToast("일정 변경을 요청했어요. 고객 확인 후 확정돼요", "success");
+          onSubmit={async () => {
+            if (submittingResched || !reschedReasonDraft || !reschedDateDraft || !reschedTimeDraft) return;
+            setSubmittingResched(true);
+            try {
+              await requestResched(curJob.id, {
+                date: reschedDateDraft,
+                time: reschedTimeDraft,
+                reason: reschedReasonDraft,
+              });
+              patchJob(curJob.id, {
+                reschedStatus: "sent",
+                reschedDate: reschedDateDraft,
+                reschedTime: reschedTimeDraft,
+                reschedReason: reschedReasonDraft,
+                reschedRejectReason: "",
+              });
+              showToast("일정 변경을 요청했어요. 고객 확인 후 확정돼요", "success");
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "일정변경 요청에 실패했습니다", "danger");
+            } finally {
+              setSubmittingResched(false);
+            }
           }}
+        />
+      )}
+
+      {sheet === "reschedDatePick" && (
+        <RsvcDatePickSheet
+          shopCode={shopCode}
+          year={reschedDatePickYear}
+          month={reschedDatePickMonth}
+          selectedDate={reschedDateDraft}
+          onSelectDate={selectReschedDate}
+          onPrevMonth={() =>
+            setReschedDatePickMonth((m) => {
+              if (m === 1) {
+                setReschedDatePickYear((y) => y - 1);
+                return 12;
+              }
+              return m - 1;
+            })
+          }
+          onNextMonth={() =>
+            setReschedDatePickMonth((m) => {
+              if (m === 12) {
+                setReschedDatePickYear((y) => y + 1);
+                return 1;
+              }
+              return m + 1;
+            })
+          }
+          onClose={() => setSheet(null)}
         />
       )}
 
@@ -594,11 +759,17 @@ export default function RsvcFlow({
           }}
           onToggleBulk={() => {
             const next = !posLine.posBulk;
-            const first = posLine.posLevels[POS_NAMES[0]] ?? "15";
+            // 기본 농도 없음 — 아직 아무 부위도 농도를 안 골랐으면 일괄 적용을 켜도 값 없이(미설정) 그대로 둠
+            const first = posLine.posLevels[POS_NAMES[0]];
             setLine(
               planPosIdx,
               next
-                ? { posBulk: true, posLevels: POS_NAMES.reduce<Record<string, string>>((acc, n) => ((acc[n] = first), acc), {}) }
+                ? {
+                    posBulk: true,
+                    posLevels: first
+                      ? POS_NAMES.reduce<Record<string, string>>((acc, n) => ((acc[n] = first), acc), {})
+                      : posLine.posLevels,
+                  }
                 : { posBulk: false },
             );
           }}
@@ -665,6 +836,7 @@ export default function RsvcFlow({
         <RsvcBidSubmitConfirmSheet
           req={curReq}
           bidPrices={bidPrices}
+          bidDate={schedDate}
           bidTime={bidTime}
           bidMemo={bidMemo}
           submitting={submittingOffer}
@@ -678,12 +850,13 @@ export default function RsvcFlow({
                   instCode: it.instCode ?? "",
                   price: Number(bidPrices[it.instCode ?? ""]) || 0,
                 })),
+                scheduledDate: schedDate,
                 scheduledTime: bidTime,
                 memo: bidMemo.trim() || undefined,
               });
               patchReq(curReq.id, {
                 status: "active",
-                myOffer: { prices: { ...bidPrices }, time: bidTime, memo: bidMemo },
+                myOffer: { prices: { ...bidPrices }, date: schedDate, time: bidTime, memo: bidMemo },
               });
               setSheet(null);
               setScreen("reqdetail");
@@ -694,6 +867,35 @@ export default function RsvcFlow({
               setSubmittingOffer(false);
             }
           }}
+        />
+      )}
+
+      {sheet === "datePick" && (
+        <RsvcDatePickSheet
+          shopCode={shopCode}
+          year={datePickYear}
+          month={datePickMonth}
+          selectedDate={schedDate}
+          onSelectDate={changeSchedDate}
+          onPrevMonth={() =>
+            setDatePickMonth((m) => {
+              if (m === 1) {
+                setDatePickYear((y) => y - 1);
+                return 12;
+              }
+              return m - 1;
+            })
+          }
+          onNextMonth={() =>
+            setDatePickMonth((m) => {
+              if (m === 12) {
+                setDatePickYear((y) => y + 1);
+                return 1;
+              }
+              return m + 1;
+            })
+          }
+          onClose={() => setSheet(null)}
         />
       )}
 

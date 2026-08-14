@@ -109,3 +109,13 @@
 - 네이티브(모바일 앱) 촬영/앨범 브릿지 경로는 아직 실기기/에뮬레이터에서 end-to-end 검증되지 않음(위 항목 참고).
 - 현재 릴리즈 APK는 디버그 키스토어로 서명됨 — 실제 배포(Play 스토어 또는 실기기 다수 배포)를 하려면 별도 release keystore를 만들고 `android/gradle.properties`·`app/build.gradle`에 서명 설정을 추가해야 함.
 - 하드웨어 백버튼 수정은 디버그 빌드로만 검증됨 — Phase 3에서 만든 `app-release.apk`(운영 URL+새 아이콘)는 이 수정 이전 빌드라, 배포용 릴리즈 APK가 다시 필요해지면 `npx expo run:android --variant release`로 재빌드해야 이 수정이 반영됨(웹 쪽 `backHandler.ts`/Flow 변경은 운영 서버에 `dist` 재배포만 하면 되지만, 네이티브 쪽 `WebViewScreen.tsx`의 `BackHandler` 연동은 APK 자체를 다시 빌드해야 함).
+
+## 컨텍스트 노트 — 푸시 알림 (Phase 5, 2026-08-13)
+
+- 배경·아키텍처 결정(Expo Push Notification Service 채택 이유, PushToken 다형 설계, EAS 자격증명 제약)은 `server/context-notes.md`의 "푸시 알림 인프라(Phase 28)" 섹션에 정리 — 서버·모바일이 같은 결정을 공유하므로 중복 기술하지 않음.
+- 이 프로젝트 웹뷰 셸 특성상 딥링크는 네이티브 라우팅이 아니라 기존 `MotoBridge` 브릿지(`protocol.ts`)에 새 메시지 타입을 추가하는 방식으로 처리 — Phase 2에서 만든 카메라/앨범 브릿지, Phase 4에서 만든 하드웨어 백버튼(`nav:exit`) 메시지와 동일한 패턴(네이티브→웹은 `injectJavaScript`로 CustomEvent 주입)을 그대로 재사용하면 됨, 새 통신 방식을 고안할 필요 없음.
+- `eas.json` 부재 확인함(Phase 3에서는 로컬 Gradle 빌드로 EAS 없이도 릴리즈 APK를 뽑았던 전례가 있어 지금까지 필요 없었음) — 푸시는 로컬 빌드만으로는 안 되고 EAS 자격증명 등록이 필수라 이번에 처음 필요해짐.
+
+## 미해결/후속 확인 필요 (Phase 5)
+- EAS 자격증명 등록은 Expo/Apple 개발자 계정 접근이 필요해 에이전트가 대신 진행 불가 — 사용자 진행 필요.
+- 딥링크 대상 화면 목록(어떤 알림이 어떤 화면으로 이동해야 하는지)은 아직 트리거가 예약 확정/시공 완료 2건뿐이라 구체 매핑 미정 — 트리거 추가 시 함께 정의.

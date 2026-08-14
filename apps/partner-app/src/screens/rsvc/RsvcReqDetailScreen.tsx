@@ -1,22 +1,30 @@
 // PT-RSVC-05: 요청 상세 - 항목·옵션·일정·마감시간 확인 후 입찰 참여(수정) 또는 추천안 작성으로 분기
 // 일반입찰은 고객이 업체를 선택하기 전(status="active", 아직 OPEN)까지는 "입찰 수정하기"로 계속 재제출 가능
 import Button from "../../components/ui/Button";
-import { formatDesiredDateLabel, reqInfoRows, reqTypeChipClass, reqTypeLabel, won } from "./rsvcData";
-import type { BidReq } from "./rsvcTypes";
+import { findRequestedProductPrice, formatDesiredDateLabel, reqInfoRows, reqTypeChipClass, reqTypeLabel, won } from "./rsvcData";
+import type { BidReq, RsvcProduct } from "./rsvcTypes";
 
 interface RsvcReqDetailScreenProps {
   req: BidReq;
+  /** 고객이 요청한 제품의 참고 판매가 표시용 실 카탈로그(instCode -> GET /products 결과) */
+  productsByInstCode: Record<string, RsvcProduct[]>;
   onBack: () => void;
   onGoResult: () => void;
   onGoBidJoin: () => void;
   onGoPlanWrite: () => void;
 }
 
-export default function RsvcReqDetailScreen({ req, onBack, onGoResult, onGoBidJoin, onGoPlanWrite }: RsvcReqDetailScreenProps) {
+export default function RsvcReqDetailScreen({ req, productsByInstCode, onBack, onGoResult, onGoBidJoin, onGoPlanWrite }: RsvcReqDetailScreenProps) {
   const myOfferTotal = req.myOffer ? Object.values(req.myOffer.prices).reduce((sum, p) => sum + (Number(p) || 0), 0) : 0;
   const mySubmitAmount = req.type === "general" ? (req.myOffer ? won(myOfferTotal) : "") : req.myPlan ? won(req.myPlan.totalOffer) : "";
   const mySubmitLabel = req.type === "general" ? "제출한 견적가" : "제출한 추천 총액";
-  const myOfferTimeLabel = req.myOffer ? `${formatDesiredDateLabel(req.desiredDate)} ${req.myOffer.time}` : "";
+  // 실제 제출한 날짜(myOffer.date/myPlan.scheduledDate)를 써야 함 — 희망일에 슬롯이 없어 다른 날짜로
+  // 제출했을 수 있어(2026-08-14 날짜 변경 기능) req.desiredDate를 그대로 쓰면 잘못 표시됨(버그 리포트로 수정)
+  const myOfferTimeLabel = req.myOffer
+    ? `${formatDesiredDateLabel(req.myOffer.date)} ${req.myOffer.time}`
+    : req.myPlan
+      ? `${formatDesiredDateLabel(req.myPlan.scheduledDate)} ${req.myPlan.scheduledTime}`
+      : "";
   const itemsTitle = req.type === "general" ? "시공 항목" : "고객 요청 항목";
   const rows = reqInfoRows(req);
 
@@ -84,14 +92,23 @@ export default function RsvcReqDetailScreen({ req, onBack, onGoResult, onGoBidJo
 
         <div className="mb-2.5 text-[15px] font-extrabold text-gray-900">{itemsTitle}</div>
         <div className="flex flex-col gap-2">
-          {req.items.map((it, i) => (
-            <div key={`${it.name}-${i}`} className="flex items-center gap-2.5 rounded-[14px] border border-gray-200 bg-white px-[15px] py-3.5">
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-gray-800">{it.name}</div>
-                <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>
+          {req.items.map((it, i) => {
+            const refPrice = findRequestedProductPrice(productsByInstCode, it.instCode, it.productName);
+            return (
+              <div key={`${it.name}-${i}`} className="flex items-center gap-2.5 rounded-[14px] border border-gray-200 bg-white px-[15px] py-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-gray-800">{it.name}</div>
+                  <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>
+                </div>
+                {refPrice != null && (
+                  <div className="flex-none text-right">
+                    <div className="text-[10.5px] text-gray-400">판매가</div>
+                    <div className="text-[12.5px] font-bold text-gray-600">{won(refPrice)}</div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

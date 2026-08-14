@@ -12,7 +12,6 @@ import MyPageScreen from "./MyPageScreen";
 import MyCarListScreen from "./MyCarListScreen";
 import CarRegScreen from "./mycarlis/CarRegScreen";
 import DfltCarSetScreen from "./mycarlis/DfltCarSetScreen";
-import CstHistScreen from "./CstHistScreen";
 import NotiCfgScreen, { type NotiSettings } from "./NotiCfgScreen";
 import MyInfoChgScreen from "./MyInfoChgScreen";
 import PwdChgScreen from "./PwdChgScreen";
@@ -38,6 +37,7 @@ function toViewCar(c: MyCarApi, brandNames: CodeNameMap, modelNames: CodeNameMap
     id: String(c.id),
     maker: brandNames[c.carBrandCode] ?? c.carBrandCode,
     model: modelNames[c.carModelCode] ?? c.carModelCode,
+    trimName: c.trimName,
     year: c.modelYear ?? "",
     plate: c.plateNumber ?? "",
     isDefault: c.isDefault,
@@ -240,7 +240,6 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
       case "pwedit":
         return pushBackAction(() => setScreen("infoedit"));
       case "cars":
-      case "cst":
       case "notisettings":
       case "infoedit":
       case "shophist":
@@ -263,13 +262,15 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
           profileImageUrl={profileImageAbsoluteUrl}
           userCarLabel={(() => {
             const def = cars.find((c) => c.isDefault) || cars[0];
-            return def ? `${def.maker} ${def.model}${def.plate ? ` · ${def.plate}` : ""}` : "등록된 차량이 없어요";
+            return def
+              ? `${def.maker} ${def.model}${def.trimName ? ` ${def.trimName}` : ""}${def.plate ? ` · ${def.plate}` : ""}`
+              : "등록된 차량이 없어요";
           })()}
           onExit={onExit}
           onOpenShop={onOpenShop}
           onOpenRsv={onOpenRsv}
           onOpenCars={goCars}
-          onOpenCst={() => setScreen("cst")}
+          onOpenCst={onOpenRsv}
           onOpenShopHist={() => setScreen("shophist")}
           onOpenCancelHist={() => setScreen("cancelhist")}
           onOpenCouponBox={() => setScreen("couponbox")}
@@ -325,8 +326,6 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
           saving={carSaving}
         />
       )}
-
-      {screen === "cst" && <CstHistScreen onBack={goMain} onOpenItem={() => showToast("예약시공 모듈의 상세로 이동해요")} />}
 
       {screen === "notisettings" && (
         <NotiCfgScreen
@@ -455,7 +454,11 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
       {sheet === "defaultcar" && (
         <DfltCarSetScreen
           onClose={() => setSheet(null)}
-          targetName={defaultTarget ? defaultTarget.model : ""}
+          targetName={
+            defaultTarget
+              ? `${defaultTarget.maker} ${defaultTarget.model}${defaultTarget.trimName ? ` ${defaultTarget.trimName}` : ""}`
+              : ""
+          }
           onConfirm={async () => {
             if (!defaultTargetId) return;
             try {

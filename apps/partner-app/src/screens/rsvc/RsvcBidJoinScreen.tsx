@@ -6,14 +6,18 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Textarea from "../../components/ui/Textarea";
 import type { DailySlot } from "../../api/shopSchedule";
-import { formatDesiredDateLabel, itemSummary, won } from "./rsvcData";
-import type { BidReq } from "./rsvcTypes";
+import { findRequestedProductPrice, formatDesiredDateLabel, itemSummary, won } from "./rsvcData";
+import type { BidReq, RsvcProduct } from "./rsvcTypes";
 
 interface RsvcBidJoinScreenProps {
   req: BidReq;
   activeGeneralCount: number;
+  /** 고객이 요청한 제품의 참고 판매가 표시용 실 카탈로그(instCode -> GET /products 결과) */
+  productsByInstCode: Record<string, RsvcProduct[]>;
   bidPrices: Record<string, string>;
   onChangePrice: (instCode: string, value: string) => void;
+  schedDate: string; // "YYYY-MM-DD" — 시공 가능 시간 조회 기준 날짜(기본은 고객 희망일, 변경 시 다른 날짜)
+  onChangeDate: () => void;
   daySlots: DailySlot[];
   loadingSlots: boolean;
   bidTime: string;
@@ -27,8 +31,11 @@ interface RsvcBidJoinScreenProps {
 export default function RsvcBidJoinScreen({
   req,
   activeGeneralCount,
+  productsByInstCode,
   bidPrices,
   onChangePrice,
+  schedDate,
+  onChangeDate,
   daySlots,
   loadingSlots,
   bidTime,
@@ -38,6 +45,7 @@ export default function RsvcBidJoinScreen({
   onBack,
   onSubmit,
 }: RsvcBidJoinScreenProps) {
+  const dateChanged = schedDate !== req.desiredDate;
   const isEdit = req.status === "active";
   const total = req.items.reduce((sum, it) => sum + (Number(bidPrices[it.instCode ?? ""]) || 0), 0);
   const allPriced = req.items.every((it) => Number(bidPrices[it.instCode ?? ""]) > 0);
@@ -70,10 +78,22 @@ export default function RsvcBidJoinScreen({
           <div>
             <div className="mb-2 text-[13px] font-bold text-gray-800">시공 항목별 견적가</div>
             <div className="flex flex-col gap-2.5">
-              {req.items.map((it) => (
-                <div key={it.instCode} className="flex items-center gap-2.5">
-                  <span className="w-[92px] flex-none text-[13px] font-semibold text-gray-700">{it.name}</span>
-                  <div className="flex-1">
+              {req.items.map((it) => {
+                const refPrice = findRequestedProductPrice(productsByInstCode, it.instCode, it.productName);
+                return (
+                  <div key={it.instCode} className="rounded-xl border border-gray-200 px-3.5 py-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-bold text-gray-800">{it.name}</div>
+                        {it.spec && <div className="mt-0.5 text-[11.5px] text-gray-500">{it.spec}</div>}
+                      </div>
+                      {refPrice != null && (
+                        <div className="flex-none text-right">
+                          <div className="text-[10.5px] text-gray-400">판매가</div>
+                          <div className="text-[12px] font-bold text-gray-600">{won(refPrice)}</div>
+                        </div>
+                      )}
+                    </div>
                     <Input
                       type="number"
                       placeholder="숫자만 입력"
@@ -81,8 +101,8 @@ export default function RsvcBidJoinScreen({
                       onChange={(e) => onChangePrice(it.instCode ?? "", e.target.value)}
                     />
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-2.5 flex items-center justify-between rounded-[10px] bg-brand-subtle px-3.5 py-3">
               <span className="text-[12.5px] font-bold text-brand">견적 합계</span>
@@ -90,13 +110,23 @@ export default function RsvcBidJoinScreen({
             </div>
           </div>
           <div>
-            <div className="mb-2 text-[13px] font-bold text-gray-800">
-              시공 가능 시간 · 고객 희망일 {formatDesiredDateLabel(req.desiredDate)}
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[13px] font-bold text-gray-800">
+                시공 가능 시간 · {dateChanged ? "변경한 일자" : "고객 희망일"} {formatDesiredDateLabel(schedDate)}
+              </span>
+              <span onClick={onChangeDate} className="cursor-pointer text-[12px] font-bold text-brand">
+                날짜 변경 ›
+              </span>
             </div>
+            {dateChanged && (
+              <div className="mb-2 text-[11.5px] text-gray-500">고객 희망일은 {formatDesiredDateLabel(req.desiredDate)}이에요</div>
+            )}
             {loadingSlots ? (
               <div className="py-6 text-center text-[12.5px] text-gray-400">불러오는 중...</div>
             ) : daySlots.length === 0 ? (
-              <div className="py-6 text-center text-[12.5px] text-gray-400">등록된 예약 가능 시간이 없어요</div>
+              <div className="py-6 text-center text-[12.5px] text-gray-400">
+                등록된 예약 가능 시간이 없어요. 위 "날짜 변경"으로 다른 날짜를 선택해주세요.
+              </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {daySlots.map((s) => {
@@ -122,7 +152,11 @@ export default function RsvcBidJoinScreen({
                 })}
               </div>
             )}
-            <div className="mt-2 text-[11.5px] text-gray-500">고객 희망일 기준 우리 업체의 예약 가능 시간이에요</div>
+            {daySlots.length > 0 && (
+              <div className="mt-2 text-[11.5px] text-gray-500">
+                {dateChanged ? "변경한 일자 기준" : "고객 희망일 기준"} 우리 업체의 예약 가능 시간이에요
+              </div>
+            )}
           </div>
           <Textarea
             label="메모 (선택)"

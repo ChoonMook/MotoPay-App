@@ -66,16 +66,24 @@ const IMAGES_ORDER_BY = { sortOrder: 'asc' as const };
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** 상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면에서 파트너가 카테고리별 추천 상품을 검색할 때 사용 */
+  /**
+   * 상품 카탈로그 조회 — 예약시공(입찰) 전문가추천 화면에서 파트너가 카테고리별 추천 상품을 검색할 때,
+   * 그리고 고객앱 예약시공 요청 등록(CU-RSVC-04/05)의 제품 선택·검색에서 사용.
+   * bidApplicable=true로 필터하면 Product.bidApplicable(예약시공 신청 화면 노출여부)이 true인 상품만 반환
+   */
   async list(params: {
     prodCat?: string;
     prodType?: string;
+    bidApplicable?: boolean;
   }): Promise<Product[]> {
     return this.prisma.product.findMany({
       where: {
         useYn: true,
         ...(params.prodCat ? { prodCat: params.prodCat } : {}),
         ...(params.prodType ? { prodType: params.prodType } : {}),
+        ...(params.bidApplicable !== undefined
+          ? { bidApplicable: params.bidApplicable }
+          : {}),
       },
       orderBy: { price: 'asc' },
     });

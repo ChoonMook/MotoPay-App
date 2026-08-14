@@ -1,6 +1,7 @@
 // GET /shops/me/reservations/today, PATCH /shops/me/reservations/:reservationNo/progress, GET /shops/me/reservations/package-stats
 // GET /shops/me/reservations/packages, GET /shops/me/reservations/packages/:reservationNo, PATCH /shops/me/reservations/:reservationNo/complete
-// GET /shops/me/reservations/bids, POST/GET /shops/me/reservations/:reservationNo/call-logs
+// GET /shops/me/reservations/bids, PATCH /shops/me/reservations/:reservationNo/resched-request(일정변경 요청)
+// POST/GET /shops/me/reservations/:reservationNo/call-logs
 // — 파트너(시공업체) 로그인 전용, 항상 로그인 계정 소속 업체(shopCode) 기준으로만 조회/수정
 import {
   Body,
@@ -18,6 +19,7 @@ import type { SafePartnerUser } from '../partner-auth/partner-auth.types';
 import { CompleteReservationDto } from './dto/complete-reservation.dto';
 import { CreateCallLogDto } from './dto/create-call-log.dto';
 import { UpdateReservationProgressDto } from './dto/update-reservation-progress.dto';
+import { RequestReschedDto } from './dto/request-resched.dto';
 import { ReservationsService } from './reservations.service';
 
 @ApiTags('reservations')
@@ -118,6 +120,24 @@ export class PartnerReservationsController {
     @Body() dto: CompleteReservationDto,
   ) {
     await this.reservationsService.completeReservation(
+      partnerUser.shopCode,
+      reservationNo,
+      dto,
+    );
+    return { success: true };
+  }
+
+  @Patch(':reservationNo/resched-request')
+  @ApiOperation({
+    summary:
+      '일정변경 요청(PT-RSVC-12) — 확정·시공 시작 전 예약에 한해 새 일시 제안, 고객이 수락해야 실제 일정이 바뀜',
+  })
+  async requestResched(
+    @CurrentPartnerUser() partnerUser: SafePartnerUser,
+    @Param('reservationNo') reservationNo: string,
+    @Body() dto: RequestReschedDto,
+  ) {
+    await this.reservationsService.requestResched(
       partnerUser.shopCode,
       reservationNo,
       dto,

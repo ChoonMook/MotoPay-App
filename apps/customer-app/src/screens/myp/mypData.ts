@@ -1,24 +1,6 @@
-// 마이페이지 데모 데이터: 시공내역·쇼핑몰주문내역·취소반품내역·알림·SNS 목업 (원본 dc.html의 renderVals() 목업 그대로 이식)
+// 마이페이지 데모 데이터: 쇼핑몰주문내역·취소반품내역·알림·SNS 목업 (원본 dc.html의 renderVals() 목업 그대로 이식)
 // 차량 목록/제조사·차종 옵션은 apps/api의 /cars/me, /common-codes 실 데이터를 씀(MypFlow.tsx)
-
-export interface CstHistItem {
-  date: string;
-  shop: string;
-  items: string;
-  price: string;
-  status: "done" | "ing";
-}
-
-export const CST_HIST: CstHistItem[] = [
-  { date: "2026.07.15", shop: "강남 카프로 디테일링", items: "썬팅 · 블랙박스", price: "640,000원", status: "done" },
-  { date: "2026.07.02", shop: "서초 오토스타일", items: "유리막 코팅", price: "360,000원", status: "ing" },
-  { date: "2026.06.10", shop: "프리미엄 카케어 방배", items: "하부 언더코팅", price: "280,000원", status: "done" },
-];
-
-export const CST_STATUS_META: Record<CstHistItem["status"], { label: string; color: string; bg: string }> = {
-  done: { label: "시공완료", color: "var(--green-600)", bg: "var(--status-success-bg)" },
-  ing: { label: "시공중", color: "var(--color-brand)", bg: "var(--surface-brand-subtle)" },
-};
+// 시공내역은 실데이터(GET /bid-requests/me)를 그대로 보여주는 RsvFlow의 예약시공 탭으로 연결됨(2026-08-14 목업 제거)
 
 export interface ShopOrderHistItem {
   date: string;

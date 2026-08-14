@@ -17,9 +17,11 @@ export interface BidPlanPositionApi {
 
 export interface BidPlanApi {
   planNo: string;
+  shopCode: string;
   shopName: string;
   items: BidPlanItemApi[];
   positions: BidPlanPositionApi[];
+  scheduledDate: string; // "YYYY-MM-DD" — 요청의 희망일과 다를 수 있음(업체가 다른 날짜로 추천한 경우)
   scheduledTime: string; // "HH:mm"
   reason: string;
   createdAt: string;

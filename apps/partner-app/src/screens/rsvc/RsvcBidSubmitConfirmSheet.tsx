@@ -8,6 +8,7 @@ import type { BidReq } from "./rsvcTypes";
 interface RsvcBidSubmitConfirmSheetProps {
   req: BidReq;
   bidPrices: Record<string, string>;
+  bidDate: string; // "YYYY-MM-DD" — 고객 희망일과 다른 날짜로 응찰했을 수 있어 실제 선택한 날짜를 표시
   bidTime: string;
   bidMemo: string;
   submitting: boolean;
@@ -15,7 +16,7 @@ interface RsvcBidSubmitConfirmSheetProps {
   onConfirm: () => void;
 }
 
-export default function RsvcBidSubmitConfirmSheet({ req, bidPrices, bidTime, bidMemo, submitting, onCancel, onConfirm }: RsvcBidSubmitConfirmSheetProps) {
+export default function RsvcBidSubmitConfirmSheet({ req, bidPrices, bidDate, bidTime, bidMemo, submitting, onCancel, onConfirm }: RsvcBidSubmitConfirmSheetProps) {
   const isEdit = req.status === "active";
   const priceRows = req.items.map((it) => ({ k: it.name, v: won(bidPrices[it.instCode ?? ""] ?? 0) }));
   const total = req.items.reduce((sum, it) => sum + (Number(bidPrices[it.instCode ?? ""]) || 0), 0);
@@ -47,7 +48,7 @@ export default function RsvcBidSubmitConfirmSheet({ req, bidPrices, bidTime, bid
         <div className={`flex items-center justify-between py-[11px] ${bidMemo.trim() ? "border-b border-gray-200" : ""}`}>
           <span className="text-[13px] text-gray-500">시공 가능 시간</span>
           <span className="text-[13.5px] font-semibold text-gray-800">
-            {formatDesiredDateLabel(req.desiredDate)} {bidTime}
+            {formatDesiredDateLabel(bidDate)} {bidTime}
           </span>
         </div>
         {bidMemo.trim() && (

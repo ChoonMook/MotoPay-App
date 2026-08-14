@@ -3,9 +3,9 @@
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import Button from "../../components/ui/Button";
-import { CircleXIcon } from "./rsvIcons";
+import { CircleXIcon, ChevronRightIcon } from "./rsvIcons";
 import type { RecoPlan } from "./rsvTypes";
-import { nfmt } from "./rsvFormat";
+import { nfmt, formatDateOnlyLabel } from "./rsvFormat";
 
 const RecoStarIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-brand)" stroke="none">
@@ -24,8 +24,13 @@ interface PlanCmpExpertScreenProps {
   recos: RecoPlan[];
   loading: boolean;
   budgetLabel: string;
+  /** 요청의 희망일("YYYY-MM-DD") — 업체가 다른 날짜로 추천했으면 카드에 함께 표시 */
+  desiredDate: string;
+  /** shopCode -> 실제 업체 사진 URL(없으면 null) — GET /shops 응답 기반 */
+  photoUrlByShopCode: Record<string, string | null>;
   onSelectReco: (id: string) => void;
   onReRequest: () => void;
+  onOpenMyReq: () => void;
   onBack: () => void;
 }
 
@@ -33,8 +38,11 @@ export default function PlanCmpExpertScreen({
   recos,
   loading,
   budgetLabel,
+  desiredDate,
+  photoUrlByShopCode,
   onSelectReco,
   onReRequest,
+  onOpenMyReq,
   onBack,
 }: PlanCmpExpertScreenProps) {
   const showEmpty = !loading && recos.length === 0;
@@ -43,10 +51,14 @@ export default function PlanCmpExpertScreen({
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <RsvHeader title="전문가 추천안 비교" onBack={onBack} />
 
-      <div className="flex-none border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
+      <div className="flex-none flex items-center justify-between border-b border-gray-100 bg-brand-subtle px-5 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-brand">
           <RecoStarIcon />
           예산 {budgetLabel} · 추천 {recos.length}건
+        </span>
+        <span onClick={onOpenMyReq} className="inline-flex cursor-pointer items-center gap-0.5 text-[11.5px] font-bold text-brand">
+          내 요청 내용
+          <ChevronRightIcon color="var(--color-brand)" />
         </span>
       </div>
 
@@ -82,11 +94,21 @@ export default function PlanCmpExpertScreen({
                 <div key={r.id} onClick={() => onSelectReco(r.id)} className="cursor-pointer rounded-2xl border border-gray-200 bg-white p-[15px] shadow-sm">
                   <div className="flex items-center gap-2.5">
                     <span className="h-[46px] w-[46px] flex-none overflow-hidden rounded-xl bg-gray-100">
-                      <img src={shopThumb} alt={r.name} className="h-full w-full object-cover" />
+                      <img
+                        src={photoUrlByShopCode[r.shopCode] ?? shopThumb}
+                        alt={r.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = shopThumb;
+                        }}
+                      />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="text-[14.5px] font-extrabold text-gray-900">{r.name}</div>
                       <div className="mt-[3px] text-[11.5px] text-gray-500">{r.when}</div>
+                      {r.date !== desiredDate && (
+                        <div className="mt-0.5 text-[11px] text-gray-400">내 희망일 {formatDateOnlyLabel(desiredDate)}</div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 rounded-[11px] bg-brand-subtle px-[13px] py-[11px]">

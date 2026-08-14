@@ -1,4 +1,4 @@
-// apps/api의 내 업체(Shop) 조회·수정 엔드포인트(/shops/me) 호출 — 파트너 로그인 전용
+// apps/api의 내 업체(Shop) 조회·수정 엔드포인트(/shops/me), 후기 조회(/shops/me/reviews, PT-STL-03) 호출 — 파트너 로그인 전용
 import { authedRequest } from "./http";
 
 export interface ShopPhoto {
@@ -60,4 +60,24 @@ export function uploadShopPhoto(imageBase64: string, photoType: "MAIN" | "CASE")
 
 export function deleteShopPhoto(photoId: number): Promise<MyShop> {
   return authedRequest<MyShop>(`/shops/me/photos/${photoId}`, { method: "DELETE" });
+}
+
+export interface ShopReviewItem {
+  id: number;
+  reviewerName: string;
+  rating: number;
+  content: string;
+  photos: string[];
+  createdAt: string;
+  car: string | null;
+}
+
+export interface ShopReviewPage {
+  items: ShopReviewItem[];
+  total: number;
+  avgRating: number | null;
+}
+
+export function listMyReviews(offset: number, limit: number): Promise<ShopReviewPage> {
+  return authedRequest<ShopReviewPage>(`/shops/me/reviews?offset=${offset}&limit=${limit}`);
 }

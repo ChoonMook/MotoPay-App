@@ -18,9 +18,12 @@ import {
   getHandoverDetail,
   confirmHandover,
   getPackageSelection,
+  createReview,
+  getReview,
   type ReservationApi,
   type HandoverDetail,
   type PackageSelectionDetail,
+  type ReviewApi,
 } from "../../api/reservations";
 import PkgScreen from "./PkgScreen";
 import MyPkgCfmScreen, { type PkgGroup } from "./MyPkgCfmScreen";
@@ -149,6 +152,8 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
   const [reviewStar, setReviewStar] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
+  const [review, setReview] = useState<ReviewApi | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const { toast, showToast } = useToast();
 
@@ -187,7 +192,11 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
   const carModelName = defaultCarApi
     ? carModelOptions.find((m) => m.detailCode === defaultCarApi.carModelCode)?.detailName ?? defaultCarApi.carModelCode
     : "";
-  const carLabel = defaultCarApi ? `${carBrandName} ${carModelName}` : "등록된 차량이 없어요";
+  const carLabel = defaultCarApi
+    ? defaultCarApi.trimName
+      ? `${carBrandName} ${carModelName} ${defaultCarApi.trimName}`
+      : `${carBrandName} ${carModelName}`
+    : "등록된 차량이 없어요";
   const carVin = defaultCarApi?.vin ?? null;
 
   // CU-NCPK-02 시공 항목 — 대표차량이 신차매핑(MAP)이고 연결된 패키지가 있을 때만 구성상품을 조회.
@@ -304,14 +313,20 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
 
   // CU-RSVC-16/CU-NCPK-10 시공완료·인수확인 — 실제 완료 등록된 차량·구성상품·사진으로 화면 구성
   const handover: HandoverStatus = handoverDetail?.handoverStatus === "confirmed" ? "done" : "pending";
+  const handoverTintDetail =
+    handoverDetail && handoverDetail.tintPositions.length > 0
+      ? handoverDetail.tintPositions.map((t) => `${TINT_POSITION_LABELS[t.position] ?? t.position} ${t.level}%`).join(" · ")
+      : undefined;
   const handoverVehicleSummary: VehicleSummary | undefined = handoverDetail
     ? {
         car: handoverDetail.car ?? "-",
         vin: handoverDetail.vin ?? "-",
+        packageName: handoverDetail.packageName,
         items: handoverDetail.items.map((it) => ({
           name: it.name,
           sub: it.spec ?? "",
           tag: it.tag === "OPTION" ? "업그레이드" : "기본",
+          tintDetail: it.prodCat === "TINT" ? handoverTintDetail : undefined,
         })),
       }
     : undefined;
@@ -443,10 +458,14 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
   useEffect(() => {
     if (screen !== "handover" || reservationId === null) return;
     setLoadingHandover(true);
+    setReview(null);
     getHandoverDetail(reservationId)
       .then(setHandoverDetail)
       .catch((err) => showToast(err instanceof Error ? err.message : "인수확인 정보를 불러오지 못했어요", "danger"))
       .finally(() => setLoadingHandover(false));
+    getReview(reservationId)
+      .then(setReview)
+      .catch(() => {}); // 후기 조회 실패는 버튼 노출에만 영향 — 별도 에러 토스트 불필요(RsvFlow.tsx와 동일 처리)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, reservationId]);
 
@@ -787,6 +806,7 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
           handover={handover}
           vehicleSummary={handoverVehicleSummary}
           photos={handoverPhotoUrls}
+          review={review}
           loading={loadingHandover}
           confirming={confirmingHandover}
           onBack={goMain}
@@ -1009,10 +1029,23 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
           onRemovePhoto={(index) => setReviewPhotos((prev) => prev.filter((_, i) => i !== index))}
           onError={showToast}
           onClose={closeSheet}
-          onSubmit={() => {
-            if (reviewStar === 0) return;
-            showToast("소중한 후기가 등록됐어요", "success");
-            setTimeout(goMain, 700);
+          onSubmit={async () => {
+            if (reviewStar === 0 || submittingReview || reservationId === null) return;
+            setSubmittingReview(true);
+            try {
+              const created = await createReview(reservationId, {
+                rating: reviewStar,
+                content: reviewText,
+                photos: reviewPhotos,
+              });
+              setReview(created);
+              showToast("소중한 후기가 등록됐어요", "success");
+              closeSheet();
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "후기 등록에 실패했어요", "danger");
+            } finally {
+              setSubmittingReview(false);
+            }
           }}
         />
       )}

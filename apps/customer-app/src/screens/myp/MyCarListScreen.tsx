@@ -32,6 +32,7 @@ export default function MyCarListScreen({ onBack, cars, onOpenCar, onAddCar, onS
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[14.5px] font-extrabold text-gray-900">
                         {c.maker} {c.model}
+                        {c.trimName ? ` ${c.trimName}` : ""}
                       </span>
                       {c.isDefault && <span className="rounded bg-brand-subtle px-1.5 py-0.5 text-[9.5px] font-extrabold text-brand">대표차량</span>}
                       {c.fromDealer && <span className="rounded bg-accent-subtle px-1.5 py-0.5 text-[9.5px] font-extrabold text-accent-strong">딜러사 구매</span>}

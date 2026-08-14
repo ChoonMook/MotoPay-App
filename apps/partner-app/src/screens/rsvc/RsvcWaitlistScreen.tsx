@@ -82,7 +82,17 @@ export default function RsvcWaitlistScreen({
                   </div>
                   <div className="mb-[3px] text-[13.5px] text-gray-800">{j.car}</div>
                   <div className="mb-[3px] font-mono text-xs tabular-nums text-gray-500">VIN {j.vin}</div>
-                  <div className="mb-[9px] text-[12.5px] text-gray-500">{j.schedule}</div>
+                  <div className="mb-[9px] flex items-center gap-1.5 text-[12.5px] text-gray-500">
+                    {j.schedule}
+                    {j.reschedStatus === "sent" && (
+                      <span className="rounded-full bg-brand-subtle px-2 py-0.5 text-[10.5px] font-bold text-brand">일정변경 응답대기</span>
+                    )}
+                    {j.reschedStatus === "rejected" && (
+                      <span className="rounded-full bg-status-danger-bg px-2 py-0.5 text-[10.5px] font-bold text-status-danger">
+                        일정변경 거절됨
+                      </span>
+                    )}
+                  </div>
                   <div className="rounded-[9px] bg-gray-100 px-[11px] py-[9px] text-[12.5px] text-gray-500">
                     {itemSummary(j.items)}
                   </div>

@@ -24,6 +24,7 @@ interface CoPlanPickPayScreenProps {
   onSelectCoupon: (id: string | null) => void;
   onConfirmCoupon: () => void;
   onBack: () => void;
+  submitting?: boolean;
   onPay: () => void;
 }
 
@@ -43,6 +44,7 @@ export default function CoPlanPickPayScreen({
   onSelectCoupon,
   onConfirmCoupon,
   onBack,
+  submitting = false,
   onPay,
 }: CoPlanPickPayScreenProps) {
   const { isRec, bidder, reco, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
@@ -57,8 +59,13 @@ export default function CoPlanPickPayScreen({
   );
   const couponUsable = COUPON_DEFS.filter((c) => !c.minAmount || payTotal >= c.minAmount);
 
-  const ctaLabel =
-    payMethod === "bank" ? `${nfmt(payRemain)}원 입금 예약하기` : payRemain > 0 ? `${nfmt(payRemain)}원 결제하기` : "포인트로 결제 완료하기";
+  const ctaLabel = submitting
+    ? "처리 중..."
+    : payMethod === "bank"
+      ? `${nfmt(payRemain)}원 입금 예약하기`
+      : payRemain > 0
+        ? `${nfmt(payRemain)}원 결제하기`
+        : "포인트로 결제 완료하기";
 
   const payRows: Array<{ k: string; v: string; strong?: boolean; green?: boolean }> = [
     { k: "견적 금액", v: `${nfmt(payTotal)}원` },
@@ -176,7 +183,7 @@ export default function CoPlanPickPayScreen({
       </div>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 pt-3.5 pb-6">
-        <Button size="xl" onClick={onPay}>
+        <Button size="xl" disabled={submitting} onClick={onPay}>
           {ctaLabel}
         </Button>
       </div>

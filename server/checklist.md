@@ -440,3 +440,19 @@
 - [ ] 대표사진/소개사진(최대 10장) 업로드는 스코프 밖(사용자 확인) — 프로필 사진과 동일한 base64 업로드 패턴(`common/storage/profile-image-storage.ts`)으로 나중에 구현 가능, `ShopPhoto` 테이블은 이미 준비돼 있음
 - [ ] PT-PROF-03~08(매장 휴무일 설정/예약 가능 시간 설정/예약 현황/알림함/비밀번호 변경/로그아웃 확인은 이번에 구현됨)은 아직 미구현 — `ShopHoliday`/`ShopTimeSlot`/`ShopDailySlot`/`Reservation` 테이블은 이미 스키마에 있어 다음 작업 시 바로 활용 가능
 - [ ] "주소" 필드는 원본 디자인 그대로 비활성(주소 검색 팝업 경유 전제)이라 실제로는 변경 불가 상태로 남음 — 실제 주소 검색(다음/카카오 우편번호 API 등) 연동 시 함께 풀어야 함
+
+## Phase 28: 푸시 알림 인프라 구축 (계획, 2026-08-13)
+
+> **사용자 요청**: "푸쉬 기능 추가하려면 어떻게 해야 하는지 설명해줘" → 설명 후 AskUserQuestion으로 범위 확정
+> **범위**: customer-mobile 우선 구현, PushToken 모델은 partner-app 향후 확장을 고려해 설계. 첫 발송 트리거는 예약 확정/시공 완료 등 서비스 필수 알림부터(마케팅성 알림은 후순위)
+
+- [ ] Prisma `PushToken` 모델 추가 — `ownerType`('USER'|'PARTNER')+`ownerId`(FK 없는 다형 참조, User.id 또는 PartnerUser.id), `expoPushToken`(unique), `platform`, `updatedAt`만 사용(관리자 CRUD 화면이 없는 시스템 upsert 테이블이라 createdBy/updatedBy 제외) + 마이그레이션
+- [ ] `expo-server-sdk` 설치, `PushNotificationService` 신설(Expo Push API 발송 래퍼, 만료/무효 토큰 응답 처리 포함)
+- [ ] `POST /me/push-token`(로그인한 User 전용, 등록/upsert), 로그아웃 시 토큰 삭제
+- [ ] 예약 확정 트리거 연결 — `ReservationsService`에서 status가 `CONFIRMED`로 바뀌는 지점
+- [ ] 시공 완료 트리거 연결 — 시공업체가 완료 처리하는 지점
+- [ ] 두 트리거 모두 `agreedMarketingPush` 동의 여부와 무관하게 발송(서비스 필수 알림으로 분류)
+
+### 미해결/후속
+- [ ] `ownerType='PARTNER'` 경로(partner-app 발급/등록)는 이번 범위 밖 — 테이블 구조만 재사용 가능하게 설계해둠
+- [ ] 마케팅성 푸시(프로모션 등)는 `agreedMarketingPush` 체크 분기가 필요하나 이번 범위 밖

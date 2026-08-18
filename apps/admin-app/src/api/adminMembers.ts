@@ -8,6 +8,8 @@ export interface AdminMemberListItem {
   phone: string | null;
   email: string | null;
   carCount: number;
+  pointBalance: number;
+  grade: string | null; // GOLD/SILVER/BRONZE, 최근 3개월 결제금액 합계 기준 실시간 계산(저장 안 함)
   withdrawnAt: string | null;
   lastLoginAt: string | null;
   createdAt: string;

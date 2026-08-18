@@ -1,6 +1,8 @@
 // 마이페이지 데모 데이터: 쇼핑몰주문내역·취소반품내역·알림·SNS 목업 (원본 dc.html의 renderVals() 목업 그대로 이식)
 // 차량 목록/제조사·차종 옵션은 apps/api의 /cars/me, /common-codes 실 데이터를 씀(MypFlow.tsx)
 // 시공내역은 실데이터(GET /bid-requests/me)를 그대로 보여주는 RsvFlow의 예약시공 탭으로 연결됨(2026-08-14 목업 제거)
+// 보유 쿠폰함도 실데이터(GET /me/coupons)로 연결됨(2026-08-18 목업 제거) — toUiCoupon()이 API 응답을 화면 표시용 CouponItem으로 변환
+import type { MyCouponItemApi } from "../../api/coupons";
 
 export interface ShopOrderHistItem {
   date: string;
@@ -88,14 +90,6 @@ export interface CouponItem {
   status: CouponStatus;
 }
 
-export const COUPON_DEFS: CouponItem[] = [
-  { id: "cp1", issuer: "운영사", name: "전 모듈 5,000원 할인 쿠폰", desc: "3만원 이상 결제 시 사용 가능", expiryLabel: "2026.08.31까지", discountLabel: "5,000원", status: "usable" },
-  { id: "cp2", issuer: "딜러사", name: "KCC 오토 신차패키지 쿠폰", desc: "신차패키지 시공 10% 할인", expiryLabel: "2026.09.15까지", discountLabel: "10%", status: "usable" },
-  { id: "cp3", issuer: "운영사", name: "쇼핑몰 무료배송 쿠폰", desc: "금액 제한 없이 배송비 무료", expiryLabel: "2026.08.10까지", discountLabel: "무료배송", status: "usable" },
-  { id: "cp4", issuer: "운영사", name: "여름맞이 3,000원 할인 쿠폰", desc: "전 모듈 공통 사용", expiryLabel: "2026.06.30 사용완료", discountLabel: "3,000원", status: "used" },
-  { id: "cp5", issuer: "딜러사", name: "KCC 오토 엔진오일 교환권", desc: "엔진오일 무상 교환 1회", expiryLabel: "2026.05.31 만료", discountLabel: "교환권", status: "expired" },
-];
-
 export const COUPON_STATUS_META: Record<CouponStatus, { label: string; color: string; bg: string }> = {
   usable: { label: "사용가능", color: "var(--green-600)", bg: "var(--status-success-bg)" },
   used: { label: "사용완료", color: "var(--text-tertiary)", bg: "var(--surface-sunken)" },
@@ -112,3 +106,28 @@ export const COUPON_TAB_DEFS: { key: CouponStatus; label: string }[] = [
   { key: "used", label: "사용완료" },
   { key: "expired", label: "만료" },
 ];
+
+function dotDate(iso: string): string {
+  return iso.slice(0, 10).replaceAll("-", ".");
+}
+
+// 백엔드 응답(MyCouponItemApi)을 화면 표시용 CouponItem으로 변환 — desc는 실제 저장 필드가 없어 쿠폰유형·할인값으로부터 생성
+export function toUiCoupon(c: MyCouponItemApi): CouponItem {
+  const issuer: CouponIssuer = c.issuerType === "DEALER" ? "딜러사" : "운영사";
+  const status: CouponStatus = c.status === "USED" ? "used" : c.status === "EXPIRED" ? "expired" : "usable";
+  const discountLabel =
+    c.couponType === "DISCOUNT" ? `${c.discountValue}%` : c.couponType === "AMOUNT" ? `${c.discountValue.toLocaleString("en-US")}원` : "교환권";
+  const desc =
+    c.couponType === "DISCOUNT"
+      ? `전체 금액 ${c.discountValue}% 할인`
+      : c.couponType === "AMOUNT"
+        ? `${c.discountValue.toLocaleString("en-US")}원 할인 쿠폰`
+        : "교환 가능한 쿠폰이에요";
+  const expiryLabel =
+    status === "used" && c.usedAt
+      ? `${dotDate(c.usedAt)} 사용완료`
+      : status === "expired"
+        ? `${dotDate(c.validTo)} 만료`
+        : `${dotDate(c.validTo)}까지`;
+  return { id: c.couponNo, issuer, name: c.name, desc, expiryLabel, discountLabel, status };
+}

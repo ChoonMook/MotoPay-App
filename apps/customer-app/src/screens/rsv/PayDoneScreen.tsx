@@ -19,6 +19,8 @@ interface PayDoneScreenProps {
   pointUse: number;
   /** 업체·추천안 선택 직후 새로 생성된 실제 예약의 reservationNo — 아직 못 불러왔으면 행 자체를 생략 */
   reservationNo?: string;
+  /** 결제 확정 응답의 실제 결제금액 — 결제 이후 보유 포인트가 이미 차감돼 재계산 값과 어긋날 수 있어 이 값을 우선 사용 */
+  paidAmount?: number | null;
   onConfirm: () => void;
 }
 
@@ -32,10 +34,12 @@ export default function PayDoneScreen({
   couponSel,
   pointUse,
   reservationNo,
+  paidAmount,
   onConfirm,
 }: PayDoneScreenProps) {
   const { isRec, bidder, reco, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
-  const { payRemain } = computePayBreakdown(selId, isExpert, couponSel, pointUse, bidders, recos);
+  const { payRemain: computedPayRemain } = computePayBreakdown(selId, isExpert, couponSel, pointUse, Infinity, bidders, recos);
+  const payRemain = paidAmount ?? computedPayRemain;
   const rows = [
     { k: "시공 업체", v: selName },
     { k: "결제 수단", v: PAY_LABEL[payMethod] },

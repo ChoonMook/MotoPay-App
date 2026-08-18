@@ -30,6 +30,7 @@ model User {
   phoneHash        String? // HMAC-SHA256 결정적 해시 — 평문 대조 없이 동일 번호 검색용(암호문은 IV가 매번 달라 검색 불가)
   profileImagePath String? // 서버 uploads/ 기준 상대경로(예: "profile/<uuid>.jpg") — 절대 URL이 아닌 경로만 저장
   role             UserRole
+  pointBalance     Int      @default(0) // 포인트 잔액(원) — PointHistory 처리(적립/사용/관리자 부여·차감)마다 함께 갱신되는 캐시값
 
   // 약관 동의
   agreedTerms          Boolean @default(false) // 서비스 이용약관 동의(필수)
@@ -52,9 +53,93 @@ model User {
   reservations Reservation[] // 이 회원이 등록한 시공 예약 목록
   bidRequests  BidRequest[] // 이 회원이 등록한 예약시공 입찰 요청 목록
   reviews      Review[] // 이 회원이 작성한 후기 목록
+  pointHistories PointHistory[] // 이 회원의 포인트 적립/사용/관리자 조정 내역
+  couponIssuances CouponIssuance[] // 이 회원에게 발급된 쿠폰 목록
+  inquiries       Inquiry[] // 이 회원이 등록한 1:1 문의 목록
 
   @@index([phoneHash])
   @@map("users")
+}
+
+// 포인트 적립/사용/관리자 조정 내역 — 회원별 append-only 원장(수정 UI 없음, User.pointBalance와 함께 트랜잭션으로 갱신)
+model PointHistory {
+  id           Int      @id @default(autoincrement())
+  memberId     String // 회원 -> User.id
+  kind         String // 구분(CHARGE=충전/USE=사용/GRANT=관리자부여/DEDUCT=관리자차감/PURCHASE_GRANT=신차구매포인트) -> CommonCodeDetail(code='POINT_HIST_KIND')
+  amount       Int // 증감액(원) — 충전·부여는 양수, 사용·차감은 음수
+  balanceAfter Int // 처리 후 잔액 스냅샷(원)
+  title        String // 내역 제목(예: "카드 충전", "썬팅 시공 결제") — 관리자 부여/차감은 사유를 그대로 사용
+  reason       String? @db.Text // 관리자 강제 부여/차감(AD-PNT-04/05) 시 필수 입력 사유 — 충전/사용 건은 null
+  createdBy    String? // 처리자 — 관리자 처리건은 AdminAccount.username, 회원 스스로 발생한 충전/사용은 회원 자기 자신의 User.id(FK 없음)
+  createdAt    DateTime @default(now()) @db.Timestamp(3)
+
+  member User @relation(fields: [memberId], references: [id])
+
+  @@index([memberId])
+  @@map("point_histories")
+}
+
+// 회원 등급 기준 설정(AD-PNT-07) — GOLD/SILVER/BRONZE 3개 고정 등급의 산정기준금액·혜택 설정값 저장용.
+// 회원 등급을 실제로 계산·부여하는 산정 엔진은 아직 없어(User에 grade 컬럼 없음) 이 표는 설정값 저장 전용이고,
+// 나중에 산정 로직을 구현할 때 참조한다(2026-08-18 사용자 확정). 등급 3종은 고정이라 다른 테이블에서 참조할
+// 일이 없어 CommonCodeDetail 대신 전용 테이블로 관리(속성이 3개라 ref1/ref2 2개로는 부족하기도 함).
+model MemberGradeRule {
+  gradeCode      String   @id // GOLD/SILVER/BRONZE 고정 3종
+  minSpendAmount Int      @default(0) // 등급 산정 기준금액(원) — 최근 3개월 누적 지출 기준(향후 산정 로직용)
+  discountRate   Int      @default(0) // 혜택: 시공 할인권(%)
+  voucherAmount  Int      @default(0) // 혜택: 월 금액권(원)
+  createdBy      String? // 등록자 -> AdminAccount.username(FK 없음)
+  createdAt      DateTime @default(now()) @db.Timestamp(3)
+  updatedBy      String? // 수정자 -> AdminAccount.username(FK 없음)
+  updatedAt      DateTime @updatedAt @db.Timestamp(3)
+
+  @@map("member_grade_rules")
+}
+
+// 쿠폰 발행(AD-CPN-02) — 운영사가 발행(딜러사 요청 프로모션 쿠폰도 운영사가 대행 발행). 발행 시점에 대상 회원을
+// 확정해 CouponIssuance를 함께 생성하는 방식이라(전체/조건별/개별선택 모두 발행 즉시 스냅샷) 발행 이후 대상이
+// 바뀌어도 이 쿠폰의 이미 발급된 인원에는 영향 없음.
+model Coupon {
+  id              Int      @id @default(autoincrement())
+  couponNo        String   @unique @db.Char(10) // 쿠폰번호 — id를 10자리로 0-padding(Product/Shop과 동일 방식)
+  name            String // 쿠폰명
+  couponType      String // DISCOUNT(할인권)/EXCHANGE(교환권)/AMOUNT(금액권) -> CommonCodeDetail(code='COUPON_TYPE')
+  discountValue   Int      @default(0) // 할인권=할인율(%), 금액권=할인금액(원), 교환권=0(품목 자체가 혜택이라 미사용)
+  issuerType      String // OPERATOR(운영사)/DEALER(딜러사) -> CommonCodeDetail(code='COUPON_ISSUER_TYPE')
+  issuerCompanyId Int? // 딜러사 요청 대행 발행인 경우만 -> Company.id(coType='DEALER')
+  targetType      String // ALL(전체)/CONDITION(조건별)/INDIVIDUAL(개별선택) -> CommonCodeDetail(code='COUPON_TARGET_TYPE')
+  targetGrade     String? // targetType='CONDITION'일 때 대상 등급 -> MemberGradeRule.gradeCode
+  validFrom       DateTime @db.Date
+  validTo         DateTime @db.Date
+  issuedCount     Int      @default(0) // 발행 시점 대상 인원 스냅샷(CouponIssuance 생성 건수와 동일)
+  createdBy       String? // 등록자 -> AdminAccount.username(FK 없음)
+  createdAt       DateTime @default(now()) @db.Timestamp(3)
+  updatedBy       String? // 수정자 -> AdminAccount.username(FK 없음)
+  updatedAt       DateTime @updatedAt @db.Timestamp(3)
+
+  issuerCompany Company?         @relation(fields: [issuerCompanyId], references: [id])
+  issuances     CouponIssuance[]
+
+  @@map("coupons")
+}
+
+// 쿠폰 발행 시 대상 회원별로 생성되는 개별 지급 내역 — 업로드/생성만 있고 수정 UI가 없는 로그성 테이블이라
+// createdBy/updatedBy/updatedAt 제외(CLAUDE.md 시스템 컬럼 예외 규칙과 동일 — status는 향후 실제 쿠폰 사용
+// 처리 로직이 구현되면 그 로직이 갱신, 지금은 발행 상태만 생성됨)
+model CouponIssuance {
+  id        Int       @id @default(autoincrement())
+  couponId  Int
+  memberId  String
+  status    String    @default("ISSUED") // ISSUED(사용가능)/USED(사용완료)/EXPIRED(만료) -> CommonCodeDetail(code='COUPON_ISSUANCE_STATUS')
+  usedAt    DateTime? @db.Timestamp(3)
+  createdAt DateTime  @default(now()) @db.Timestamp(3)
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  member User   @relation(fields: [memberId], references: [id])
+
+  @@unique([couponId, memberId])
+  @@index([memberId])
+  @@map("coupon_issuances")
 }
 
 // 공통코드 마스터 — 딜러사/차량브랜드/차종/틴팅농도/시공유형 등 플랫폼 전반에서 참조하는 코드 그룹
@@ -422,6 +507,7 @@ model Company {
   productDealerMappings ProductDealerMapping[] // 이 딜러사가 판매 가능한 패키지 매핑(AD-CTLG-08 역참조)
   newCarPurchases       NewCarPurchaseCustomer[] // 이 딜러사가 등록한 신차 구매 고객 정보(역참조)
   myCars                MyCar[] // 이 딜러사를 통해 신차매핑된 내 차량 정보(역참조)
+  issuedCoupons         Coupon[] // 이 딜러사가 요청해 운영사가 대행 발행한 쿠폰(coType='DEALER'만 해당) — Coupon.issuerCompanyId 역참조
 
   @@map("companies")
 }
@@ -624,6 +710,7 @@ model Review {
   shopCode      String // 대상 업체 -> Shop.shopCode(업체별 후기 집계·조회용)
   rating        Int // 평점 1~5
   content       String   @db.Text
+  isBlinded     Boolean  @default(false) // 관리자 블라인드 처리 여부(AD-NOTI-02) — true면 고객·업체 화면에서 숨김
   createdBy     String? // 등록자 — 작성한 회원 자기 자신의 User.id(FK 없음)
   createdAt     DateTime @default(now()) @db.Timestamp(3)
   updatedBy     String? // 수정자 — 회원 자기 자신의 User.id(FK 없음)
@@ -650,6 +737,61 @@ model ReviewPhoto {
 
   @@index([reviewId])
   @@map("review_photos")
+}
+
+// 1:1 문의(CU-CS-03~05 고객 작성, AD-CS-02 관리자 답변) — 답변은 이메일 등 실제 발송 없이 앱 내 상세 화면
+// 반영으로만 처리한다(이 프로젝트에 이메일 발송 인프라 자체가 없음, 2026-08-18 확인)
+model Inquiry {
+  id         Int       @id @default(autoincrement())
+  inquiryNo  String    @unique @db.Char(10) // 접수번호 — id를 10자리로 0-padding(Product/Shop과 동일 방식)
+  memberId   String // 문의자 -> User.id
+  category   String // -> CommonCodeDetail(code='INQUIRY_CATEGORY')
+  title      String
+  content    String    @db.Text
+  status     String    @default("PENDING") // PENDING(대기)/ANSWERED(답변완료) -> CommonCodeDetail(code='INQUIRY_STATUS')
+  answer     String?   @db.Text
+  answeredBy String? // 답변한 관리자 -> AdminAccount.username(FK 없음)
+  answeredAt DateTime? @db.Timestamp(3)
+  createdBy  String? // 등록자 — 작성한 회원 자기 자신의 User.id(FK 없음)
+  createdAt  DateTime  @default(now()) @db.Timestamp(3)
+  updatedBy  String?
+  updatedAt  DateTime  @updatedAt @db.Timestamp(3)
+
+  member User          @relation(fields: [memberId], references: [id])
+  photos InquiryPhoto[]
+
+  @@index([memberId])
+  @@map("inquiries")
+}
+
+// 1:1 문의에 첨부한 사진 — 수정 시 전체 삭제 후 재등록 방식(체크리스트류 매핑 테이블과 동일한 이유로 감사 컬럼 제외)
+model InquiryPhoto {
+  id        Int      @id @default(autoincrement())
+  inquiryId Int
+  photoPath String // 서버 uploads/ 기준 상대경로
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id])
+
+  @@index([inquiryId])
+  @@map("inquiry_photos")
+}
+
+// FAQ(CU-CS-02 고객 조회, AD-CS-03 관리자 관리)
+model FaqItem {
+  id        Int      @id @default(autoincrement())
+  category  String // -> CommonCodeDetail(code='FAQ_CATEGORY')
+  question  String
+  answer    String   @db.Text
+  sortOrder Int      @default(0)
+  useYn     Boolean  @default(true)
+  createdBy String? // -> AdminAccount.username(FK 없음)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedBy String?
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  @@map("faq_items")
 }
 
 // 예약시공(CU-RSVC) 입찰 요청 — 일반입찰/전문가추천 공용. 낙찰 전까지는 실제 예약 슬롯이 아니라 "요청"일 뿐이며,

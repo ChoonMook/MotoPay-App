@@ -173,7 +173,7 @@ export class ShopsService {
     if (shopCodes.length === 0) return new Map();
     const grouped = await this.prisma.review.groupBy({
       by: ['shopCode'],
-      where: { shopCode: { in: shopCodes } },
+      where: { shopCode: { in: shopCodes }, isBlinded: false },
       _avg: { rating: true },
       _count: { rating: true },
     });
@@ -195,7 +195,7 @@ export class ShopsService {
       throw new NotFoundException('시공업체를 찾을 수 없습니다.');
     }
     const reviews = await this.prisma.review.findMany({
-      where: { shopCode },
+      where: { shopCode, isBlinded: false },
       include: {
         member: { select: { name: true } },
         photos: { orderBy: { sortOrder: 'asc' } },
@@ -219,13 +219,13 @@ export class ShopsService {
     limit: number,
   ): Promise<ShopReviewPage> {
     const [total, avg, reviews] = await Promise.all([
-      this.prisma.review.count({ where: { shopCode } }),
+      this.prisma.review.count({ where: { shopCode, isBlinded: false } }),
       this.prisma.review.aggregate({
-        where: { shopCode },
+        where: { shopCode, isBlinded: false },
         _avg: { rating: true },
       }),
       this.prisma.review.findMany({
-        where: { shopCode },
+        where: { shopCode, isBlinded: false },
         include: {
           member: { select: { name: true } },
           photos: { orderBy: { sortOrder: 'asc' } },

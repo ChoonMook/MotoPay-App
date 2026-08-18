@@ -6,12 +6,13 @@ import type { Inquiry } from "./csTypes";
 interface InquiryProcStatScreenProps {
   onBack: () => void;
   inquiries: Inquiry[];
+  categoryLabel: (code: string) => string;
   onOpenItem: (id: string) => void;
   onWriteNew: () => void;
 }
 
-export default function InquiryProcStatScreen({ onBack, inquiries, onOpenItem, onWriteNew }: InquiryProcStatScreenProps) {
-  const cards = [...inquiries].reverse();
+export default function InquiryProcStatScreen({ onBack, inquiries, categoryLabel, onOpenItem, onWriteNew }: InquiryProcStatScreenProps) {
+  const cards = inquiries;
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -22,7 +23,7 @@ export default function InquiryProcStatScreen({ onBack, inquiries, onOpenItem, o
           {cards.map((q) => (
             <div key={q.id} onClick={() => onOpenItem(q.id)} className="cursor-pointer rounded-[14px] border border-gray-200 bg-white p-3.5 shadow-sm">
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-brand">{q.cat}</span>
+                <span className="text-[11px] font-bold text-brand">{categoryLabel(q.cat)}</span>
                 <span
                   className={`rounded-md px-[9px] py-[3px] text-[10.5px] font-extrabold ${
                     q.answered ? "bg-status-success-bg text-green-600" : "bg-accent-subtle text-accent-strong"

@@ -8,6 +8,7 @@ import type { LoginUser } from "../../api/auth";
 import { changePassword, updateProfile, updateProfileImage } from "../../api/users";
 import { createMyCar, deleteMyCar, listMyCars, setDefaultCar, updateMyCar, type MyCarApi } from "../../api/cars";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { getMyCoupons } from "../../api/coupons";
 import MyPageScreen from "./MyPageScreen";
 import MyCarListScreen from "./MyCarListScreen";
 import CarRegScreen from "./mycarlis/CarRegScreen";
@@ -22,7 +23,7 @@ import LogoutConfirmScreen from "./LogoutConfirmScreen";
 import AcctWithdrawScreen from "./AcctWithdrawScreen";
 import SnsLinkManageScreen from "./SnsLinkManageScreen";
 import CpnBoxScreen from "./CpnBoxScreen";
-import type { CouponStatus } from "./mypData";
+import { toUiCoupon, type CouponItem, type CouponStatus } from "./mypData";
 import type { Car, MypScreenId, MypSheetId } from "./mypTypes";
 
 type CodeNameMap = Record<string, string>;
@@ -102,6 +103,8 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
   const [snsLinked, setSnsLinked] = useState<Record<string, boolean>>({ kakao: true, naver: false, google: true });
 
   const [couponFilter, setCouponFilter] = useState<CouponStatus>("usable");
+  const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(true);
 
   const { toast, showToast } = useToast();
 
@@ -115,6 +118,10 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
         setCarModelOptions(models);
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "차량 코드 정보를 불러오지 못했어요", "danger"));
+    getMyCoupons()
+      .then((list) => setCoupons(list.map(toUiCoupon)))
+      .catch((err) => showToast(err instanceof Error ? err.message : "쿠폰 정보를 불러오지 못했어요", "danger"))
+      .finally(() => setCouponsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -407,7 +414,15 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
 
       {screen === "cancelhist" && <CancelReturnHistScreen onBack={goMain} />}
 
-      {screen === "couponbox" && <CpnBoxScreen onBack={goMain} filter={couponFilter} onSelectFilter={setCouponFilter} />}
+      {screen === "couponbox" && (
+        <CpnBoxScreen
+          onBack={goMain}
+          filter={couponFilter}
+          onSelectFilter={setCouponFilter}
+          loading={couponsLoading}
+          coupons={coupons}
+        />
+      )}
 
       {screen === "notis" && (
         <NotiInboxScreen

@@ -455,4 +455,68 @@
 
 ### 미해결/후속
 - [ ] `ownerType='PARTNER'` 경로(partner-app 발급/등록)는 이번 범위 밖 — 테이블 구조만 재사용 가능하게 설계해둠
+- [ ] 발송 트리거를 예약 확정/시공 완료 2건 이상으로 넓힐지(입찰 마감 임박 등)는 아직 기획 확정 전
+- [ ] `eas.json` 미설정 — Android FCM/iOS APNs 자격증명 등록은 에이전트가 대신 할 수 없어 사용자 진행 필요
+
+## Phase 29: 포인트 충전/사용 연계 · 회원 상세 화면 재구성 · 보유 쿠폰함 연계 (2026-08-17~08-18)
+
+> **사용자 요청 흐름**: "포인트 충전, 사용내역까지 연계"(포인트홈 API 연동 이후 UI 시뮬레이션으로만 남겨뒀던 충전/사용을 실 연동으로 전환) → "홈 상단 보유 포인트도 연계처리" → 관리자 포인트 내역 화면의 처리자 표시 버그 신고 → "본인 보다 회원명으로 표시해줘"/"admin 대신 사용자명으로 변경"(표시 개선 2단계) → "회원 상세 탭 화면 사이즈를 50%정도 넓히고... 재구성" → "포인트 그리드 하단에 금액합계 표시" → "customer-app 보유 쿠폰함 api 연계"
+
+- [x] **포인트 충전 실 연동** — `apps/customer-app`의 `PtChargeAmtSelScreen`(CU-PNT-02) 결제하기 버튼을 실제 포인트 적립 API 호출로 전환(기존엔 UI 시뮬레이션만)
+- [x] **예약시공 결제 시 포인트 사용 실 연동** — 예약 결제 흐름에 실제 포인트 차감을 연결하되, **포인트 차감 → 예약 결제확정 순서를 지켜** 잔액 부족 시 예약 상태가 바뀌지 않고 그대로 남도록 처리(직접 테스트로 순서 확인)
+- [x] **`PointsService` 단일 `adjust()` 사설 메서드로 통합** — 관리자 강제부여/차감(AD-PNT-04/05), 신차구매 포인트 지급, 자기 충전, 자기 사용 4개 경로가 모두 이 메서드 하나를 재사용(포인트 잔액 변경 로직이 4곳에 중복 구현되는 것을 방지)
+- [x] **홈 상단 보유 포인트 배지** — `HomeScreen.tsx`의 포인트 배지를 실 API 연동으로 전환
+- [x] **관리자 포인트 내역(AD-PNT-06) 처리자 표시 개선(2단계)** — ① 처리자가 raw UUID로 노출되던 것을 1차로 "본인" 고정 표시로 수정했다가, 사용자 피드백("본인 보다 회원명으로 표시해줘")으로 실제 회원 이름으로 교체, ② 관리자 처리 건은 raw username "admin"이 그대로 보이던 것을 `AdminAccount.findMany({username:{in:[...]}})`로 일괄 조회해 실제 관리자 표시이름으로 매핑하는 방식으로 교체(사용자 피드백 "admin 대신 사용자명으로 변경"). 구분값이 "충전"인 행 클릭 시 상세가 안 보이던 버그도 함께 수정.
+- [x] **AD-MBR-02 회원 상세 화면 재구성** — 모달 폭 50% 확대 + 기준정보/보유차량/신차패키지/포인트/쿠폰 5개 탭 구조로 전면 재구성(기존엔 단일 뷰)
+- [x] **회원 등급 계산 로직 공유** — `MemberGradeRulesService`의 등급 산정 로직을 `AdminMembersService`(회원 상세 기준정보 탭)와 `CouponsService`(등급별 쿠폰 발행 대상)가 함께 재사용하도록 통합(로직 중복 방지)
+- [x] **포인트 탭 금액 합계 행** — 회원 상세 포인트 탭 그리드 하단에 합계 행 추가
+- [x] **customer-app 보유 쿠폰함 API 연계** — `CpnBoxScreen`(CU-MYPG-16)을 `GET /me/coupons` 실 연동으로 전환(기존 목업 `COUPON_DEFS` 제거)
+- [x] 각 단계마다 curl/실 로그인으로 검증 후 테스트 데이터 원복(포인트 잔액, 테스트 쿠폰 등)
+
+### 미해결/후속
+- [ ] 등급 산정을 실제로 트리거하는 배치/스케줄러는 없음 — `MemberGradeRule` 설정값과 계산 로직은 있지만 "언제 재계산할지"는 아직 없음(Phase 30/`admin/checklist.md`에도 동일하게 남아있는 항목)
+
+## Phase 30: AD-CS-02·AD-CS-03·AD-NOTI-02 (1:1문의·FAQ·후기 관리) 전체 연동 (2026-08-18)
+
+> **사용자 요청**: "AD-CS-02, AD-CS-03, AD-NOTI-02 api 연계 처리" → AskUserQuestion으로 "관리자 화면만 만들지, customer-app 목업 화면까지 실연동해서 전체 루프를 완성할지" 확인 → **"고객앱까지 전체 연동" 선택** → 이어서 "일반적인 faq 샘플로 데이터 등록해줘" → 이후 다수의 UI 버그 리포트("후기 관리 평점 및 처리 정렬이 맞지 않음", "faq 관리 토글 스위치 레이아웃이 안맞음", "customer-app 1:1 문의 등록 사진 첨부 기능 작동 안함. 카메라 기능도 추가. 등록 후 답변 수신 전까지는 수정 기능이 있어야 함", "admin-app 1:1문의 답변 발송 클릭시 발송하시겠습니까? 문의 후 저장 후 닫기", "admin-app 후기 관리 그리드 처리 버튼 사이즈가 안맞음", "블라인드 처리 버튼이 아직도 크게 보임...", "버튼 정렬이 top임", "customer-app 자주 묻는 질문, 문의 처리현황 진입시 재조회 하는 방식으로 변경")를 순차 반영
+
+### 스키마·백엔드
+- [x] Prisma `Inquiry`(1:1 문의, inquiryNo는 Product/Shop과 동일한 10자리 0-padding 채번), `FaqItem`, `Review.isBlinded` 컬럼, `InquiryPhoto`(첨부사진, 수정 시 전체삭제후재등록 방식이라 감사컬럼 제외) 신규/추가 — 마이그레이션 2건 모두 `migrate diff` 빈 결과로 drift 없음 확인
+- [x] `seed-common-codes.ts`에 `INQUIRY_CATEGORY`(5)·`INQUIRY_STATUS`(2)·`FAQ_CATEGORY`(4) 코드그룹 추가 — **customer-app에 이미 존재하던 목업 텍스트(csData.ts)를 그대로 시드값으로 사용**(설계 문서상 카테고리 목록과 실제 렌더된 문구가 다를 때 실제 렌더를 신뢰하는 이 프로젝트의 기존 원칙 적용)
+- [x] `apps/api/src/inquiries/` — 고객용 `POST/GET /me/inquiries`, `GET/PATCH /me/inquiries/:inquiryNo`(수정은 PENDING 상태에서만 허용, 답변완료 후 시도하면 400), 관리자용 `GET /admin/inquiries`(대기건 상단 고정 정렬 — `status` desc가 'PENDING'>'ANSWERED' 알파벳순과 일치하는 걸 이용), `GET/PATCH /admin/inquiries/:inquiryNo(/answer)`
+- [x] `apps/api/src/faqs/` — 공개 `GET /faqs`(로그인 불필요), 관리자 `GET/POST/PATCH/DELETE /admin/faqs(/:id)` + `PATCH /admin/faqs/reorder`(라우트 순서상 `:id`보다 먼저 선언)
+- [x] `apps/api/src/reviews/` — `GET /admin/reviews`, `PATCH /admin/reviews/:id/blind`. `shops.service.ts`의 기존 후기 조회 3곳(집계·공개 상세·파트너용 목록)에 `isBlinded:false` 필터 추가해 블라인드 처리된 후기가 실제로 숨겨지도록 함
+- [x] **문의 첨부사진 수정 시 불필요한 재업로드 방지** — `PATCH /me/inquiries/:inquiryNo`의 `photos` 배열에 data URI(신규)와 기존 상대경로(유지)가 섞여 와도, `data:` 접두사로 신규만 판별해 저장하고 유지 항목은 그대로 통과시킴(기존 파일 재다운로드/재업로드 없음). 목록에서 빠진 기존 사진은 물리 파일까지 정리
+- [x] `common/storage/inquiry-photo-storage.ts` 신규(기존 review/reservation-photo-storage와 동일 패턴)
+
+### admin-app
+- [x] `InquiryMgmtPage.tsx`(AD-CS-02), `FaqMgmtPage.tsx`(AD-CS-03), `ReviewMgmtPage.tsx`(AD-NOTI-02) 3개 화면 신규, `App.tsx` 라우팅 연결
+- [x] **"답변 발송" 확인 모달 추가** — 클릭 즉시 발송되던 것을 `ConfirmModal`("발송하시겠습니까?")로 한 단계 확인 거치도록 변경, 발송 성공 시 상세 모달 자동 닫힘(기존엔 계속 열려있었음)
+- [x] **UI 버그 수정 다수, 원인 규명 포함**:
+  - ReviewMgmtPage 평점/처리 컬럼 가로 정렬 — `cellClass:"flex items-center justify-center"` 누락이 원인(CstItemMgmtPage 등 기존 아이콘 액션 컬럼의 정착 컨벤션과 대조해 확인)
+  - 처리 버튼 크기 — 텍스트 라벨(아이콘 전용이 아님)이 이 그리드에서 처음이라 기존 좁은 컬럼폭이 안 맞았음, 고정폭 컬럼(`width`)+버튼 `h-7` 고정높이로 교체
+  - 처리 버튼 세로 정렬(top→middle) — ag-grid가 커스텀 `cellRenderer`를 감싸는 `.ag-react-container`가 `height:100%`만 채울 뿐 스스로 세로 중앙정렬은 안 해준다는 걸 확인(기존 삭제아이콘 버튼들이 전부 `h-full w-full flex items-center justify-center`였던 이유였음, 뒤늦게 발견) — "평점"/"노출상태" 컬럼도 동일 원인이라 함께 수정
+  - FaqMgmtPage 노출여부 토글 — 절대좌표(`top-0.5`+`translate-x-0.5/5`) 방식이 ON/OFF 상태별 여백이 비대칭이었음, `border-2 border-transparent`+`inline-flex` 트릭(shadcn 계열 표준 패턴)으로 교체해 대칭 해소
+
+### customer-app (사용자가 명시적으로 "고객앱까지 전체 연동" 선택)
+- [x] `api/inquiries.ts`, `api/faqs.ts` 신규 클라이언트
+- [x] `CsFlow.tsx`(CU-CS 컨테이너) 목업(`INITIAL_INQUIRIES`/`FAQ_DEFS`/`INQUIRY_CATEGORIES`) 완전 제거, 실 API로 교체
+- [x] `FaqScreen.tsx`는 `faqs` prop을, `InquiryRegScreen.tsx`는 `categories` prop을 받도록 변경(직접 import하던 목업 상수 제거)
+- [x] **1:1 문의 사진 첨부 + 카메라 기능** — partner-app에서 이미 검증된 `PhotoUploadGrid`(촬영/앨범, 네이티브 브릿지 우선+웹 `<input type=file>` 대체) 패턴을 customer-app에 이식해 신규 작성, `InquiryRegScreen`에 실제 업로드 UI로 교체(기존엔 비기능 장식 아이콘)
+- [x] **문의 수정 기능(답변 등록 전까지)** — `InquiryDtlScreen`에 "문의 수정하기" 버튼(`!answered`일 때만 노출), `InquiryRegScreen`을 등록/수정 겸용으로 확장, 기존 사진 유지 항목은 URL↔상대경로 왕복 변환(`toPhotoUrl`/`fromPhotoUrl`)으로 재업로드 없이 서버에 전달
+- [x] **문의유형 코드 표시 방식 변경** — `Inquiry.cat`이 기존엔 화면에 뿌릴 한글 라벨을 직접 담았는데, 수정 폼에서 원래 코드값이 필요해져 raw 코드(`INQUIRY_CATEGORY` 코드값)로 바꾸고 `InquiryProcStatScreen`/`InquiryDtlScreen`이 `categoryLabel(code)` 함수 prop으로 라벨을 그때그때 변환하도록 변경
+- [x] **자주 묻는 질문 / 문의 처리현황 화면 재조회 방식으로 전환** — 기존엔 `CsFlow` 마운트 시 한 번만 조회해서 이전 진입 때 데이터가 남아있는 문제가 있었음, `goFaq()`/`goInquiryStat()` 헬퍼로 해당 화면에 진입하는 모든 경로(메인 메뉴·등록/수정 완료 후 이동·상세 화면 뒤로가기·하드웨어 뒤로가기 포함)에서 매번 재조회하도록 통일
+- [x] 일반 FAQ 샘플 6건 등록(포인트 2·예약시공 2·쇼핑몰 1·계정 1, 기존 customer-app 목업 문구 그대로 재사용)
+
+### 검증
+- [x] 문의 등록(사진 첨부 포함) → 관리자 목록에서 대기건 상단 정렬 확인 → 답변 등록(확인 모달 경유) → 고객 화면에 답변 즉시 반영 → 답변완료 후 수정 시도 시 400 차단까지 curl로 전 구간 확인
+- [x] 문의 수정 시 기존 사진이 재업로드 없이 유지되는지 물리 파일 경로까지 확인
+- [x] FAQ 등록(관리자) → 공개 `/faqs` 즉시 노출 확인
+- [x] 후기 블라인드 처리/해제 시 `/shops/:shopCode/reviews` 응답에서 실제로 빠지는지 확인, 기존 실제 후기 3건은 원상 복구
+- [x] admin-app·customer-app 양쪽 `tsc -b --force` 클린, dev 서버 컴파일 확인
+- [x] 테스트로 생성한 문의·FAQ·첨부사진 파일 전부 정리, 실제 데이터는 미변경
+
+### 미해결/후속
+- [ ] 등급 산정 엔진 부재(Phase 29와 동일 항목)
+- [ ] 이번에 admin-app 전체 이력이 처음으로 `admin/checklist.md`·`admin/context-notes.md`로 정리됨 — 이후 admin-app 작업은 계속 그쪽에 기록할 것(더 이상 서버 체크리스트에 admin-app 화면 단위 항목을 섞지 않는다)
 - [ ] 마케팅성 푸시(프로모션 등)는 `agreedMarketingPush` 체크 분기가 필요하나 이번 범위 밖

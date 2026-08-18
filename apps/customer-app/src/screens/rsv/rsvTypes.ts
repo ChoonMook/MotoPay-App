@@ -128,5 +128,3 @@ export const COUPON_DEFS: CouponDef[] = [
   { id: "c2", name: "견적 10% 할인", desc: "최대 20,000원 할인", type: "percent", value: 10, cap: 20000 },
   { id: "c3", name: "프리미엄 회원 3만원 할인", desc: "30만원 이상 결제 시", type: "amount", value: 30000, minAmount: 300000 },
 ];
-
-export const POINT_BALANCE = 5000;

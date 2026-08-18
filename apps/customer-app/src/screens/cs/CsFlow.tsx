@@ -2,13 +2,17 @@
 import { useEffect, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
+import PhotoLightbox from "../../components/ui/PhotoLightbox";
 import { pushBackAction } from "../../native/backHandler";
+import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { createInquiry, listMyInquiries, updateInquiry } from "../../api/inquiries";
+import { listFaqs } from "../../api/faqs";
 import CSScreen from "./CSScreen";
 import FaqScreen from "./FaqScreen";
 import InquiryRegScreen from "./InquiryRegScreen";
 import InquiryProcStatScreen from "./InquiryProcStatScreen";
 import InquiryDtlScreen from "./InquiryDtlScreen";
-import { INITIAL_INQUIRIES, INQUIRY_CATEGORIES } from "./csData";
+import { formatDotDate, fromPhotoUrl, toPhotoUrl, type FaqItem } from "./csData";
 import type { CsScreenId, Inquiry } from "./csTypes";
 
 interface CsFlowProps {
@@ -19,18 +23,89 @@ export default function CsFlow({ onExit }: CsFlowProps) {
   const [screen, setScreen] = useState<CsScreenId>("main");
   const [faqCat, setFaqCat] = useState("all");
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
-  const [inqCat, setInqCat] = useState(INQUIRY_CATEGORIES[0]);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [inquiryCategories, setInquiryCategories] = useState<CommonCodeDetailApi[]>([]);
+  const [inqCat, setInqCat] = useState("");
   const [inqTitleVal, setInqTitleVal] = useState("");
   const [inqBodyVal, setInqBodyVal] = useState("");
-  const [inquiries, setInquiries] = useState<Inquiry[]>(INITIAL_INQUIRIES);
-  const [inquiryDtlId, setInquiryDtlId] = useState("q1");
+  const [inqPhotos, setInqPhotos] = useState<string[]>([]);
+  const [editTargetNo, setEditTargetNo] = useState<string | null>(null);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiryDtlId, setInquiryDtlId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [viewingPhotoUrl, setViewingPhotoUrl] = useState<string | null>(null);
 
   const { toast, showToast } = useToast();
 
+  const categoryLabel = (code: string): string =>
+    inquiryCategories.find((c) => c.detailCode === code)?.detailName ?? code;
+
+  const toUiInquiry = (row: {
+    inquiryNo: string;
+    category: string;
+    title: string;
+    content: string;
+    status: string;
+    answer: string | null;
+    createdAt: string;
+    photos: string[];
+  }): Inquiry => ({
+    id: row.inquiryNo,
+    cat: row.category,
+    title: row.title,
+    date: formatDotDate(row.createdAt),
+    answered: row.status === "ANSWERED",
+    body: row.content,
+    answer: row.answer ?? undefined,
+    photos: row.photos,
+  });
+
+  useEffect(() => {
+    getCommonCodeDetails("INQUIRY_CATEGORY")
+      .then((rows) => {
+        setInquiryCategories(rows);
+        setInqCat((prev) => prev || rows[0]?.detailCode || "");
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : "문의 유형 정보를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadFaqs = () => {
+    listFaqs()
+      .then((rows) => setFaqs(rows.map((r) => ({ id: String(r.id), cat: r.category, q: r.question, a: r.answer }))))
+      .catch((err) => showToast(err instanceof Error ? err.message : "FAQ를 불러오지 못했어요", "danger"));
+  };
+
+  const loadInquiries = () => {
+    listMyInquiries()
+      .then((rows) => setInquiries(rows.map(toUiInquiry)))
+      .catch((err) => showToast(err instanceof Error ? err.message : "문의 내역을 불러오지 못했어요", "danger"));
+  };
+
   const goMain = () => setScreen("main");
+  // 매번 최신 데이터를 다시 조회 — 이전 진입 때 불러온 목록이 그대로 남아있지 않도록
+  const goFaq = () => {
+    setScreen("faq");
+    loadFaqs();
+  };
+  const goInquiryStat = () => {
+    setScreen("inquirystat");
+    loadInquiries();
+  };
   const goInquiryReg = () => {
+    setEditTargetNo(null);
+    setInqCat((prev) => prev || inquiryCategories[0]?.detailCode || "");
     setInqTitleVal("");
     setInqBodyVal("");
+    setInqPhotos([]);
+    setScreen("inquiryreg");
+  };
+  const goInquiryEdit = (inquiry: Inquiry) => {
+    setEditTargetNo(inquiry.id);
+    setInqCat(inquiry.cat);
+    setInqTitleVal(inquiry.title);
+    setInqBodyVal(inquiry.body);
+    setInqPhotos(inquiry.photos.map(toPhotoUrl));
     setScreen("inquiryreg");
   };
 
@@ -41,30 +116,64 @@ export default function CsFlow({ onExit }: CsFlowProps) {
   useEffect(() => {
     switch (screen) {
       case "faq":
-      case "inquiryreg":
       case "inquirystat":
         return pushBackAction(goMain);
+      case "inquiryreg":
+        return pushBackAction(() => setScreen(editTargetNo ? "inquirydtl" : "main"));
       case "inquirydtl":
-        return pushBackAction(() => setScreen("inquirystat"));
+        return pushBackAction(goInquiryStat);
       default:
         return;
     }
-  }, [screen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, editTargetNo]);
+
+  const submitInquiry = async () => {
+    if (!inqTitleVal || !inqBodyVal || submitting) return;
+    setSubmitting(true);
+    try {
+      if (editTargetNo) {
+        const updated = await updateInquiry(editTargetNo, {
+          category: inqCat,
+          title: inqTitleVal,
+          content: inqBodyVal,
+          photos: inqPhotos.map(fromPhotoUrl),
+        });
+        setInquiries((prev) => prev.map((q) => (q.id === editTargetNo ? toUiInquiry(updated) : q)));
+        showToast("문의가 수정됐어요", "success");
+        setInquiryDtlId(editTargetNo);
+        setScreen("inquirydtl");
+      } else {
+        await createInquiry({ category: inqCat, title: inqTitleVal, content: inqBodyVal, photos: inqPhotos });
+        showToast("문의가 등록됐어요", "success");
+        goInquiryStat();
+      }
+      setInqTitleVal("");
+      setInqBodyVal("");
+      setInqPhotos([]);
+      setEditTargetNo(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "처리에 실패했어요", "danger");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {screen === "main" && (
         <CSScreen
           onBack={onExit}
-          onOpenFaq={() => setScreen("faq")}
+          onOpenFaq={goFaq}
           onOpenInquiryReg={goInquiryReg}
-          onOpenInquiryStat={() => setScreen("inquirystat")}
+          onOpenInquiryStat={goInquiryStat}
         />
       )}
 
       {screen === "faq" && (
         <FaqScreen
           onBack={goMain}
+          faqs={faqs}
           cat={faqCat}
           onSelectCat={setFaqCat}
           openMap={faqOpen}
@@ -75,22 +184,22 @@ export default function CsFlow({ onExit }: CsFlowProps) {
 
       {screen === "inquiryreg" && (
         <InquiryRegScreen
-          onBack={goMain}
+          onBack={() => setScreen(editTargetNo ? "inquirydtl" : "main")}
+          editing={!!editTargetNo}
+          categories={inquiryCategories}
           cat={inqCat}
           onSelectCat={setInqCat}
           title={inqTitleVal}
           onChangeTitle={setInqTitleVal}
           body={inqBodyVal}
           onChangeBody={setInqBodyVal}
-          onSubmit={() => {
-            if (!inqTitleVal || !inqBodyVal) return;
-            const id = `q${Date.now()}`;
-            setInquiries((prev) => [...prev, { id, cat: inqCat, title: inqTitleVal, date: "2026.07.22", answered: false, body: inqBodyVal }]);
-            setInqTitleVal("");
-            setInqBodyVal("");
-            showToast("문의가 등록됐어요", "success");
-            setScreen("inquirystat");
-          }}
+          photos={inqPhotos}
+          onAddPhoto={(dataUri) => setInqPhotos((prev) => (prev.length < 5 ? [...prev, dataUri] : prev))}
+          onRemovePhoto={(i) => setInqPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+          onViewPhoto={setViewingPhotoUrl}
+          onError={(msg) => showToast(msg, "danger")}
+          onSubmit={submitInquiry}
+          submitting={submitting}
         />
       )}
 
@@ -98,6 +207,7 @@ export default function CsFlow({ onExit }: CsFlowProps) {
         <InquiryProcStatScreen
           onBack={goMain}
           inquiries={inquiries}
+          categoryLabel={categoryLabel}
           onOpenItem={(id) => {
             setInquiryDtlId(id);
             setScreen("inquirydtl");
@@ -106,7 +216,17 @@ export default function CsFlow({ onExit }: CsFlowProps) {
         />
       )}
 
-      {screen === "inquirydtl" && <InquiryDtlScreen onBack={() => setScreen("inquirystat")} inquiry={curInquiry} />}
+      {screen === "inquirydtl" && curInquiry && (
+        <InquiryDtlScreen
+          onBack={goInquiryStat}
+          inquiry={curInquiry}
+          categoryLabel={categoryLabel}
+          onEdit={() => goInquiryEdit(curInquiry)}
+          onViewPhoto={setViewingPhotoUrl}
+        />
+      )}
+
+      <PhotoLightbox photoUrl={viewingPhotoUrl} onClose={() => setViewingPhotoUrl(null)} />
 
       {toast && (
         <div className="absolute inset-x-0 bottom-10 z-[90] flex justify-center px-6">

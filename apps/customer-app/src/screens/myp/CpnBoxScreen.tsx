@@ -1,16 +1,18 @@
 // CU-MYPG-16: 보유 쿠폰함 - 보유 쿠폰(신차패키지쿠폰+이벤트 할인권·교환권·금액권) 조회, 사용가능/사용완료/만료 필터
 import CommonHeader from "../common/CommonHeader";
-import { COUPON_DEFS, COUPON_STATUS_META, COUPON_ISSUER_META, COUPON_TAB_DEFS } from "./mypData";
-import type { CouponStatus } from "./mypData";
+import { COUPON_STATUS_META, COUPON_ISSUER_META, COUPON_TAB_DEFS } from "./mypData";
+import type { CouponItem, CouponStatus } from "./mypData";
 
 interface CpnBoxScreenProps {
   onBack: () => void;
   filter: CouponStatus;
   onSelectFilter: (filter: CouponStatus) => void;
+  loading: boolean;
+  coupons: CouponItem[];
 }
 
-export default function CpnBoxScreen({ onBack, filter, onSelectFilter }: CpnBoxScreenProps) {
-  const cards = COUPON_DEFS.filter((c) => c.status === filter);
+export default function CpnBoxScreen({ onBack, filter, onSelectFilter, loading, coupons }: CpnBoxScreenProps) {
+  const cards = coupons.filter((c) => c.status === filter);
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -34,7 +36,11 @@ export default function CpnBoxScreen({ onBack, filter, onSelectFilter }: CpnBoxS
       </div>
 
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-3.5 pb-6">
-        {cards.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center gap-2 py-[60px] text-center">
+            <div className="text-sm font-bold text-gray-400">불러오는 중...</div>
+          </div>
+        ) : cards.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-[60px] text-center">
             <div className="text-sm font-bold text-gray-600">해당 쿠폰이 없어요</div>
           </div>

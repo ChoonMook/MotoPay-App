@@ -13,6 +13,7 @@ import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
 import { maskPhone } from '../common/mask/mask-phone';
 import { saveReservationPhoto } from '../common/storage/reservation-photo-storage';
 import { saveReviewPhoto } from '../common/storage/review-photo-storage';
+import { PointsService } from '../points/points.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
 import type { CompleteReservationDto } from './dto/complete-reservation.dto';
@@ -212,6 +213,46 @@ export interface CallLogView {
   createdAt: string;
 }
 
+// AD-NCPK-07 관리자 신차패키지 시공현황 — 전체 업체(shopCode 무관) 대상, 조회 전용(수정 없음)
+export interface AdminPackageReservationListItem {
+  reservationNo: string;
+  customerName: string;
+  car: string | null;
+  vin: string | null;
+  packageName: string | null;
+  dealerCompanyId: number | null;
+  dealerName: string | null;
+  shopName: string;
+  date: string; // "YYYY-MM-DD"
+  time: string; // "HH:mm"
+  status: string; // -> CommonCodeDetail(code='RESERVATION_STATUS')
+  progressStatus: string; // -> CommonCodeDetail(code='RESERVATION_PROGRESS')
+  createdAt: string; // ISO
+}
+
+export interface AdminPackageReservationDetail {
+  reservationNo: string;
+  customerName: string;
+  phoneMasked: string;
+  car: string | null;
+  vin: string | null;
+  dealerName: string | null;
+  shopName: string;
+  date: string;
+  time: string;
+  status: string;
+  progressStatus: string;
+  packageName: string | null;
+  items: PackageJobItem[];
+  tintPositions: { position: string; level: string }[];
+  cancelReason: string | null;
+  cancelReasonEtc: string | null;
+  completionMemo: string | null;
+  completedAt: string | null;
+  handoverConfirmedAt: string | null;
+  photos: string[];
+}
+
 const HANDOVER_AUTO_CONFIRM_DAYS = 3;
 
 @Injectable()
@@ -220,6 +261,7 @@ export class ReservationsService {
     private readonly prisma: PrismaService,
     private readonly productsService: ProductsService,
     private readonly phoneCrypto: PhoneCryptoService,
+    private readonly pointsService: PointsService,
   ) {}
 
   async create(params: CreateReservationParams): Promise<ReservationView> {
@@ -576,8 +618,9 @@ export class ReservationsService {
   /**
    * 결제 확정(CU-RSVC-14) — 업체/추천안 선정으로 예약이 이미 생성된 뒤, 결제 화면에서 "결제하기"를 눌렀을 때
    * 쿠폰/포인트/결제수단/최종 결제금액을 기록. 확정(CONFIRMED) 상태에서만 가능하고, 이미 결제가 확정된 예약은
-   * 재결제할 수 없음(paidAt으로 판단). 쿠폰/포인트 자체는 별도 시스템이 없어(Coupon/Point 테이블 미존재) 이 시점의
-   * 스냅샷만 그대로 저장한다.
+   * 재결제할 수 없음(paidAt으로 판단). 쿠폰은 아직 별도 시스템이 없어(Reservation과 연결된 Coupon 테이블 없음)
+   * 이 시점의 스냅샷만 저장하지만, 포인트는 실제 PointHistory·User.pointBalance를 사용(2026-08-18)해서
+   * pointsUsed>0이면 잔액을 실제로 차감한다(잔액 부족 시 결제 자체가 실패).
    */
   async confirmPayment(
     memberId: string,
@@ -590,6 +633,14 @@ export class ReservationsService {
     }
     if (reservation.paidAt) {
       throw new BadRequestException('이미 결제가 확정된 예약입니다.');
+    }
+
+    if (dto.pointsUsed && dto.pointsUsed > 0) {
+      await this.pointsService.useMyPoints(
+        memberId,
+        dto.pointsUsed,
+        `예약결제 사용(${reservation.reservationNo})`,
+      );
     }
 
     const updated = await this.prisma.reservation.update({
@@ -941,22 +992,144 @@ export class ReservationsService {
     };
   }
 
+  // ── 관리자 신차패키지 시공현황(AD-NCPK-07) ──────────────────
+
+  async adminListPackages(params: {
+    keyword?: string;
+    status?: string;
+    progressStatus?: string;
+    dealerCompanyId?: number;
+  }): Promise<AdminPackageReservationListItem[]> {
+    const reservations = await this.prisma.reservation.findMany({
+      where: {
+        reservationType: 'PKG',
+        ...(params.status ? { status: params.status } : {}),
+        ...(params.progressStatus
+          ? { progressStatus: params.progressStatus }
+          : {}),
+        ...(params.keyword
+          ? {
+              OR: [
+                { reservationNo: { contains: params.keyword } },
+                { member: { name: { contains: params.keyword } } },
+              ],
+            }
+          : {}),
+      },
+      include: { member: true, shop: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const items = await Promise.all(
+      reservations.map(async (r) => {
+        const { car, packageName, dealerCompanyId, dealerName } =
+          await this.resolveMemberPackage(r.memberId);
+        return {
+          reservationNo: r.reservationNo,
+          customerName: r.member.name,
+          car: car?.name ?? null,
+          vin: car?.vin ?? null,
+          packageName,
+          dealerCompanyId,
+          dealerName,
+          shopName: r.shop.name,
+          date: formatDateOnly(r.date),
+          time: formatTimeOnly(r.time),
+          status: r.status,
+          progressStatus: r.progressStatus,
+          createdAt: r.createdAt.toISOString(),
+        };
+      }),
+    );
+
+    // 딜러사 필터는 목록 화면과 동일하게 resolveMemberPackage가 고른 "최근 등록 매핑 차량" 기준으로 판단
+    // (DB 레벨에서 회원의 매핑 차량 전체를 대상으로 걸면, 여러 대를 가진 회원의 경우 화면에 표시되는 차량과
+    // 다른 차량의 딜러사로도 매칭되는 오류가 있어 조회 후 필터링으로 변경)
+    return params.dealerCompanyId
+      ? items.filter((i) => i.dealerCompanyId === params.dealerCompanyId)
+      : items;
+  }
+
+  async adminGetPackageDetail(
+    reservationNo: string,
+  ): Promise<AdminPackageReservationDetail> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { reservationNo },
+      include: { member: true, shop: true },
+    });
+    if (!reservation || reservation.reservationType !== 'PKG') {
+      throw new NotFoundException('신차패키지 예약을 찾을 수 없습니다.');
+    }
+
+    const [
+      { car, packageName, dealerName, items, tintPositions },
+      photos,
+      handoverConfirmedAt,
+    ] = await Promise.all([
+      this.resolveMemberPackage(reservation.memberId),
+      this.prisma.reservationPhoto.findMany({
+        where: { reservationNo },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      this.resolveHandoverConfirmation(reservation),
+    ]);
+    const phone = reservation.member.phoneEncrypted
+      ? this.phoneCrypto.decrypt(reservation.member.phoneEncrypted)
+      : null;
+
+    return {
+      reservationNo: reservation.reservationNo,
+      customerName: reservation.member.name,
+      phoneMasked: phone ? maskPhone(phone) : '-',
+      car: car?.name ?? null,
+      vin: car?.vin ?? null,
+      dealerName,
+      shopName: reservation.shop.name,
+      date: formatDateOnly(reservation.date),
+      time: formatTimeOnly(reservation.time),
+      status: reservation.status,
+      progressStatus: reservation.progressStatus,
+      packageName,
+      items,
+      tintPositions,
+      cancelReason: reservation.cancelReason,
+      cancelReasonEtc: reservation.cancelReasonEtc,
+      completionMemo: reservation.completionMemo,
+      completedAt: reservation.completedAt?.toISOString() ?? null,
+      handoverConfirmedAt: handoverConfirmedAt?.toISOString() ?? null,
+      photos: photos.map((p) => p.photoPath),
+    };
+  }
+
   private async resolveMemberPackage(memberId: string): Promise<{
     car: { name: string; vin: string | null; photo: string | null } | null;
     packageName: string | null;
+    dealerCompanyId: number | null; // -> Company.id(coType='DEALER')
+    dealerName: string | null; // 신차 구매 딜러사명 -> NewCarPurchaseCustomer.dealerCompanyId -> Company.name
     items: PackageJobItem[];
     tintPositions: { position: string; level: string }[];
   }> {
     const car = await this.prisma.myCar.findFirst({
       where: { memberId, regType: 'MAP', purchaseVin: { not: null } },
       include: {
-        purchase: { include: { selectedItems: true, tintPositions: true } },
+        purchase: {
+          include: { selectedItems: true, tintPositions: true, dealer: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
     if (!car) {
-      return { car: null, packageName: null, items: [], tintPositions: [] };
+      return {
+        car: null,
+        packageName: null,
+        dealerCompanyId: null,
+        dealerName: null,
+        items: [],
+        tintPositions: [],
+      };
     }
+    const dealerCompanyId = car.purchase?.dealerCompanyId ?? null;
+    const dealerName = car.purchase?.dealer.name ?? null;
 
     // 차량브랜드+차종 라벨로 표기(PT-NCPK-01~03) — trimName은 자유텍스트(예: "E 200")라 브랜드가 안 드러나므로
     // CommonCodeDetail(CAR_BRAND/CAR_MODEL)에서 실제 이름을 조회해 조합. 코드에 대응하는 상세가 없으면 코드값 그대로 표기.
@@ -982,7 +1155,14 @@ export class ReservationsService {
     };
     const packageCode = car.purchase?.packageCode;
     if (!packageCode) {
-      return { car: carView, packageName: null, items: [], tintPositions: [] };
+      return {
+        car: carView,
+        packageName: null,
+        dealerCompanyId,
+        dealerName,
+        items: [],
+        tintPositions: [],
+      };
     }
 
     // 예약확정(POST /reservations) 시점에 저장된 실제 선택 항목 전체(분류별 기본/업그레이드 1건 + 추가옵션들)
@@ -1034,12 +1214,21 @@ export class ReservationsService {
       return {
         car: carView,
         packageName: detail.package.name,
+        dealerCompanyId,
+        dealerName,
         items,
         tintPositions,
       };
     } catch {
       // 매핑된 패키지 상품이 삭제·비활성화된 경우 등 — 차량 정보만 있고 시공 항목은 빈 목록으로 응답
-      return { car: carView, packageName: null, items: [], tintPositions: [] };
+      return {
+        car: carView,
+        packageName: null,
+        dealerCompanyId,
+        dealerName,
+        items: [],
+        tintPositions: [],
+      };
     }
   }
 

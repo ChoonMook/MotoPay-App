@@ -82,7 +82,7 @@ export const MENU_GROUPS: MenuGroup[] = [
       { pgId: "AD-NCPK-04", label: "딜러사-시공업체 매핑", path: "/ncp/dealer-ptn-map" },
       { pgId: "AD-CTLG-10", label: "신차패키지 구성 관리", path: "/catalog/pkg-comp-mgmt" },
       { pgId: "DL-NCPK-01", label: "신차 구매내역", path: "/ncp/purchase" },
-      { pgId: "AD-NCPK-06", label: "발급 현황(미사용)", path: "/ncp/issue-stat" },
+      // AD-NCPK-06(발급 현황) 메뉴 제거 — 미구현 플레이스홀더였음(2026-08-16 사용자 확정)
     ],
   },
   {
@@ -90,10 +90,15 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "예약시공 관리",
     icon: CalendarClock,
     items: [
-      { pgId: "AD-RSVC-02", label: "입찰 현황 모니터링", path: "/rsv/bid-stat-mon" },
-      { pgId: "AD-RSVC-03", label: "추천형 입찰 현황", path: "/rsv/rcmd-bid-stat" },
-      { pgId: "AD-RSVC-04", label: "입찰 마감시간 설정", path: "/rsv/bid-deadline-cfg" },
-      { pgId: "AD-RSVC-05", label: "시공일시 변경 (관리자)", path: "/rsv/cst-chg-admin" },
+      // 신차패키지 시공현황 신규 추가 — pgId는 신차패키지 관리에 이미 AD-NCPK-05가 배정돼 있어(패키지 상품
+      // 목록, 미사용) 다음 빈 번호(AD-NCPK-07)로 채번, 메뉴 위치는 예약시공현황과 성격이 같아 이 그룹에 배치
+      // (2026-08-18 사용자 확정). 메뉴 순서는 신차패키지 시공현황 -> 예약시공현황(2026-08-18 사용자 확정)
+      { pgId: "AD-NCPK-07", label: "신차패키지 시공현황", path: "/rsv/ncpk-stat" },
+      // AD-RSVC-02(입찰 현황 모니터링)·AD-RSVC-03(추천형 입찰 현황)을 하나로 통합(2026-08-16 사용자 확정)
+      { pgId: "AD-RSVC-02", label: "예약시공현황", path: "/rsv/rsv-stat" },
+      // AD-RSVC-04(입찰 마감시간 설정) 메뉴 제거 — 값 목록이 아니라 숫자 하나(BID_DEADLINE_DAYS)라 전용 화면 없이
+      // apps/api/src/bid-requests/bid-requests.service.ts의 코드 상수로 계속 관리(2026-08-16 사용자 확정)
+      // AD-RSVC-05(시공일시 변경 (관리자)) 메뉴도 제거 — 미구현 플레이스홀더였음(2026-08-16 사용자 확정)
     ],
   },
   {
@@ -124,12 +129,16 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "포인트·쿠폰 관리",
     icon: Coins,
     items: [
-      { pgId: "AD-PNT-02", label: "포인트 상품 설정", path: "/point/pt-prod-cfg" },
-      { pgId: "AD-PNT-03", label: "포인트 유효기간 설정", path: "/point/pt-valid-cfg" },
+      // AD-PNT-02(포인트 상품 설정) 메뉴 제거 — customer-app 포인트 충전은 "추가 적립 없이 충전액 그대로
+      // 1P=1원" 정책이라(PtChargeAmtSelScreen.tsx 안내문구) 추가지급비율을 설정할 대상 자체가 없음(2026-08-18 사용자 확정)
+      // AD-PNT-03(포인트 유효기간 설정) 메뉴도 제거 — 값 목록이 아니라 스칼라 값 2개(유효기간 년수·만료임박
+      // 알림 시점)뿐이고, 포인트 적립/소멸 백엔드 로직 자체가 아직 없어 지금은 읽어갈 곳도 없음. BID_DEADLINE_DAYS와
+      // 동일하게, 실제로 포인트 소멸 로직을 구현할 때 전용 화면 없이 코드 상수로 관리(2026-08-18 사용자 확정)
       { pgId: "AD-PNT-06", label: "포인트 내역 조회", path: "/point/pt-hist" },
       { pgId: "AD-PNT-07", label: "회원 등급 기준 설정", path: "/point/mbr-grade-rule-cfg" },
-      { pgId: "AD-CPN-02", label: "쿠폰 발행", path: "/coupon/cpn" },
-      { pgId: "AD-CPN-03", label: "쿠폰 내역 조회", path: "/coupon/cpn-hist" },
+      // AD-CPN-02(쿠폰 발행) 메뉴 제거 — 포인트 강제 부여/차감과 동일하게 팝업 액션으로 전환해 아래
+      // 쿠폰 발행 내역(AD-CPN-03) 화면 상단 버튼으로 이동(2026-08-18 사용자 확정)
+      { pgId: "AD-CPN-03", label: "쿠폰 발행 내역", path: "/coupon/cpn-hist" },
     ],
   },
   {

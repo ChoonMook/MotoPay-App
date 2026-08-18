@@ -1,10 +1,11 @@
 // CU-CS-02: FAQ 조회 - 카테고리별 아코디언 리스트, 답변 미해결 시 1:1 문의로 연결
 import CommonHeader from "../common/CommonHeader";
 import { InfoIcon, ChevronDownIcon } from "./csIcons";
-import { FAQ_CATEGORY_META, FAQ_DEFS } from "./csData";
+import { FAQ_CATEGORY_META, type FaqItem } from "./csData";
 
 interface FaqScreenProps {
   onBack: () => void;
+  faqs: FaqItem[];
   cat: string;
   onSelectCat: (cat: string) => void;
   openMap: Record<string, boolean>;
@@ -12,8 +13,8 @@ interface FaqScreenProps {
   onOpenInquiryReg: () => void;
 }
 
-export default function FaqScreen({ onBack, cat, onSelectCat, openMap, onToggle, onOpenInquiryReg }: FaqScreenProps) {
-  const rows = FAQ_DEFS.filter((f) => cat === "all" || f.cat === cat);
+export default function FaqScreen({ onBack, faqs, cat, onSelectCat, openMap, onToggle, onOpenInquiryReg }: FaqScreenProps) {
+  const rows = faqs.filter((f) => cat === "all" || f.cat === cat);
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>

@@ -12,6 +12,7 @@ import { listShops } from "../../api/shops";
 import { listMyBidRequests } from "../../api/bidRequests";
 import { getBidOffers } from "../../api/bidOffers";
 import { getBidPlans } from "../../api/bidPlans";
+import { getMyPointsSummary } from "../../api/points";
 import { API_BASE_URL } from "../../api/config";
 import { INST_CODE_LABELS } from "../rsv/rsvTypes";
 import type { ReqStatusFilter } from "../rsv/BookingScreen";
@@ -134,6 +135,7 @@ export default function HomeScreen({
   // 하단 카드로 전환해 진행상태(방문 전) 또는 인수확인(방문일 도래)을 안내
   const [hasEligiblePackage, setHasEligiblePackage] = useState(false);
   const [ncpkBooking, setNcpkBooking] = useState<NcpkBooking | null>(null);
+  const [pointBalance, setPointBalance] = useState(0);
 
   // CU-HOME-01 견적 도착·예약시공 진행현황 — 예약시공(입찰) 요청·응찰·예약 데이터로 조합
   const [bidQuote, setBidQuote] = useState<BidQuoteCard | null>(null);
@@ -250,6 +252,12 @@ export default function HomeScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    getMyPointsSummary()
+      .then((s) => setPointBalance(s.balance))
+      .catch(() => {}); // 상단바 보조 정보라 실패해도 토스트 없이 0으로 유지
+  }, []);
+
   return (
     <div className="absolute inset-0 bg-gray-50">
       {/* top app bar (상태바 46px 아래부터 시작) */}
@@ -259,13 +267,13 @@ export default function HomeScreen({
         </span>
         <span className="flex-1" />
         <span
-          onClick={() => showToast("보유 포인트 5,000P · 적립/사용 내역")}
+          onClick={onOpenPoint}
           className="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-subtle px-[11px] py-[5px]"
         >
           <span className="flex h-[14px] w-[14px] items-center justify-center rounded-full bg-brand text-[9px] font-extrabold text-white">
             P
           </span>
-          <span className="text-[12.5px] font-bold text-brand tabular-nums">5,000</span>
+          <span className="text-[12.5px] font-bold text-brand tabular-nums">{nfmt(pointBalance)}</span>
         </span>
         <span
           onClick={() => showToast("알림함으로 이동해요")}

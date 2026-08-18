@@ -69,6 +69,7 @@ import {
 import { getBidOffers, selectBidOffer, type BidOfferApi } from "../../api/bidOffers";
 import { getBidPlans, selectBidPlan, type BidPlanApi } from "../../api/bidPlans";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { getMyPointsSummary } from "../../api/points";
 import {
   listMyReservations,
   getHandoverDetail,
@@ -190,6 +191,7 @@ export default function RsvFlow({
   const [payMethod, setPayMethod] = useState<PayMethodKey>("card");
 
   const [pointUse, setPointUse] = useState(0);
+  const [memberPointBalance, setMemberPointBalance] = useState(0);
   const [couponSel, setCouponSel] = useState<string | null>(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
   // CU-RSVC-21 업체 일정변경 요청 수락/거절
@@ -260,6 +262,9 @@ export default function RsvFlow({
     // 우선 한 번 조회해둠(prodsel 화면에 들어가면 최신 값으로 다시 조회됨 — 아래 CU-RSVC-04 effect 참고)
     getCommonCodeDetails("PROD_BRAND").then(setProdBrandCodes).catch(() => {});
     listBidProducts("TINT").then(setTintProducts).catch(() => {});
+    getMyPointsSummary()
+      .then((s) => setMemberPointBalance(s.balance))
+      .catch(() => {}); // 결제 화면 진입 전까지는 몰라도 되는 보조 데이터라 실패해도 토스트 없이 0으로 유지
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1071,6 +1076,7 @@ export default function RsvFlow({
           recos={recoPlans}
           payMethod={payMethod}
           pointUse={pointUse}
+          memberPointBalance={memberPointBalance}
           couponSel={couponSel}
           couponSheetOpen={sheet === "coupon"}
           onPointChange={setPointUse}
@@ -1089,7 +1095,7 @@ export default function RsvFlow({
             if (!activeReservation || submittingPayment) return;
             setSubmittingPayment(true);
             try {
-              const breakdown = computePayBreakdown(selId, isExpert, couponSel, pointUse, bidOffers, recoPlans);
+              const breakdown = computePayBreakdown(selId, isExpert, couponSel, pointUse, memberPointBalance, bidOffers, recoPlans);
               const coupon = COUPON_DEFS.find((d) => d.id === couponSel);
               const updated = await confirmReservationPayment(activeReservation.id, {
                 paymentMethod: payMethod === "bank" ? "BANK" : "CARD",
@@ -1099,6 +1105,7 @@ export default function RsvFlow({
                 paidAmount: breakdown.payRemain,
               });
               setActiveReservation(updated);
+              setMemberPointBalance((b) => b - breakdown.pointsUsed);
               setScreen("paydone");
             } catch (err) {
               showToast(err instanceof Error ? err.message : "결제 확정에 실패했어요", "danger");
@@ -1120,6 +1127,7 @@ export default function RsvFlow({
           couponSel={couponSel}
           pointUse={pointUse}
           reservationNo={activeReservation?.reservationNo}
+          paidAmount={activeReservation?.paidAmount}
           onConfirm={goMain}
         />
       )}

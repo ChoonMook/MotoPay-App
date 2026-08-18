@@ -15,6 +15,7 @@ interface PtChargeAmtSelScreenProps {
   onChangeEtc: (v: string) => void;
   onSelectMethod: (k: PtMethodKey) => void;
   onPay: () => void;
+  submitting: boolean;
 }
 
 export default function PtChargeAmtSelScreen({
@@ -26,6 +27,7 @@ export default function PtChargeAmtSelScreen({
   onChangeEtc,
   onSelectMethod,
   onPay,
+  submitting,
 }: PtChargeAmtSelScreenProps) {
   const chargeVal = chargeEtc ? parseDigits(chargeEtc) : chargeAmt;
   const chargeOk = chargeVal >= 10000;
@@ -110,8 +112,8 @@ export default function PtChargeAmtSelScreen({
           <span className="text-base font-extrabold text-brand tabular-nums">{nfmt(chargeVal)}원</span>
         </div>
         <div className="px-5 pt-2 pb-6">
-          <Button size="xl" disabled={!chargeOk} onClick={onPay}>
-            {chargeOk ? "결제하기" : "충전 금액을 입력하세요"}
+          <Button size="xl" disabled={!chargeOk || submitting} onClick={onPay}>
+            {submitting ? "처리 중..." : chargeOk ? "결제하기" : "충전 금액을 입력하세요"}
           </Button>
         </div>
       </div>

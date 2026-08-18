@@ -34,6 +34,14 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'CO_TYPE', name: '업체구분' },
   { code: 'BIZ_DIV', name: '사업자구분' },
   { code: 'BANK', name: '은행' },
+  { code: 'POINT_HIST_KIND', name: '포인트 내역 구분' },
+  { code: 'COUPON_TYPE', name: '쿠폰 유형' },
+  { code: 'COUPON_ISSUER_TYPE', name: '쿠폰 발행주체' },
+  { code: 'COUPON_TARGET_TYPE', name: '쿠폰 발행대상' },
+  { code: 'COUPON_ISSUANCE_STATUS', name: '쿠폰 발급 상태' },
+  { code: 'INQUIRY_CATEGORY', name: '1:1문의 유형' },
+  { code: 'INQUIRY_STATUS', name: '1:1문의 상태' },
+  { code: 'FAQ_CATEGORY', name: 'FAQ 카테고리' },
 ];
 
 interface DetailRow {
@@ -228,6 +236,50 @@ const DETAILS: DetailRow[] = [
   { code: 'BANK', detailCode: 'GWANGJU', detailName: '광주은행' },
   { code: 'BANK', detailCode: 'JEONBUK', detailName: '전북은행' },
   { code: 'BANK', detailCode: 'JEJU', detailName: '제주은행' },
+
+  // POINT_HIST_KIND — 포인트 내역 조회(AD-PNT-06) 구분. CHARGE/USE는 향후 고객 충전·사용 기능 구현 시 사용,
+  // 현재는 관리자 강제 부여/차감(AD-PNT-04/05)만 실제로 발생함
+  { code: 'POINT_HIST_KIND', detailCode: 'CHARGE', detailName: '충전' },
+  { code: 'POINT_HIST_KIND', detailCode: 'USE', detailName: '사용' },
+  { code: 'POINT_HIST_KIND', detailCode: 'GRANT', detailName: '관리자부여' },
+  { code: 'POINT_HIST_KIND', detailCode: 'DEDUCT', detailName: '관리자차감' },
+  { code: 'POINT_HIST_KIND', detailCode: 'PURCHASE_GRANT', detailName: '신차구매 포인트' },
+
+  // COUPON_TYPE — 쿠폰 발행(AD-CPN-02) 유형
+  { code: 'COUPON_TYPE', detailCode: 'DISCOUNT', detailName: '할인권' },
+  { code: 'COUPON_TYPE', detailCode: 'EXCHANGE', detailName: '교환권' },
+  { code: 'COUPON_TYPE', detailCode: 'AMOUNT', detailName: '금액권' },
+
+  // COUPON_ISSUER_TYPE — 쿠폰 발행주체
+  { code: 'COUPON_ISSUER_TYPE', detailCode: 'OPERATOR', detailName: '운영사' },
+  { code: 'COUPON_ISSUER_TYPE', detailCode: 'DEALER', detailName: '딜러사' },
+
+  // COUPON_TARGET_TYPE — 쿠폰 발행대상
+  { code: 'COUPON_TARGET_TYPE', detailCode: 'ALL', detailName: '전체' },
+  { code: 'COUPON_TARGET_TYPE', detailCode: 'CONDITION', detailName: '조건별' },
+  { code: 'COUPON_TARGET_TYPE', detailCode: 'INDIVIDUAL', detailName: '개별선택' },
+
+  // COUPON_ISSUANCE_STATUS — 쿠폰 발급 상태(USE는 향후 쿠폰 사용 처리 로직 구현 시 반영)
+  { code: 'COUPON_ISSUANCE_STATUS', detailCode: 'ISSUED', detailName: '사용가능' },
+  { code: 'COUPON_ISSUANCE_STATUS', detailCode: 'USED', detailName: '사용완료' },
+  { code: 'COUPON_ISSUANCE_STATUS', detailCode: 'EXPIRED', detailName: '만료' },
+
+  // INQUIRY_CATEGORY — 1:1문의 등록(CU-CS-03)의 문의 유형(customer-app csData.ts INQUIRY_CATEGORIES와 동일 텍스트)
+  { code: 'INQUIRY_CATEGORY', detailCode: 'PAYMENT_POINT', detailName: '결제/포인트' },
+  { code: 'INQUIRY_CATEGORY', detailCode: 'RESERVATION', detailName: '예약/시공' },
+  { code: 'INQUIRY_CATEGORY', detailCode: 'SHOP_ORDER', detailName: '쇼핑몰/주문' },
+  { code: 'INQUIRY_CATEGORY', detailCode: 'ACCOUNT', detailName: '계정/로그인' },
+  { code: 'INQUIRY_CATEGORY', detailCode: 'ETC', detailName: '기타' },
+
+  // INQUIRY_STATUS — 1:1문의 처리상태
+  { code: 'INQUIRY_STATUS', detailCode: 'PENDING', detailName: '답변대기' },
+  { code: 'INQUIRY_STATUS', detailCode: 'ANSWERED', detailName: '답변완료' },
+
+  // FAQ_CATEGORY — FAQ 조회(CU-CS-02)의 카테고리(customer-app csData.ts FAQ_CATEGORY_META와 동일, "전체" 제외)
+  { code: 'FAQ_CATEGORY', detailCode: 'POINT', detailName: '포인트' },
+  { code: 'FAQ_CATEGORY', detailCode: 'RESV', detailName: '예약시공' },
+  { code: 'FAQ_CATEGORY', detailCode: 'SHOP', detailName: '쇼핑몰' },
+  { code: 'FAQ_CATEGORY', detailCode: 'ACCOUNT', detailName: '계정' },
 ];
 
 async function main() {

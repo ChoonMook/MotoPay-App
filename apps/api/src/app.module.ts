@@ -10,12 +10,18 @@ import { BidRequestsModule } from './bid-requests/bid-requests.module';
 import { CarsModule } from './cars/cars.module';
 import { CommonCodesModule } from './common-codes/common-codes.module';
 import { CompaniesModule } from './companies/companies.module';
+import { CouponsModule } from './coupons/coupons.module';
+import { FaqsModule } from './faqs/faqs.module';
+import { InquiriesModule } from './inquiries/inquiries.module';
+import { MemberGradeRulesModule } from './member-grade-rules/member-grade-rules.module';
 import { MenuPermissionsModule } from './menu-permissions/menu-permissions.module';
 import { NewCarPurchasesModule } from './new-car-purchases/new-car-purchases.module';
 import { PartnerAuthModule } from './partner-auth/partner-auth.module';
+import { PointsModule } from './points/points.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { ShopsModule } from './shops/shops.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
@@ -40,6 +46,12 @@ import { UsersModule } from './users/users.module';
     BidRequestsModule,
     UploadsModule,
     NewCarPurchasesModule,
+    PointsModule,
+    MemberGradeRulesModule,
+    CouponsModule,
+    InquiriesModule,
+    FaqsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -28,7 +28,9 @@ import type { CancelBidRequestDto } from './dto/cancel-bid-request.dto';
 import type { SubmitBidOfferDto } from './dto/submit-bid-offer.dto';
 import type { SubmitBidPlanDto } from './dto/submit-bid-plan.dto';
 
-const BID_DEADLINE_DAYS = 1; // 입찰 마감 기한 정책 미정 상태의 임시 상수 — createdAt + N일
+// 입찰 마감 기한(createdAt + N일) — 값 목록이 아니라 숫자 하나라 공통코드/관리자 화면 대신 이 상수로 직접 관리한다
+// (admin-app에 전용 메뉴를 두지 않기로 확정, 2026-08-16). 정책이 바뀌면 이 값만 수정하면 됨.
+const BID_DEADLINE_DAYS = 1;
 
 type CarSnapshot = Pick<MyCar, 'carBrandCode' | 'carModelCode' | 'trimName'>;
 const CAR_SELECT = {
@@ -119,6 +121,44 @@ export interface BidPlanView {
   scheduledTime: string; // "HH:mm"
   reason: string;
   createdAt: string;
+}
+
+// 관리자 예약시공현황(AD-RSVC-02) 목록 행 — 일반입찰(GENERAL)·전문가추천(EXPERT) 공통 요약(타입별 상세는 상세 조회에서)
+export interface AdminBidRequestListItem {
+  requestNo: string;
+  reqType: string;
+  status: string;
+  customerName: string;
+  car: CarSnapshot | null;
+  itemInstCodes: string[]; // 요청 항목(관심 카테고리) instCode 목록, 중복 제거
+  desiredDate: string;
+  bidDeadline: string;
+  responseCount: number; // GENERAL은 응찰 수, EXPERT는 추천안 수
+  selectedShopName: string | null; // 낙찰(SELECTED) 업체명 — 아직 선정 전이면 null
+  createdAt: string;
+}
+
+// 관리자 예약시공현황 상세 — 요청 원본 + 타입에 맞는 응찰/추천안 전체(다른 타입 배열은 항상 빈 배열)
+export interface AdminBidRequestDetail {
+  requestNo: string;
+  reqType: string;
+  status: string;
+  customerName: string;
+  car: CarSnapshot | null;
+  items: BidRequestItem[];
+  positions: BidRequestPosition[];
+  radiusKm: number;
+  minRating: number | null;
+  budget: number | null;
+  note: string | null;
+  desiredDate: string;
+  bidDeadline: string;
+  cancelReason: string | null;
+  cancelReasonNote: string | null;
+  selectedOfferNo: string | null;
+  selectedPlanNo: string | null;
+  offers: BidOfferView[]; // GENERAL만 값 존재
+  plans: BidPlanView[]; // EXPERT만 값 존재
 }
 
 @Injectable()
@@ -809,5 +849,150 @@ export class BidRequestsService {
       return req;
     });
     return toView(updated);
+  }
+
+  // ── 관리자 예약시공현황(AD-RSVC-02) — 일반입찰(GENERAL)·전문가추천(EXPERT) 통합 모니터링 ──────────────────
+
+  async adminList(params: {
+    keyword?: string;
+    reqType?: string;
+    status?: string;
+  }): Promise<AdminBidRequestListItem[]> {
+    const requests = await this.prisma.bidRequest.findMany({
+      where: {
+        ...(params.reqType ? { reqType: params.reqType } : {}),
+        ...(params.status ? { status: params.status } : {}),
+        ...(params.keyword
+          ? {
+              OR: [
+                { requestNo: { contains: params.keyword } },
+                { member: { name: { contains: params.keyword } } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        member: { select: { name: true } },
+        myCar: { select: CAR_SELECT },
+        items: { select: { instCode: true } },
+        _count: { select: { offers: true, plans: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 낙찰 업체명은 selectedOfferNo/selectedPlanNo가 있는 건만 모아 한 번에 조회(N+1 방지)
+    const selectedOfferNos = requests
+      .map((r) => r.selectedOfferNo)
+      .filter((v): v is string => !!v);
+    const selectedPlanNos = requests
+      .map((r) => r.selectedPlanNo)
+      .filter((v): v is string => !!v);
+    const [offerShops, planShops] = await Promise.all([
+      this.prisma.bidOffer.findMany({
+        where: { offerNo: { in: selectedOfferNos } },
+        include: { shop: { select: { name: true } } },
+      }),
+      this.prisma.bidPlan.findMany({
+        where: { planNo: { in: selectedPlanNos } },
+        include: { shop: { select: { name: true } } },
+      }),
+    ]);
+    const offerShopNameByNo = new Map<string, string>(
+      offerShops.map((o) => [o.offerNo, o.shop.name]),
+    );
+    const planShopNameByNo = new Map<string, string>(
+      planShops.map((p) => [p.planNo, p.shop.name]),
+    );
+
+    return requests.map((r) => ({
+      requestNo: r.requestNo,
+      reqType: r.reqType,
+      status: r.status,
+      customerName: r.member.name,
+      car: r.myCar,
+      itemInstCodes: [...new Set(r.items.map((it) => it.instCode))],
+      desiredDate: formatDateOnly(r.desiredDate),
+      bidDeadline: r.bidDeadline.toISOString(),
+      responseCount: r.reqType === 'EXPERT' ? r._count.plans : r._count.offers,
+      selectedShopName: r.selectedOfferNo
+        ? (offerShopNameByNo.get(r.selectedOfferNo) ?? null)
+        : r.selectedPlanNo
+          ? (planShopNameByNo.get(r.selectedPlanNo) ?? null)
+          : null,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  async adminGetDetail(requestNo: string): Promise<AdminBidRequestDetail> {
+    const request = await this.prisma.bidRequest.findUnique({
+      where: { requestNo },
+      include: {
+        member: { select: { name: true } },
+        myCar: { select: CAR_SELECT },
+        items: true,
+        positions: true,
+      },
+    });
+    if (!request) {
+      throw new NotFoundException('요청을 찾을 수 없습니다.');
+    }
+
+    const [offers, plans] = await Promise.all([
+      request.reqType === 'GENERAL'
+        ? this.prisma.bidOffer.findMany({
+            where: { requestNo },
+            include: { items: true, shop: { select: { name: true } } },
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve([]),
+      request.reqType === 'EXPERT'
+        ? this.prisma.bidPlan.findMany({
+            where: { requestNo },
+            include: { items: true, positions: true, shop: { select: { name: true } } },
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    return {
+      requestNo: request.requestNo,
+      reqType: request.reqType,
+      status: request.status,
+      customerName: request.member.name,
+      car: request.myCar,
+      items: request.items,
+      positions: request.positions,
+      radiusKm: request.radiusKm,
+      minRating: request.minRating,
+      budget: request.budget,
+      note: request.note,
+      desiredDate: formatDateOnly(request.desiredDate),
+      bidDeadline: request.bidDeadline.toISOString(),
+      cancelReason: request.cancelReason,
+      cancelReasonNote: request.cancelReasonNote,
+      selectedOfferNo: request.selectedOfferNo,
+      selectedPlanNo: request.selectedPlanNo,
+      offers: offers.map((o) => ({
+        offerNo: o.offerNo,
+        shopCode: o.shopCode,
+        shopName: o.shop.name,
+        items: o.items,
+        scheduledDate: formatDateOnly(o.scheduledDate ?? request.desiredDate),
+        scheduledTime: formatTimeOnly(o.scheduledTime),
+        memo: o.memo,
+        createdAt: o.createdAt.toISOString(),
+      })),
+      plans: plans.map((p) => ({
+        planNo: p.planNo,
+        shopCode: p.shopCode,
+        shopName: p.shop.name,
+        items: p.items,
+        positions: p.positions,
+        scheduledDate: formatDateOnly(p.scheduledDate ?? request.desiredDate),
+        scheduledTime: formatTimeOnly(p.scheduledTime),
+        reason: p.reason,
+        createdAt: p.createdAt.toISOString(),
+      })),
+    };
   }
 }

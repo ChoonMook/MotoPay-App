@@ -1,5 +1,5 @@
 // 예약시공 선정·결제(CU-RSVC-14/15) 화면이 공유하는 금액 계산 헬퍼
-import { COUPON_DEFS, POINT_BALANCE, type Bidder, type CouponDef, type RecoPlan } from "./rsvTypes";
+import { COUPON_DEFS, type Bidder, type CouponDef, type RecoPlan } from "./rsvTypes";
 import { nfmt } from "./rsvFormat";
 
 export function bidTotal(items: Array<[string, number, string]>) {
@@ -50,6 +50,7 @@ export function computePayBreakdown(
   isExpert: boolean,
   couponSel: string | null,
   pointUse: number,
+  memberPointBalance: number,
   bidders: Bidder[] = [],
   recos: RecoPlan[] = [],
 ): PayBreakdown {
@@ -58,7 +59,7 @@ export function computePayBreakdown(
   const selCoupon = couponUsable.find((c) => c.id === couponSel) || null;
   const couponDiscount = couponDiscountFor(selCoupon, payTotal);
   const afterCoupon = payTotal - couponDiscount;
-  const pointMax = Math.min(POINT_BALANCE, afterCoupon);
+  const pointMax = Math.min(memberPointBalance, afterCoupon);
   const pointsUsed = Math.max(0, Math.min(pointUse, pointMax));
   const payRemain = afterCoupon - pointsUsed;
   return { payTotal, selCoupon, couponDiscount, pointMax, pointsUsed, payRemain };

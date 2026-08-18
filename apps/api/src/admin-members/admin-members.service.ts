@@ -2,6 +2,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { User, UserRole } from '@prisma/client';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { MemberGradeRulesService } from '../member-grade-rules/member-grade-rules.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface AdminMemberListItem {
@@ -11,6 +12,8 @@ export interface AdminMemberListItem {
   phone: string | null;
   email: string | null;
   carCount: number;
+  pointBalance: number;
+  grade: string | null; // -> MemberGradeRule.gradeCode(GOLD/SILVER/BRONZE), 최근 3개월 결제금액 합계 기준 실시간 계산(저장 안 함)
   withdrawnAt: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -51,10 +54,12 @@ export class AdminMembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly phoneCrypto: PhoneCryptoService,
+    private readonly memberGradeRulesService: MemberGradeRulesService,
   ) {}
 
   private toListItem(
     user: User & { _count: { cars: number } },
+    grade: string | null,
   ): AdminMemberListItem {
     return {
       id: user.id,
@@ -65,6 +70,8 @@ export class AdminMembersService {
         : null,
       email: user.email,
       carCount: user._count.cars,
+      pointBalance: user.pointBalance,
+      grade,
       withdrawnAt: user.withdrawnAt,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
@@ -77,7 +84,8 @@ export class AdminMembersService {
       include: { _count: { select: { cars: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    return users.map((u) => this.toListItem(u));
+    const gradeMap = await this.memberGradeRulesService.computeGrades(users.map((u) => u.id));
+    return users.map((u) => this.toListItem(u, gradeMap.get(u.id) ?? null));
   }
 
   async detail(id: string): Promise<AdminMemberDetail> {
@@ -96,9 +104,10 @@ export class AdminMembersService {
     if (!user || user.role !== CUSTOMER_ROLE) {
       throw new NotFoundException('회원을 찾을 수 없습니다.');
     }
+    const gradeMap = await this.memberGradeRulesService.computeGrades([user.id]);
 
     return {
-      ...this.toListItem(user),
+      ...this.toListItem(user, gradeMap.get(user.id) ?? null),
       cars: user.cars.map((c) => ({
         id: c.id,
         regType: c.regType,
@@ -137,6 +146,7 @@ export class AdminMembersService {
       data: { withdrawnAt: withdrawn ? new Date() : null },
       include: { _count: { select: { cars: true } } },
     });
-    return this.toListItem(updated);
+    const gradeMap = await this.memberGradeRulesService.computeGrades([updated.id]);
+    return this.toListItem(updated, gradeMap.get(updated.id) ?? null);
   }
 }

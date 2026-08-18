@@ -24,6 +24,14 @@ import CoListPage from "./pages/company/CoListPage";
 import CustMbrListPage from "./pages/member/CustMbrListPage";
 import DealerPtnMapPage from "./pages/ncp/DealerPtnMapPage";
 import NewCarPurchaseInputPage from "./pages/ncp/NewCarPurchaseInputPage";
+import CpnHistPage from "./pages/coupon/CpnHistPage";
+import GradeRuleSetPage from "./pages/point/GradeRuleSetPage";
+import PtHistPage from "./pages/point/PtHistPage";
+import NcpkStatPage from "./pages/rsv/NcpkStatPage";
+import RsvStatPage from "./pages/rsv/RsvStatPage";
+import InquiryMgmtPage from "./pages/cs/InquiryMgmtPage";
+import FaqMgmtPage from "./pages/cs/FaqMgmtPage";
+import ReviewMgmtPage from "./pages/review/ReviewMgmtPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
 import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
 import UserAcctMgmtPage from "./pages/system/UserAcctMgmtPage";
@@ -45,6 +53,14 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/catalog/pkg-comp-mgmt") return <PkgCompMgmtPage />;
   if (path === "/ncp/dealer-ptn-map") return <DealerPtnMapPage />;
   if (path === "/ncp/purchase") return <NewCarPurchaseInputPage />;
+  if (path === "/rsv/rsv-stat") return <RsvStatPage />;
+  if (path === "/rsv/ncpk-stat") return <NcpkStatPage />;
+  if (path === "/point/pt-hist") return <PtHistPage />;
+  if (path === "/point/mbr-grade-rule-cfg") return <GradeRuleSetPage />;
+  if (path === "/coupon/cpn-hist") return <CpnHistPage />;
+  if (path === "/cs/inquiry-mgmt") return <InquiryMgmtPage />;
+  if (path === "/cs/faq-mgmt") return <FaqMgmtPage />;
+  if (path === "/review/review-mgmt") return <ReviewMgmtPage />;
   return <PlaceholderPage path={path} />;
 }
 

@@ -4,7 +4,7 @@ import BottomSheet from "../../components/ui/BottomSheet";
 import shopThumb from "../../assets/images/shop.png";
 import RsvHeader from "./RsvHeader";
 import { CloseIcon, CouponIcon, InfoIcon } from "./rsvIcons";
-import { COUPON_DEFS, POINT_BALANCE, type Bidder, type PayMethodKey, type RecoPlan } from "./rsvTypes";
+import { COUPON_DEFS, type Bidder, type PayMethodKey, type RecoPlan } from "./rsvTypes";
 import { nfmt, parseDigits } from "./rsvFormat";
 import { selectedEntry, computePayBreakdown, couponBadge } from "./rsvCalc";
 
@@ -15,6 +15,7 @@ interface CoPlanPickPayScreenProps {
   recos: RecoPlan[];
   payMethod: PayMethodKey;
   pointUse: number;
+  memberPointBalance: number;
   couponSel: string | null;
   couponSheetOpen: boolean;
   onPointChange: (n: number) => void;
@@ -35,6 +36,7 @@ export default function CoPlanPickPayScreen({
   recos,
   payMethod,
   pointUse,
+  memberPointBalance,
   couponSel,
   couponSheetOpen,
   onPointChange,
@@ -54,6 +56,7 @@ export default function CoPlanPickPayScreen({
     isExpert,
     couponSel,
     pointUse,
+    memberPointBalance,
     bidders,
     recos,
   );
@@ -99,7 +102,7 @@ export default function CoPlanPickPayScreen({
               </span>
               <div>
                 <div className="text-[13.5px] font-bold text-gray-900">포인트 사용</div>
-                <div className="mt-px text-[11.5px] text-gray-500">{nfmt(POINT_BALANCE)}P 보유</div>
+                <div className="mt-px text-[11.5px] text-gray-500">{nfmt(memberPointBalance)}P 보유</div>
               </div>
             </div>
             <span onClick={() => onPointChange(pointMax)} className="cursor-pointer rounded-lg bg-brand-subtle px-3 py-1.5 text-xs font-bold text-brand">

@@ -11,7 +11,10 @@ async function handle<T>(response: Response): Promise<T> {
     const message = Array.isArray(body?.message) ? body.message[0] : body?.message;
     throw new Error(message || "요청을 처리하지 못했습니다.");
   }
-  return response.json();
+  // void를 반환하는 엔드포인트(예: POST /partner-auth/me/push-token)는 본문이 비어있어 response.json()이
+  // "Unexpected end of JSON input"으로 실패함(customer-app에서 실제로 겪은 버그) — 본문이 있을 때만 파싱
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 async function rawFetch(path: string, init: RequestInit): Promise<Response> {

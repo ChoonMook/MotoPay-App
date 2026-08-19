@@ -42,6 +42,7 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'INQUIRY_CATEGORY', name: '1:1문의 유형' },
   { code: 'INQUIRY_STATUS', name: '1:1문의 상태' },
   { code: 'FAQ_CATEGORY', name: 'FAQ 카테고리' },
+  { code: 'NOTI_TYPE', name: '알림함 알림 유형' },
 ];
 
 interface DetailRow {
@@ -280,6 +281,11 @@ const DETAILS: DetailRow[] = [
   { code: 'FAQ_CATEGORY', detailCode: 'RESV', detailName: '예약시공' },
   { code: 'FAQ_CATEGORY', detailCode: 'SHOP', detailName: '쇼핑몰' },
   { code: 'FAQ_CATEGORY', detailCode: 'ACCOUNT', detailName: '계정' },
+
+  // NOTI_TYPE — 인앱 알림함(CU-MYPG-12) 알림 유형, PushNotificationService.sendToOwner() 호출 시 지정
+  { code: 'NOTI_TYPE', detailCode: 'RSV_CONFIRMED', detailName: '예약 확정' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_COMPLETED', detailName: '시공 완료' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_NEW', detailName: '새 예약 접수(파트너)' },
 ];
 
 async function main() {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "460356592264",
+    "project_id": "motopayapp",
+    "storage_bucket": "motopayapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:460356592264:android:e9bfc83c6c20fc2999b53d",
+        "android_client_info": {
+          "package_name": "com.motopay.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZ2y7zCXkwNnPU41N__gsXvwr7iTc297s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

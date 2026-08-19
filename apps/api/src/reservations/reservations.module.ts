@@ -3,13 +3,14 @@ import { Module } from '@nestjs/common';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
 import { PointsModule } from '../points/points.module';
 import { ProductsModule } from '../products/products.module';
+import { PushModule } from '../push/push.module';
 import { AdminReservationsController } from './admin-reservations.controller';
 import { PartnerReservationsController } from './partner-reservations.controller';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 
 @Module({
-  imports: [ProductsModule, PointsModule],
+  imports: [ProductsModule, PointsModule, PushModule],
   controllers: [
     ReservationsController,
     PartnerReservationsController,

@@ -13,6 +13,7 @@ import { listMyBidRequests } from "../../api/bidRequests";
 import { getBidOffers } from "../../api/bidOffers";
 import { getBidPlans } from "../../api/bidPlans";
 import { getMyPointsSummary } from "../../api/points";
+import { getUnreadNotificationCount } from "../../api/notifications";
 import { API_BASE_URL } from "../../api/config";
 import { INST_CODE_LABELS } from "../rsv/rsvTypes";
 import type { ReqStatusFilter } from "../rsv/BookingScreen";
@@ -114,6 +115,7 @@ interface HomeScreenProps {
   onOpenCouponBox: () => void;
   onOpenOrderHist: () => void;
   onOpenCs: () => void;
+  onOpenNotiInbox: () => void;
 }
 
 export default function HomeScreen({
@@ -128,6 +130,7 @@ export default function HomeScreen({
   onOpenCouponBox,
   onOpenOrderHist,
   onOpenCs,
+  onOpenNotiInbox,
 }: HomeScreenProps) {
   const { toast, showToast } = useToast();
 
@@ -136,6 +139,7 @@ export default function HomeScreen({
   const [hasEligiblePackage, setHasEligiblePackage] = useState(false);
   const [ncpkBooking, setNcpkBooking] = useState<NcpkBooking | null>(null);
   const [pointBalance, setPointBalance] = useState(0);
+  const [unreadNotiCount, setUnreadNotiCount] = useState(0);
 
   // CU-HOME-01 견적 도착·예약시공 진행현황 — 예약시공(입찰) 요청·응찰·예약 데이터로 조합
   const [bidQuote, setBidQuote] = useState<BidQuoteCard | null>(null);
@@ -256,6 +260,9 @@ export default function HomeScreen({
     getMyPointsSummary()
       .then((s) => setPointBalance(s.balance))
       .catch(() => {}); // 상단바 보조 정보라 실패해도 토스트 없이 0으로 유지
+    getUnreadNotificationCount()
+      .then(setUnreadNotiCount)
+      .catch(() => {});
   }, []);
 
   return (
@@ -275,15 +282,14 @@ export default function HomeScreen({
           </span>
           <span className="text-[12.5px] font-bold text-brand tabular-nums">{nfmt(pointBalance)}</span>
         </span>
-        <span
-          onClick={() => showToast("알림함으로 이동해요")}
-          className="relative inline-flex cursor-pointer text-gray-700"
-        >
+        <span onClick={onOpenNotiInbox} className="relative inline-flex cursor-pointer text-gray-700">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
-          <span className="absolute top-[-1px] right-0 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-status-danger" />
+          {unreadNotiCount > 0 && (
+            <span className="absolute top-[-1px] right-0 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-status-danger" />
+          )}
         </span>
       </div>
 

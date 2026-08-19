@@ -5,33 +5,60 @@ import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
 import { clearTokens } from "../../api/tokenStorage";
 import { getMyShop, type MyShop } from "../../api/shops";
+import { listMyNotifications, markNotificationRead, type NotificationApi } from "../../api/notifications";
+import { isNativeBridgeAvailable, requestPushToken } from "../../native/bridge";
+import { unregisterPushToken } from "../../api/pushToken";
 import BizMainScreen from "./BizMainScreen";
 import BizBasicInfoScreen from "./BizBasicInfoScreen";
 import BizHolidayScreen from "./BizHolidayScreen";
 import BizAvailTimeScreen from "./BizAvailTimeScreen";
 import BizRsvStatScreen from "./BizRsvStatScreen";
 import BizPwdChangeScreen from "./BizPwdChangeScreen";
+import NotiInboxScreen from "./NotiInboxScreen";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 
-type Screen = "main" | "basicInfo" | "holiday" | "availtime" | "rsvstat" | "pwdChange";
+type Screen = "main" | "basicInfo" | "holiday" | "availtime" | "rsvstat" | "pwdChange" | "notiInbox";
 
 interface BizFlowProps {
   onExit: () => void;
   onLogout: () => void;
   onOpenRsvc: () => void;
   onOpenStl: () => void;
+  initialScreen?: Screen;
 }
 
-export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl }: BizFlowProps) {
-  const [screen, setScreen] = useState<Screen>("main");
+export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl, initialScreen = "main" }: BizFlowProps) {
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const [shop, setShop] = useState<MyShop | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationApi[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
     getMyShop()
       .then(setShop)
       .catch((err) => showToast(err instanceof Error ? err.message : "업체 정보를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 알림함 진입할 때마다 재조회 — 이전 진입 때 목록이 그대로 남아있지 않도록
+  const loadNotifications = () => {
+    setNotificationsLoading(true);
+    listMyNotifications()
+      .then(setNotifications)
+      .catch((err) => showToast(err instanceof Error ? err.message : "알림을 불러오지 못했어요", "danger"))
+      .finally(() => setNotificationsLoading(false));
+  };
+
+  const goNotiInbox = () => {
+    setScreen("notiInbox");
+    loadNotifications();
+  };
+
+  // 홈 알림 아이콘에서 initialScreen="notiInbox"로 곧장 진입한 경우 마운트 시 1회 조회
+  useEffect(() => {
+    if (initialScreen === "notiInbox") loadNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -57,7 +84,20 @@ export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl }: Biz
           onOpenRsvc={onOpenRsvc}
           onOpenStl={onOpenStl}
           onOpenLogoutConfirm={() => setShowLogoutConfirm(true)}
+          onOpenNotiInbox={goNotiInbox}
           onPlaceholder={(label) => showToast(`${label}(으)로 이동해요`)}
+        />
+      )}
+
+      {screen === "notiInbox" && (
+        <NotiInboxScreen
+          onBack={() => setScreen("main")}
+          notifications={notifications}
+          loading={notificationsLoading}
+          onMarkRead={(id) => {
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+            markNotificationRead(id).catch(() => {});
+          }}
         />
       )}
 
@@ -113,7 +153,16 @@ export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl }: Biz
       {showLogoutConfirm && (
         <LogoutConfirmModal
           onCancel={() => setShowLogoutConfirm(false)}
-          onConfirm={() => {
+          onConfirm={async () => {
+            // 토큰을 지우기 전에(그래야 인증된 상태로 해제 요청을 보낼 수 있음) 먼저 이 기기의 푸시 토큰을 해제
+            if (isNativeBridgeAvailable()) {
+              try {
+                const { expoPushToken } = await requestPushToken();
+                await unregisterPushToken(expoPushToken);
+              } catch {
+                // 무시 — 로그아웃 자체는 계속 진행
+              }
+            }
             clearTokens();
             onLogout();
           }}

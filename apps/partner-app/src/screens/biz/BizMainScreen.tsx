@@ -36,6 +36,7 @@ interface BizMainScreenProps {
   onOpenRsvc: () => void;
   onOpenStl: () => void;
   onOpenLogoutConfirm: () => void;
+  onOpenNotiInbox: () => void;
   onPlaceholder: (label: string) => void;
 }
 
@@ -50,6 +51,7 @@ export default function BizMainScreen({
   onOpenRsvc,
   onOpenStl,
   onOpenLogoutConfirm,
+  onOpenNotiInbox,
   onPlaceholder,
 }: BizMainScreenProps) {
   const mainPhoto = shop?.photos.find((p) => p.photoType === "MAIN") ?? null;
@@ -117,7 +119,7 @@ export default function BizMainScreen({
             {/* 부가 메뉴 */}
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div
-                onClick={() => onPlaceholder("알림함")}
+                onClick={onOpenNotiInbox}
                 className="flex items-center gap-3 border-b border-gray-100 px-4 py-[15px]"
               >
                 <span className="flex-none text-gray-700">

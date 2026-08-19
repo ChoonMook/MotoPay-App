@@ -2,7 +2,7 @@
   "expo": {
     "name": "모토페이",
     "slug": "motopay-customer",
-    "version": "0.0.0.1",
+    "version": "0.0.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,8 @@
     },
     "android": {
       "package": "com.motopay.customer",
-      "versionCode": 1,
+      "versionCode": 3,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,7 +21,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -41,7 +45,16 @@
           "cameraPermission": "사진 촬영을 위해 카메라 접근 권한이 필요해요."
         }
       ],
+      [
+        "expo-notifications"
+      ],
       "./plugins/withTelQueries.js"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2cb144fa-d014-4622-9407-b621e2ff0749"
+      }
+    },
+    "owner": "choonmook"
   }
 }

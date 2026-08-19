@@ -3,8 +3,11 @@
 export type BridgeRequest =
   | { type: "camera:capture"; requestId: string }
   | { type: "camera:pickFromLibrary"; requestId: string }
+  | { type: "push:getToken"; requestId: string }
   | { type: "nav:exit" };
 
 export type BridgeResponse =
   | { type: "camera:result"; requestId: string; ok: true; base64: string; mimeType: string }
-  | { type: "camera:result"; requestId: string; ok: false; error: string };
+  | { type: "camera:result"; requestId: string; ok: false; error: string }
+  | { type: "push:result"; requestId: string; ok: true; expoPushToken: string; platform: "ios" | "android" }
+  | { type: "push:result"; requestId: string; ok: false; error: string };

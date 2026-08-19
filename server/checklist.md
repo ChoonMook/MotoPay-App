@@ -441,22 +441,31 @@
 - [ ] PT-PROF-03~08(매장 휴무일 설정/예약 가능 시간 설정/예약 현황/알림함/비밀번호 변경/로그아웃 확인은 이번에 구현됨)은 아직 미구현 — `ShopHoliday`/`ShopTimeSlot`/`ShopDailySlot`/`Reservation` 테이블은 이미 스키마에 있어 다음 작업 시 바로 활용 가능
 - [ ] "주소" 필드는 원본 디자인 그대로 비활성(주소 검색 팝업 경유 전제)이라 실제로는 변경 불가 상태로 남음 — 실제 주소 검색(다음/카카오 우편번호 API 등) 연동 시 함께 풀어야 함
 
-## Phase 28: 푸시 알림 인프라 구축 (계획, 2026-08-13)
+## Phase 28: 푸시 알림 인프라 구축 (2026-08-13 계획 → 2026-08-19 구현)
 
-> **사용자 요청**: "푸쉬 기능 추가하려면 어떻게 해야 하는지 설명해줘" → 설명 후 AskUserQuestion으로 범위 확정
+> **사용자 요청**: "푸쉬 기능 추가하려면 어떻게 해야 하는지 설명해줘" → 설명 후 AskUserQuestion으로 범위 확정 → 2026-08-19 "이제 미뤄두었던 푸시 기능 작업 진행하자"로 재개
 > **범위**: customer-mobile 우선 구현, PushToken 모델은 partner-app 향후 확장을 고려해 설계. 첫 발송 트리거는 예약 확정/시공 완료 등 서비스 필수 알림부터(마케팅성 알림은 후순위)
 
-- [ ] Prisma `PushToken` 모델 추가 — `ownerType`('USER'|'PARTNER')+`ownerId`(FK 없는 다형 참조, User.id 또는 PartnerUser.id), `expoPushToken`(unique), `platform`, `updatedAt`만 사용(관리자 CRUD 화면이 없는 시스템 upsert 테이블이라 createdBy/updatedBy 제외) + 마이그레이션
-- [ ] `expo-server-sdk` 설치, `PushNotificationService` 신설(Expo Push API 발송 래퍼, 만료/무효 토큰 응답 처리 포함)
-- [ ] `POST /me/push-token`(로그인한 User 전용, 등록/upsert), 로그아웃 시 토큰 삭제
-- [ ] 예약 확정 트리거 연결 — `ReservationsService`에서 status가 `CONFIRMED`로 바뀌는 지점
-- [ ] 시공 완료 트리거 연결 — 시공업체가 완료 처리하는 지점
-- [ ] 두 트리거 모두 `agreedMarketingPush` 동의 여부와 무관하게 발송(서비스 필수 알림으로 분류)
+- [x] Prisma `PushToken` 모델 추가 — `ownerType`('USER'|'PARTNER')+`ownerId`(FK 없는 다형 참조), `expoPushToken`(unique), `platform`, `updatedAt`만 사용(관리자 CRUD 화면이 없는 시스템 upsert 테이블이라 createdBy/updatedBy 제외) + 마이그레이션. **드리프트 이슈**: 이 테이블은 TIMESTAMP 컬럼이 `updatedAt` 하나뿐인데도 MariaDB가 `DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`를 암묵 부여함(기존에 알려진 "두 번째 TIMESTAMP 컬럼" 케이스와 다른 변종) — `ALTER COLUMN DROP DEFAULT`로는 해소가 안 됐고, 대신 스키마에 `@default(now())`를 `@updatedAt` 옆에 명시해 Prisma의 목표 상태를 실제 MariaDB 동작과 일치시켜 drift 해소(`migrate diff` 빈 결과 확인). **단일/첫 TIMESTAMP 컬럼에서도 이 문제가 재현된다는 걸 이번에 처음 확인** — CLAUDE.md의 "두 번째 컬럼" 설명보다 범위가 넓음
+- [x] `expo-server-sdk`(7.1.0) 설치, `apps/api/src/push/push-notification.service.ts` 신설 — `registerToken`/`unregisterToken`(PushToken upsert/delete)과 `sendToOwner`(owner의 전체 토큰에 발송, 유효하지 않은 토큰 형식은 사전 필터링·삭제, 발송 후 `DeviceNotRegistered` 티켓 에러가 온 토큰도 삭제). 리시트 폴링(발송 수십 분 뒤 배달 확인)은 별도 스케줄러 인프라가 없어 이번 범위에서 제외 — 티켓 단계 에러만 처리
+- [x] `POST /me/push-token`(등록/upsert), `DELETE /me/push-token`(해제) — `apps/api/src/push/` 신규 모듈, `PushNotificationService`는 `exports`로 다른 모듈(ReservationsModule 등)이 재사용
+- [x] 예약 확정 트리거 연결 — `ReservationsService.create()` 성공 직후(신규 예약은 생성 시점에 status가 바로 CONFIRMED로 시작하는 구조라 별도 "확정 전환" 지점이 없음, 생성 성공이 곧 확정)
+- [x] 시공 완료 트리거 연결 — `ReservationsService.completeReservation()`(파트너가 완료 처리, progressStatus→DONE) 성공 직후
+- [x] 두 트리거 모두 `agreedMarketingPush` 동의 여부와 무관하게 발송(서비스 필수 알림), 발송 실패가 예약 생성/완료 처리 자체를 막지 않도록 `.catch(() => {})`로 격리
+- [x] customer-mobile: `expo-notifications` 설치, `app.json`에 플러그인 등록, `bridge/protocol.ts`에 `push:getToken` 요청/응답 추가(customer-app의 사본과 동기화), `nativeHandler.ts`에 권한요청+`getExpoPushTokenAsync` 구현, `App.tsx`에 포그라운드 알림 표시 핸들러 + Android 알림 채널 등록
+- [x] customer-app: `native/bridge.ts`에 `requestPushToken()` 추가, `api/pushToken.ts` 신규, `App.tsx`에서 로그인 상태가 확정될 때마다(`user?.id` 기준 — 신규 로그인·회원가입·세션복원 공통) 토큰 등록, 로그아웃 시 토큰을 먼저 해제한 뒤(순서 중요 — 인증 토큰을 지우기 전에 해제 API를 호출해야 함) `clearTokens()` 실행
+- [x] `POST`/`DELETE /me/push-token` 실 로그인으로 curl 검증(등록→재등록(upsert 확인)→해제→DB에서 실제 삭제 확인), 테스트 토큰 정리 완료
+
+- [x] **Android EAS 자격증명 설정 완료(2026-08-19, 사용자 진행)**: `eas login` → `eas init`(projectId `2cb144fa-d014-4622-9407-b621e2ff0749` 발급, `app.json`에 기록) → Firebase 프로젝트 생성 + Android 앱 등록(`com.motopay.customer`) + `google-services.json` 다운로드 → `apps/customer-mobile/google-services.json`에 배치, `app.json`의 `android.googleServicesFile`에 연결 → `npx expo prebuild -p android --clean` 재실행(구글 서비스 플러그인이 `android/build.gradle`/`android/app/build.gradle`에 자동 연결된 것 확인) → `apps/customer-mobile/eas.json` 신규 생성(이 프로젝트는 EAS 클라우드 빌드를 쓰지 않아 `eas credentials`가 참조할 최소 `production` 프로필만 포함) → `eas credentials` → Android → production → Google Service Account → FCM V1 서비스 계정 키 업로드 완료. 버전 `0.0.0.2`→`0.0.0.3`(versionCode 3)로 올려 릴리즈 APK 재빌드, 최종 병합 매니페스트에 `POST_NOTIFICATIONS` 권한과 Firebase 메시징 서비스 포함된 것 확인
+- [x] **실기기 종단 검증 완료(2026-08-19)** — 실 계정(leehj)으로 로그인 → `push_tokens`에 실제 Expo 토큰 등록 확인 → `expo.sendPushNotificationsAsync` + 리시트 조회로 실제 FCM 배달까지 확인, 기기에 알림 실제 수신 확인
+- [x] **`http.ts` 빈 응답 파싱 버그 발견·수정** — `apps/customer-app/src/api/http.ts`의 공통 `handle()`이 무조건 `response.json()`을 호출해서, `void`를 반환하는 엔드포인트(`POST/DELETE /me/push-token` 등 본문 없는 응답)에서 `"Unexpected end of JSON input"` 에러가 발생했음(서버 처리 자체는 성공, 클라이언트 파싱만 실패). 응답 본문이 비어있으면 `undefined`를 반환하도록 수정 — 앞으로 void 응답 엔드포인트를 추가해도 안전
+- [ ] iOS APNs 자격증명은 아직 진행 안 함(Apple Developer Program 유료 멤버십 필요, 사용자 결정 대기)
 
 ### 미해결/후속
 - [ ] `ownerType='PARTNER'` 경로(partner-app 발급/등록)는 이번 범위 밖 — 테이블 구조만 재사용 가능하게 설계해둠
 - [ ] 발송 트리거를 예약 확정/시공 완료 2건 이상으로 넓힐지(입찰 마감 임박 등)는 아직 기획 확정 전
-- [ ] `eas.json` 미설정 — Android FCM/iOS APNs 자격증명 등록은 에이전트가 대신 할 수 없어 사용자 진행 필요
+- [ ] iOS 자격증명(APNs) 미설정 — Apple Developer Program 필요, 진행 여부 사용자 결정 대기
+- [ ] 리시트(receipt) 폴링 미구현 — 티켓 단계 `DeviceNotRegistered`만 처리, 배달 이후 발생하는 에러(발송 성공했지만 결국 실패)는 아직 못 잡음. 스케줄러 인프라가 생기면 후속 작업
 
 ## Phase 29: 포인트 충전/사용 연계 · 회원 상세 화면 재구성 · 보유 쿠폰함 연계 (2026-08-17~08-18)
 
@@ -520,3 +529,66 @@
 - [ ] 등급 산정 엔진 부재(Phase 29와 동일 항목)
 - [ ] 이번에 admin-app 전체 이력이 처음으로 `admin/checklist.md`·`admin/context-notes.md`로 정리됨 — 이후 admin-app 작업은 계속 그쪽에 기록할 것(더 이상 서버 체크리스트에 admin-app 화면 단위 항목을 섞지 않는다)
 - [ ] 마케팅성 푸시(프로모션 등)는 `agreedMarketingPush` 체크 분기가 필요하나 이번 범위 밖
+
+## Phase 31: 인앱 알림함(CU-MYPG-12) + 홈 알림 아이콘 실연동 (2026-08-19)
+
+> **사용자 요청**: 푸시 알림 실기기 검증 완료 직후 "메인의 알림 아이콘 및 내 정보의 알림함 기능도 업데이트 해야 하지 않나?" — 확인해보니 홈 알림 아이콘은 토스트만 뜨는 목업, 알림함(NotiInboxScreen)은 `NOTI_DEFS` 하드코딩 목업이었고 백엔드에 알림 이력 테이블 자체가 없었음. AskUserQuestion으로 범위 확인 → **"전체 연동(추천)"** 선택 — Notification 테이블 신설 + 기존 푸시 트리거 2곳에서 함께 기록 + 프론트 양쪽(홈 아이콘, 알림함) 실연동.
+
+- [x] Prisma `Notification` 모델 신규 — `PushToken`과 동일한 `ownerType`/`ownerId` 다형 참조 패턴, `type`(CommonCodeDetail `NOTI_TYPE` 참조, 클라이언트 아이콘 매핑용)/`title`/`body`/`isRead`/`createdAt`만 사용(시스템 자동 생성 로그성 테이블, 읽음 처리도 본인 셀프서비스라 createdBy/updatedBy 제외) + 마이그레이션(drift 없음 확인)
+- [x] `seed-common-codes.ts`에 `NOTI_TYPE` 그룹 추가(`RSV_CONFIRMED`/`RSV_COMPLETED`, sortOrder 별도 스크립트로 설정)
+- [x] `apps/api/src/notifications/` 신규 모듈 — `GET /me/notifications`(목록), `GET /me/notifications/unread-count`(홈 뱃지용), `PATCH /me/notifications/:id/read`(읽음 처리)
+- [x] **`PushNotificationService.sendToOwner()`를 알림함과의 단일 진입점으로 확장** — `NotificationsModule`을 `PushModule`이 import해 주입, 발송 시마다(푸시 토큰 유무와 무관하게) 먼저 `Notification` 행을 기록한 뒤 토큰이 있으면 실제 푸시까지 발송. 웹만 쓰는 회원(푸시 토큰 없음)도 알림함에는 항상 남도록 보장
+- [x] 기존 예약 확정/시공완료 트리거 2곳에 `type: 'RSV_CONFIRMED'`/`'RSV_COMPLETED'` 추가(호출부 변경은 필드 하나 추가뿐, 트리거 로직 자체는 무변경)
+
+### 프론트(`apps/customer-app`)
+- [x] `api/notifications.ts` 신규
+- [x] `NotiInboxScreen.tsx` — `NOTI_DEFS` 목업 제거, `notifications` prop으로 실 데이터 표시. 기존에 읽음 상태를 별도 `notiRead` 섀도 맵으로 관리하던 걸 걷어내고 `NotiItem.isRead`(서버에서 내려주는 실제 값)로 통합 — 두 개의 진실 소스를 만들지 않기 위함
+- [x] `mypData.ts`에 `toNotiItem()`(서버 응답 → 화면 표시용 변환, 알림 유형→아이콘 매핑, ISO datetime→"N시간 전" 상대시간 포맷) 추가
+- [x] `MypFlow.tsx` — 알림함 화면 진입 시마다 재조회(`goNotis()`, Phase 30의 CsFlow 재조회 정책과 동일), 마운트 시에도 1차 조회(coupons/cars와 동일한 이 파일의 기존 컨벤션)
+- [x] `HomeScreen.tsx` 알림 아이콘 — 토스트 플레이스홀더 제거, 실제 알림함 이동(`onOpenNotiInbox`)으로 연결. 항상 떠 있던 안읽음 점(뱃지)을 실제 `getUnreadNotificationCount()` 결과가 0보다 클 때만 보이도록 수정(기존엔 무조건 하드코딩 표시)
+- [x] `App.tsx`에 `onOpenNotiInbox={() => openMyPageAt("notis")}` 연결
+
+### 검증
+- [x] `GET/PATCH /me/notifications*` curl로 목록·안읽음개수·읽음처리 전 구간 확인(직접 삽입한 테스트 알림으로)
+- [x] **실제 트리거 종단 검증**: `POST /reservations`로 실제 예약 생성 → 별도 조작 없이 `notifications`에 `RSV_CONFIRMED` 행이 자동 생성되고 안읽음 개수에 반영되는 것 확인(이 계정은 푸시 토큰이 없는 상태였음에도 정상 기록 — "토큰 없어도 알림함엔 항상 남는다" 요구사항 실증)
+- [x] admin-app 영향 없음(고객 전용 기능), customer-app `tsc -b --force` 클린, 프로덕션 빌드 성공
+- [x] 테스트로 만든 예약·알림 데이터 전부 정리
+
+### 미해결/후속
+- [ ] 알림 설정 화면(NotiCfgScreen, CU-MYPG-07)의 토글(전체/이벤트/예약/주문/야간 등)이 실제로 발송을 걸러내는 로직과 아직 연결 안 됨 — 지금은 토글 상태와 무관하게 무조건 발송·기록됨
+- [ ] 알림 유형이 예약 확정/시공완료 2종뿐 — 향후 트리거가 늘어나면(쿠폰 지급, 배송 등) `NOTI_TYPE` 코드와 `notiTypeIcon()` 매핑도 함께 늘려야 함
+- [ ] MyPageScreen의 "알림함" 메뉴 행 자체에는 안읽음 뱃지를 추가하지 않음(홈 아이콘에만 적용) — 필요하면 후속으로 추가 가능
+
+## Phase 32: partner-app 푸시 알림·알림함 반영 (2026-08-19)
+
+> **사용자 요청**: "partner-app 도 푸시알람 관련 내용 반영해줘" — Phase 28에서 `PushToken`/`Notification` 모두 `ownerType: 'USER'|'PARTNER'` 다형 참조로 처음부터 파트너 확장을 염두에 두고 설계해뒀던 부분을 실제로 채움. partner-app 자체 코드에도 이미 이 의존성을 명시한 흔적이 있었음(`HomeScreen.tsx` 헤더 주석: "확인 대기 알림 배너는 아직 연계할 백엔드(Notification 모델)가 없어 mock 유지", `BizMainScreen.tsx`의 "알림함" 메뉴가 `onPlaceholder`로만 연결돼 있었음).
+
+### 백엔드
+- [x] `NotificationsService`의 `listMine`/`unreadCount`/`markRead`를 `ownerType` 파라미터를 받도록 일반화(기존엔 'USER' 하드코딩) — 고객·파트너 양쪽이 같은 서비스를 공유
+- [x] `PartnerNotificationsController`(`/partner-auth/me/notifications*`), `PartnerPushTokenController`(`/partner-auth/me/push-token`) 신규 — `JwtPartnerAuthGuard`+`CurrentPartnerUser` 사용, 고객측과 동일 서비스 재사용
+- [x] `PushNotificationService.sendToShopPartners(shopCode, message)` 신규 — 해당 업체 소속 `PartnerUser`(useYn=true) 전원에게 팬아웃 발송(한 업체에 여러 계정이 있을 수 있음 — 대표자/정비사/경리)
+- [x] `ReservationsService.create()`에 파트너측 트리거 추가 — 고객에게 "예약이 확정됐어요" 보내는 지점 바로 옆에서 해당 업체 파트너들에게 "새 예약이 접수됐어요"(`RSV_NEW`)도 함께 발송
+- [x] `NOTI_TYPE`에 `RSV_NEW` 추가
+
+### 프론트(`apps/partner-app`)
+- [x] `native/bridge.ts`에 `requestPushToken()` 추가(customer-app과 동일 프로토콜, 같은 네이티브 셸 공유라 네이티브 쪽 변경 불필요)
+- [x] **`api/http.ts`의 동일한 빈 응답 파싱 버그를 선제적으로 발견·수정** — customer-app에서 실제로 겪었던 것과 동일한 코드(`response.json()` 무조건 호출)가 partner-app에도 그대로 있어서, 새 push-token 엔드포인트(void 응답)를 실제로 겪기 전에 미리 고침
+- [x] `api/pushToken.ts`, `api/notifications.ts` 신규
+- [x] `BizFlow.tsx`에 `notiInbox` 화면 신규 추가, `NotiInboxScreen.tsx`(파트너용, 신규 작성 — 알림 유형이 RSV_NEW 하나뿐이라 customer-app처럼 유형별 아이콘 매핑 없이 벨 아이콘 하나로 단순화) 연결, "알림함" 부가메뉴를 placeholder에서 실제 연결로 전환
+- [x] `BizFlow`에 `initialScreen` prop 추가(NcpkFlow/RsvcFlow의 기존 `initialScreen`/`initialReservationNo` 패턴과 동일) — 홈 알림 아이콘에서 바로 알림함으로 진입 가능하게
+- [x] `HomeScreen.tsx` 알림 아이콘 — 토스트 플레이스홀더 제거, 실제 알림함 이동. 무조건 표시되던 안읽음 점을 실제 `getUnreadNotificationCount()` 결과 기반으로 변경
+- [x] `App.tsx` — 로그인 상태 확정 시 푸시 토큰 자동 등록(customer-app과 동일 패턴), `BizFlow`의 로그아웃 확인 모달에서 `clearTokens()` 전에 먼저 푸시 토큰 해제(파트너는 로그아웃이 App.tsx가 아니라 BizFlow 내부 모달에서 처리되는 구조라 그쪽에 반영)
+
+### 의도적으로 손대지 않은 부분
+- **`HomeScreen.tsx`의 "확인 대기 알림 배너"**("신규 예약 2건, 마감임박 입찰 1건이 확인을 기다리고 있어요")는 건드리지 않음 — 이건 `Notification` 로그가 아니라 미확인 예약·마감임박 입찰 건수를 실시간 집계하는 별도 기능이라 이번 "알림함" 스코프와 다름. 여전히 하드코딩 텍스트+토스트 상태.
+
+### 검증
+- [x] `POST/GET/PATCH /partner-auth/me/push-token`·`/partner-auth/me/notifications*` curl 전 구간 확인
+- [x] **실제 트리거 종단 검증**: 고객 계정으로 `0000000001`(shopowner01 소속 업체) 예약 생성 → 파트너 알림함에 `RSV_NEW` 알림 자동 생성 확인
+- [x] 유효하지 않은 형식의 테스트 푸시 토큰이 발송 시도 중 자동으로 정리되는(무효 토큰 프루닝) 것도 부수적으로 확인
+- [x] admin-app 영향 없음, `tsc -b --force`/`vite build` 양쪽 클린
+- [x] 테스트 데이터 전부 정리
+
+### 미해결/후속
+- [ ] "확인 대기 알림 배너"(신규 예약·마감임박 입찰 실시간 집계)는 여전히 mock — 별도 작업 필요
+- [ ] iOS APNs 미설정(Phase 28과 동일 항목, customer-mobile 공유 네이티브 셸이라 partner-app도 동일하게 적용됨)

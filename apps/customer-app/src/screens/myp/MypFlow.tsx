@@ -9,6 +9,7 @@ import { changePassword, updateProfile, updateProfileImage } from "../../api/use
 import { createMyCar, deleteMyCar, listMyCars, setDefaultCar, updateMyCar, type MyCarApi } from "../../api/cars";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
 import { getMyCoupons } from "../../api/coupons";
+import { listMyNotifications, markNotificationRead } from "../../api/notifications";
 import MyPageScreen from "./MyPageScreen";
 import MyCarListScreen from "./MyCarListScreen";
 import CarRegScreen from "./mycarlis/CarRegScreen";
@@ -23,7 +24,7 @@ import LogoutConfirmScreen from "./LogoutConfirmScreen";
 import AcctWithdrawScreen from "./AcctWithdrawScreen";
 import SnsLinkManageScreen from "./SnsLinkManageScreen";
 import CpnBoxScreen from "./CpnBoxScreen";
-import { toUiCoupon, type CouponItem, type CouponStatus } from "./mypData";
+import { toUiCoupon, toNotiItem, type CouponItem, type CouponStatus, type NotiItem } from "./mypData";
 import type { Car, MypScreenId, MypSheetId } from "./mypTypes";
 
 type CodeNameMap = Record<string, string>;
@@ -81,7 +82,8 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
   const [carSaving, setCarSaving] = useState(false);
   const [defaultTargetId, setDefaultTargetId] = useState<string | null>(null);
 
-  const [notiRead, setNotiRead] = useState<Record<string, boolean>>({});
+  const [notifications, setNotifications] = useState<NotiItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [notiSettings, setNotiSettings] = useState<NotiSettings>({ all: true, event: true, resv: true, order: true, night: false });
 
   // user.profileImageUrl은 apps/api 기준 상대경로("/uploads/...")라 API_BASE_URL을 붙여야 브라우저에서 실제로 로드됨
@@ -108,6 +110,15 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
 
   const { toast, showToast } = useToast();
 
+  // 알림함(CU-MYPG-12) 진입할 때마다 재조회 — 이전 진입 때 목록이 그대로 남아있지 않도록(CsFlow와 동일한 정책)
+  const loadNotifications = () => {
+    setNotificationsLoading(true);
+    listMyNotifications()
+      .then((rows) => setNotifications(rows.map(toNotiItem)))
+      .catch((err) => showToast(err instanceof Error ? err.message : "알림을 불러오지 못했어요", "danger"))
+      .finally(() => setNotificationsLoading(false));
+  };
+
   useEffect(() => {
     listMyCars()
       .then(setCarsApi)
@@ -122,6 +133,7 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
       .then((list) => setCoupons(list.map(toUiCoupon)))
       .catch((err) => showToast(err instanceof Error ? err.message : "쿠폰 정보를 불러오지 못했어요", "danger"))
       .finally(() => setCouponsLoading(false));
+    loadNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -132,6 +144,11 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
   const goCars = () => {
     setScreen("cars");
     setSheet(null);
+  };
+  const goNotis = () => {
+    setScreen("notis");
+    setSheet(null);
+    loadNotifications();
   };
 
   const goInfoEdit = () => {
@@ -281,7 +298,7 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
           onOpenShopHist={() => setScreen("shophist")}
           onOpenCancelHist={() => setScreen("cancelhist")}
           onOpenCouponBox={() => setScreen("couponbox")}
-          onOpenNotis={() => setScreen("notis")}
+          onOpenNotis={goNotis}
           onOpenNotiSettings={() => setScreen("notisettings")}
           onOpenInfoEdit={goInfoEdit}
           onOpenSns={() => setScreen("sns")}
@@ -428,8 +445,12 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
         <NotiInboxScreen
           onBack={goMain}
           onOpenSettings={() => setScreen("notisettings")}
-          notiRead={notiRead}
-          onMarkRead={(id) => setNotiRead((prev) => ({ ...prev, [id]: true }))}
+          notifications={notifications}
+          loading={notificationsLoading}
+          onMarkRead={(id) => {
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+            markNotificationRead(Number(id)).catch(() => {});
+          }}
         />
       )}
 

@@ -961,3 +961,35 @@ model BidRequestPosition {
   @@id([requestNo, position])
   @@map("bid_request_positions")
 }
+
+// Expo 푸시 토큰 등록 — 로그인 계정 테이블이 User/PartnerUser/AdminAccount로 분리돼 있어 단일 FK 대신
+// ownerType+ownerId 다형 참조 사용(FK 없음). 클라이언트가 자동으로 upsert하는 시스템 테이블이라 관리자 CRUD
+// 화면이 없고 행위자 개념도 없어 createdBy/updatedBy 제외(매핑/로그성 테이블과 동일한 제외 사유)
+model PushToken {
+  id            Int      @id @default(autoincrement())
+  ownerType     String // 'USER' | 'PARTNER' -> User.id 또는 PartnerUser.id
+  ownerId       String
+  expoPushToken String   @unique
+  platform      String // 'ios' | 'android'
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  @@index([ownerType, ownerId])
+  @@map("push_tokens")
+}
+
+// 인앱 알림함(CU-MYPG-12) — PushNotificationService.sendToOwner() 호출 시점에 푸시와 함께 기록되는
+// 알림 이력. ownerType/ownerId는 PushToken과 동일한 다형 참조 패턴(FK 없음). 시스템이 자동 생성하는
+// 로그성 테이블이고 "읽음 처리"도 소유자 본인의 셀프서비스라 관리자 CRUD 개념이 없어 createdBy/updatedBy 제외
+model Notification {
+  id        Int      @id @default(autoincrement())
+  ownerType String // 'USER' | 'PARTNER' -> User.id 또는 PartnerUser.id
+  ownerId   String
+  type      String // -> CommonCodeDetail(code='NOTI_TYPE') 클라이언트 아이콘 매핑용
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  @@index([ownerType, ownerId])
+  @@map("notifications")
+}

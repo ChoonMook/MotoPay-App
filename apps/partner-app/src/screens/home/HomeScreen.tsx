@@ -16,6 +16,7 @@ import {
 import type { NcpkTab } from "../ncpk/ncpkData";
 import { mapBidJob, mapBidRequest } from "../rsvc/rsvcData";
 import type { BidTab } from "../rsvc/RsvcBidboxScreen";
+import { getUnreadNotificationCount } from "../../api/notifications";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon, AlertCircleIcon, PackageIcon, TagIcon } from "./homeIcons";
 
 interface StatItem {
@@ -62,11 +63,13 @@ interface HomeScreenProps {
   onOpenRsvc: (target?: { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" }) => void;
   onOpenStl: () => void;
   onOpenTodayJob: (reservation: TodayReservation) => void;
+  onOpenNotiInbox: () => void;
 }
 
-export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpenStl, onOpenTodayJob }: HomeScreenProps) {
+export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpenStl, onOpenTodayJob, onOpenNotiInbox }: HomeScreenProps) {
   const { toast, showToast } = useToast();
   const [partnerUser, setPartnerUser] = useState<PartnerUser | null>(null);
+  const [unreadNotiCount, setUnreadNotiCount] = useState(0);
   const [reservationTypes, setReservationTypes] = useState<CommonCodeDetailApi[]>([]);
   const [todayResv, setTodayResv] = useState<TodayReservation[]>([]);
   const [loadingToday, setLoadingToday] = useState(true);
@@ -79,6 +82,9 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
     getMe()
       .then(setPartnerUser)
       .catch((err) => showToast(err instanceof Error ? err.message : "계정 정보를 불러오지 못했어요", "danger"));
+    getUnreadNotificationCount()
+      .then(setUnreadNotiCount)
+      .catch(() => {});
     getCommonCodeDetails("RESERVATION_TYPE")
       .then(setReservationTypes)
       .catch(() => {});
@@ -144,12 +150,11 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
           파트너
         </span>
         <span className="flex-1" />
-        <span
-          onClick={() => showToast("알림함으로 이동해요")}
-          className="relative inline-flex cursor-pointer text-gray-700"
-        >
+        <span onClick={onOpenNotiInbox} className="relative inline-flex cursor-pointer text-gray-700">
           <BellIcon />
-          <span className="absolute top-[-1px] right-0 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-status-danger" />
+          {unreadNotiCount > 0 && (
+            <span className="absolute top-[-1px] right-0 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-status-danger" />
+          )}
         </span>
       </div>
 

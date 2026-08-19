@@ -37,3 +37,6 @@ apps/api/.env.*
 # android/ios build files
 android/
 ios/
+
+# firebase service account keys
+apps/customer-mobile/*firebase-adminsdk*.json

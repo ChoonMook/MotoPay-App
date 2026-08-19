@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import AppShell from "./components/AppShell";
 import { pushBackAction } from "./native/backHandler";
 import { clearTokens, getAccessToken, setOnSessionExpired } from "./api/tokenStorage";
+import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
+import { registerPushToken, unregisterPushToken } from "./api/pushToken";
 import AuthFlow from "./screens/auth/AuthFlow";
 import { getMe, type LoginUser } from "./api/auth";
 import HomeScreen from "./screens/home/HomeScreen";
@@ -50,6 +52,16 @@ function App() {
       .finally(() => setBooting(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 로그인 상태가 확정될 때마다(신규 로그인·회원가입·세션 복원 공통) 이 기기의 푸시 토큰을 등록 —
+  // 네이티브 앱(웹뷰 셸)이 아니거나 아직 푸시 설정 전이면 조용히 건너뜀
+  useEffect(() => {
+    if (!user || !isNativeBridgeAvailable()) return;
+    requestPushToken()
+      .then(({ expoPushToken, platform }) => registerPushToken(expoPushToken, platform))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const openMyPageAt = (screen: MypScreenId) => {
     setMypEntryScreen(screen);
@@ -107,6 +119,7 @@ function App() {
             onOpenCouponBox={() => openMyPageAt("couponbox")}
             onOpenOrderHist={() => openMyPageAt("shophist")}
             onOpenCs={() => setView("cs")}
+            onOpenNotiInbox={() => openMyPageAt("notis")}
           />
         )}
         {view === "ncpk" && (
@@ -145,7 +158,16 @@ function App() {
             onOpenRsv={openRsv}
             onOpenCs={() => setView("cs")}
             onUpdateUser={setUser}
-            onLogout={() => {
+            onLogout={async () => {
+              // 토큰을 지우기 전에(그래야 인증된 상태로 해제 요청을 보낼 수 있음) 먼저 이 기기의 푸시 토큰을 해제
+              if (isNativeBridgeAvailable()) {
+                try {
+                  const { expoPushToken } = await requestPushToken();
+                  await unregisterPushToken(expoPushToken);
+                } catch {
+                  // 무시 — 로그아웃 자체는 계속 진행
+                }
+              }
               clearTokens();
               setUser(null);
               setView("home");

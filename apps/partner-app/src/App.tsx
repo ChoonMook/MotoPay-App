@@ -13,6 +13,8 @@ import { setOnSessionExpired, getAccessToken, clearTokens } from "./api/tokenSto
 import { getMe } from "./api/partnerAuth";
 import type { TodayReservation } from "./api/reservations";
 import { pushBackAction } from "./native/backHandler";
+import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
+import { registerPushToken } from "./api/pushToken";
 
 type View = "home" | "biz" | "ncpk" | "rsvc" | "stl";
 type RsvcTarget = { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" } | undefined;
@@ -22,6 +24,7 @@ function App() {
   // 자동로그인 체크 후 저장된 토큰이 있으면 세션 복원을 시도하는 동안만 true — 토큰이 없으면 처음부터 false라 로그인 화면이 바로 보임
   const [booting, setBooting] = useState(() => !!getAccessToken());
   const [view, setView] = useState<View>("home");
+  const [bizEntryScreen, setBizEntryScreen] = useState<"main" | "notiInbox">("main");
   const [ncpkTab, setNcpkTab] = useState<NcpkTab>("wait");
   const [rsvcTarget, setRsvcTarget] = useState<RsvcTarget>(undefined);
   // 홈 "오늘의 시공 일정" 카드에서 특정 예약을 바로 열 때만 값이 설정됨 — 그 외 진입 경로(바로가기·하단내비 등)는 항상 초기화
@@ -39,6 +42,10 @@ function App() {
     setView("rsvc");
   };
   const openStl = () => setView("stl");
+  const openBizAt = (screen: "main" | "notiInbox") => {
+    setBizEntryScreen(screen);
+    setView("biz");
+  };
 
   // 홈 "오늘의 시공 일정" 카드 탭 — 예약유형(PKG/BID)에 따라 해당 시공관리 화면으로 이동해 그 건을 바로 연다
   const openTodayJob = (r: TodayReservation) => {
@@ -51,6 +58,15 @@ function App() {
       setView("rsvc");
     }
   };
+
+  // 로그인 상태가 확정될 때마다(로그인·세션 복원 공통) 이 기기의 푸시 토큰을 등록 —
+  // 네이티브 앱(웹뷰 셸)이 아니거나 아직 푸시 설정 전이면 조용히 건너뜀
+  useEffect(() => {
+    if (!loggedIn || !isNativeBridgeAvailable()) return;
+    requestPushToken()
+      .then(({ expoPushToken, platform }) => registerPushToken(expoPushToken, platform))
+      .catch(() => {});
+  }, [loggedIn]);
 
   // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
   useEffect(() => {
@@ -98,12 +114,18 @@ function App() {
             onOpenRsvc={openRsvc}
             onOpenStl={openStl}
             onOpenTodayJob={openTodayJob}
+            onOpenNotiInbox={() => openBizAt("notiInbox")}
           />
         )}
         {view === "biz" && (
           <BizFlow
-            onExit={() => setView("home")}
+            initialScreen={bizEntryScreen}
+            onExit={() => {
+              setBizEntryScreen("main");
+              setView("home");
+            }}
             onLogout={() => {
+              setBizEntryScreen("main");
               setLoggedIn(false);
               setView("home");
             }}

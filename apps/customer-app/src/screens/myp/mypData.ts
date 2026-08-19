@@ -52,14 +52,43 @@ export interface NotiItem {
   title: string;
   body: string;
   time: string;
+  isRead: boolean;
 }
 
-export const NOTI_DEFS: NotiItem[] = [
-  { id: "a1", icon: "clock", title: "시공 예약이 확정됐어요", body: "강남 카프로 디테일링 · 07.15 시공 예정", time: "2시간 전" },
-  { id: "a2", icon: "coupon", title: "신규 쿠폰이 도착했어요", body: "전 모듈 5,000원 할인 쿠폰이 지급됐어요", time: "어제" },
-  { id: "a3", icon: "truck", title: "주문하신 상품이 배송을 시작했어요", body: "ZIC M7 5W30 엔진오일 외 1건", time: "2일 전" },
-  { id: "a4", icon: "caralert", title: "차량 정보를 확인해주세요", body: "대표차량 번호판 정보가 오래됐어요", time: "3일 전" },
-];
+/** 알림 유형(NOTI_TYPE 코드) -> 알림함 아이콘 매핑, 모르는 유형은 clock으로 대체 */
+function notiTypeIcon(type: string): NotiIconKey {
+  switch (type) {
+    case "RSV_CONFIRMED":
+    case "RSV_COMPLETED":
+      return "clock";
+    default:
+      return "clock";
+  }
+}
+
+/** ISO datetime -> "2시간 전"/"어제"/"3일 전" 같은 상대 시간 표기 */
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "방금 전";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "어제";
+  return `${days}일 전`;
+}
+
+export function toNotiItem(row: { id: number; type: string; title: string; body: string; createdAt: string; isRead: boolean }): NotiItem {
+  return {
+    id: String(row.id),
+    icon: notiTypeIcon(row.type),
+    title: row.title,
+    body: row.body,
+    time: formatRelativeTime(row.createdAt),
+    isRead: row.isRead,
+  };
+}
 
 export const WITHDRAW_REASONS = ["서비스를 잘 이용하지 않아요", "원하는 기능이 없어요", "다른 서비스를 이용해요", "개인정보 우려"];
 

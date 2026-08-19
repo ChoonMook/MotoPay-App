@@ -16,6 +16,7 @@ import { saveReviewPhoto } from '../common/storage/review-photo-storage';
 import { PointsService } from '../points/points.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { PushNotificationService } from '../push/push-notification.service';
 import type { CompleteReservationDto } from './dto/complete-reservation.dto';
 import type { CreateCallLogDto } from './dto/create-call-log.dto';
 import type { CreateReviewDto } from './dto/create-review.dto';
@@ -262,6 +263,7 @@ export class ReservationsService {
     private readonly productsService: ProductsService,
     private readonly phoneCrypto: PhoneCryptoService,
     private readonly pointsService: PointsService,
+    private readonly pushService: PushNotificationService,
   ) {}
 
   async create(params: CreateReservationParams): Promise<ReservationView> {
@@ -372,6 +374,24 @@ export class ReservationsService {
 
       return confirmed;
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 실패해도 예약 생성 자체는 이미 완료된 상태
+    this.pushService
+      .sendToOwner('USER', reservation.memberId, {
+        type: 'RSV_CONFIRMED',
+        title: '예약이 확정됐어요',
+        body: `${date} ${time} 예약이 정상적으로 접수됐어요.`,
+        data: { reservationNo: reservation.reservationNo },
+      })
+      .catch(() => {});
+    this.pushService
+      .sendToShopPartners(shopCode, {
+        type: 'RSV_NEW',
+        title: '새 예약이 접수됐어요',
+        body: `${date} ${time} 예약이 새로 접수됐어요.`,
+        data: { reservationNo: reservation.reservationNo },
+      })
+      .catch(() => {});
 
     return toView(reservation);
   }
@@ -798,6 +818,16 @@ export class ReservationsService {
         },
       }),
     ]);
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToOwner('USER', reservation.memberId, {
+        type: 'RSV_COMPLETED',
+        title: '시공이 완료됐어요',
+        body: '인수확인을 진행해 주세요.',
+        data: { reservationNo },
+      })
+      .catch(() => {});
   }
 
   async getPackageStats(shopCode: string): Promise<PackageProgressStats> {

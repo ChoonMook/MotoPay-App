@@ -263,3 +263,26 @@
 
 ### 미해결/후속
 - admin-app 전체 이력이 그동안 한 번도 설계 문서에 기록되지 않았다는 걸 이번에 발견 — `admin/checklist.md`·`admin/context-notes.md`를 신설해 사후 재구성함(git log가 10개 커밋뿐이라 파일 헤더 주석·menuConfig.ts의 날짜 명시 메모를 근거로 재구성, 원본 대화 기반이 아니므로 신뢰도가 이 문서보다 낮음 — 상세는 그쪽 문서의 "이 문서의 성격" 참고).
+
+## 컨텍스트 노트 — 푸시 알림 실기기 배포·검증 (Phase 28 마무리, 2026-08-19)
+
+### 배경
+- Phase 28(2026-08-13)에서 인프라 코드까지는 완성했지만 `eas.json`/EAS 자격증명이 없어 실제 토큰 발급이 막혀있던 상태 — "이제 미뤄두었던 푸시 기능 작업 진행하자" 요청으로 재개, 사용자가 직접 `eas init`부터 FCM 자격증명까지 대화형으로 진행.
+
+### 겪은 문제와 해결 순서(전부 실제로 순차 발생, 다음에 비슷한 설정을 할 때 참고)
+1. **admin-app dist가 오래된 빌드였음** — 이 작업과 별개로 admin-app/customer-app/partner-app 세 앱의 로컬 `dist`가 각각 8/5~8/11 빌드로 멈춰있었던 걸 배포 확인 과정에서 우연히 발견, 전부 재빌드. **다음부터는 배포 요청이 오면 재빌드부터 먼저 하고 시작할 것** — dist가 소스보다 오래된 상태가 이 프로젝트에서 반복적으로 발생함.
+2. **`eas credentials` 실행 시 `eas.json` 없음 에러** — `eas init`은 프로젝트 연결(projectId)만 하고 `eas.json`(빌드 프로필)은 별도. 이 프로젝트는 로컬 gradle 빌드만 쓰고 EAS 클라우드 빌드는 안 쓰므로, `eas build:configure`의 풀 대화형 흐름 대신 `eas credentials`가 참조할 최소 `production` 프로필만 담은 `eas.json`을 직접 작성해서 해결.
+3. **`google-services.json` 배치 후 prebuild 재실행 필요** — `android/`이 gitignore된 Expo prebuild 산출물이고 이 저장소는 매 빌드마다 prebuild를 다시 안 돌리는 구조([[android-release-apk-build]] 참고)라, `app.json`에 `googleServicesFile`을 연결한 것만으로는 부족하고 `npx expo prebuild -p android --clean`을 명시적으로 다시 돌려야 `android/build.gradle`에 Google Services 플러그인이 실제로 연결됨. 재빌드 후 최종 병합 매니페스트(`android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml`)에서 `POST_NOTIFICATIONS`/Firebase 서비스가 실제로 들어갔는지 직접 확인.
+4. **api 배포 후 8092가 완전히 죽음** — 이번에 `expo-server-sdk`를 새 npm 의존성으로 추가했는데, 이전에 안내한 배포 절차가 "Prisma 스키마만 바뀐 경우"였던 걸 그대로 재사용해서 `package.json` 변경분을 놓침. 서버에 `Cannot find module 'expo-server-sdk'`로 죽어있었음 → `npm ci --omit=dev` 재실행으로 해결. **의존성 추가 작업을 했으면 다음 배포 안내 시 반드시 "백엔드 의존성이 바뀐 경우" 절차까지 같이 언급할 것** — 이번처럼 이전 세션에 준 절차를 그대로 재사용하면 놓치기 쉬움.
+5. **`npm ci` 이후 `.prisma/client` 모듈도 사라짐** — `npm ci`가 `node_modules`를 통째로 새로 설치하면서 이전에 만들어둔 Prisma 생성 클라이언트까지 같이 지워짐 → `npx prisma generate` 재실행으로 해결. 의존성 변경 배포 절차에 이미 있던 단계지만, 사용자가 두 단계를 분리해서 인지하지 못해 한 번 더 명시적으로 안내해야 했음.
+6. **customer-app 실제 배포 경로가 문서와 다름** — `server/checklist.md`엔 "root D:/Project/moto_dev"로 문서화돼 있었지만 실제 nginx root는 `D:\Project\moto_dev\customer-app\dist`(하위에 앱별 폴더가 있는 구조). curl로 서버가 서빙 중인 JS 번들 해시를 직접 비교하는 방식으로 "복사했다는데 반영이 안 됨" 문제를 계속 잡아냈고, 결국 사용자가 정확한 경로를 알려줘서 해결 — **다음에 유사 배포 확인 문제가 생기면 매번 "복사했나요?" 되묻기보다, `curl`로 서빙 중인 자산 파일명을 직접 대조하는 방식이 훨씬 빠르고 정확함**(이번에 실제로 유효했던 방법).
+7. **웹뷰가 이전 JS를 캐시** — 서버 파일은 최신인데도 기기에서 반영이 안 됨 → 앱 강제종료+재실행만으로는 안 지워지고, **기기 설정에서 앱 캐시/데이터 삭제**까지 해야 웹뷰가 새 번들을 다시 받아옴. `react-native-webview`는 기본적으로 HTTP 캐시를 앱 데이터 안에 영구 보관하는 걸로 보임.
+8. **`http.ts`의 빈 응답 파싱 버그 발견** — release 빌드에서는 `console.log`가 `ReactNativeJS` 태그로 logcat에 전혀 안 잡힌다는 걸 이번에 확인(release JS 콘솔이 네이티브 로그로 안 이어짐, RN/Hermes release 최적화 특성으로 추정) → `adb logcat`으로 디버깅하는 대신 **`window.alert()`를 임시로 심어서 단계별 성공/실패를 직접 눈으로 확인하는 방식**으로 전환, 실제로 원인을 빠르게 찾아냄. 이 방식으로 `POST /me/push-token`(void 응답) 클라이언트 파싱 실패를 발견 — DB엔 이미 정상 등록됐는데 클라이언트만 에러로 오인하고 있었음. 원인 확인 후 `http.ts`의 `handle()`을 응답 본문이 비어있으면 파싱을 건너뛰도록 수정하고, 디버그용 `alert()`는 전부 제거.
+9. **FCM V1 403 권한 오류(가장 오래 걸린 부분)** — 서버는 정상 등록, 발송 티켓도 "ok"였지만 실제 리시트 조회(`getPushNotificationReceiptsAsync`)에서 `PERMISSION_DENIED: cloudmessaging.messages.create`. **원인**: `eas credentials`로 업로드한 FCM V1 서비스 계정 키(`firebase-adminsdk-fbsvc@<project>.iam.gserviceaccount.com`)가 GCP IAM에 프로젝트 수준 역할이 전혀 없는 상태(신규 Firebase 프로젝트인데도 기본 역할이 자동 부여 안 돼 있었음 — 어떤 조건에서 자동부여가 안 되는지는 이번엔 특정 못함). Google Cloud Console → IAM에서 그 서비스 계정에 **"Firebase Cloud Messaging API Admin"** 역할을 수동으로 추가한 뒤 정상 발송(`getPushNotificationReceiptsAsync` status: ok, 기기 실제 수신 확인)까지 확인. **참고**: 티켓(`status:"ok"`)만으로는 실제 배달을 보장하지 않음 — 항상 `getPushNotificationReceiptsAsync`로 리시트까지 확인해야 진짜 성공 여부를 알 수 있다는 게 이번에 실전으로 확인됨.
+
+### 검증
+- 실 계정(leehj/이형준) 실기기 로그인 → `push_tokens` 실제 등록 확인 → `sendPushNotificationsAsync`+리시트 조회로 FCM 배달 확인 → 기기 실제 알림 수신 확인. 테스트 중 남은 초기 토큰 1건은 정리, 최종 실 토큰은 실사용자의 정상 등록 데이터라 유지(삭제하지 않음).
+
+### 미해결/후속
+- iOS APNs는 미착수 — Apple Developer Program 필요.
+- 이번에 겪은 "IAM 역할이 자동으로 안 붙어있었다"는 현상의 정확한 원인(신규 프로젝트 생성 방식 차이 등)은 밝히지 못함 — 나중에 같은 조직에서 새 Firebase 프로젝트를 또 만들 일이 있으면 처음부터 IAM 역할을 확인하는 습관이 필요.

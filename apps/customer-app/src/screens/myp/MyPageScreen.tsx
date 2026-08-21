@@ -1,4 +1,7 @@
 // CU-MYPG-01: 마이페이지 주화면 - 프로필 요약(이름·등급·대표차량) + 차량/이용내역/알림/계정 메뉴 그룹 + 하단 내비게이션
+import { useEffect, useState } from "react";
+import { BUILD_TIME } from "../../buildInfo";
+import { isNativeBridgeAvailable, requestAppVersion } from "../../native/bridge";
 import { NavHomeIcon, NavResvIcon, NavShopIcon, NavMyIcon } from "../home/homeIcons";
 import { EditIcon, ChevronRightIcon } from "./mypIcons";
 
@@ -12,7 +15,8 @@ const NAV_ITEMS = [
 interface MenuRow {
   label: string;
   danger?: boolean;
-  onClick: () => void;
+  value?: string;
+  onClick?: () => void;
 }
 
 interface MyPageScreenProps {
@@ -58,6 +62,16 @@ export default function MyPageScreen({
   onOpenWithdraw,
   onToast,
 }: MyPageScreenProps) {
+  // 안드로이드 앱(motopay-mobile) 안에서 실행 중이면 실제 설치된 APK 빌드버전을, 일반 브라우저면 웹 번들 빌드 시각을 표시
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isNativeBridgeAvailable()) return;
+    requestAppVersion()
+      .then(({ versionName, versionCode }) => setAppVersion(`v${versionName} (${versionCode})`))
+      .catch(() => {});
+  }, []);
+  const buildVersionLabel = appVersion ?? `웹 ${BUILD_TIME}`;
+
   const sections: { title: string; rows: MenuRow[] }[] = [
     { title: "차량", rows: [{ label: "내 차량 목록", onClick: onOpenCars }] },
     {
@@ -84,6 +98,7 @@ export default function MyPageScreen({
       ],
     },
     { title: "고객지원", rows: [{ label: "고객센터", onClick: onOpenCs }] },
+    { title: "앱 정보", rows: [{ label: "빌드버전", value: buildVersionLabel }] },
     {
       title: "",
       rows: [
@@ -130,10 +145,14 @@ export default function MyPageScreen({
                     className={`flex items-center gap-3 px-1 py-3.5 ${i < sec.rows.length - 1 || sec.title === "" ? "border-b border-gray-100" : ""}`}
                   >
                     <span className={`flex-1 text-sm ${m.danger ? "font-bold text-status-danger" : "font-semibold text-gray-800"}`}>{m.label}</span>
-                    {sec.title !== "" && (
-                      <span className="flex-none text-gray-500">
-                        <ChevronRightIcon />
-                      </span>
+                    {m.value ? (
+                      <span className="flex-none text-xs text-gray-400">{m.value}</span>
+                    ) : (
+                      sec.title !== "" && (
+                        <span className="flex-none text-gray-500">
+                          <ChevronRightIcon />
+                        </span>
+                      )
                     )}
                   </div>
                 ))}

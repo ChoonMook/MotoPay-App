@@ -1,5 +1,6 @@
 // CU-RSVC-01: 예약시공 주화면 - 진행중인 요청 카드 목록(실 API) + 새 견적 요청하기 CTA + 하단 내비게이션
 import Button from "../../components/ui/Button";
+import PullToRefresh from "../../components/ui/PullToRefresh";
 import { NavHomeIcon, NavResvIcon, NavShopIcon, NavMyIcon } from "../home/homeIcons";
 import type { BidRequestApi, BidRequestCarApi } from "../../api/bidRequests";
 import { INST_CODE_LABELS } from "./rsvTypes";
@@ -34,22 +35,25 @@ function itemSummary(request: BidRequestApi): string {
   return request.items.map((it) => INST_CODE_LABELS[it.instCode] ?? it.instCode).join(" · ") || "-";
 }
 
-export type ReqStatusFilter = "ALL" | "OPEN" | "SELECTED" | "IN_PROGRESS" | "DONE" | "CANCELLED";
+export type ReqStatusFilter = "ALL" | "OPEN" | "PENDING_PAYMENT" | "SELECTED" | "IN_PROGRESS" | "DONE" | "CANCELLED";
 
 const FILTER_DEFS: { key: ReqStatusFilter; label: string }[] = [
   { key: "ALL", label: "전체" },
   { key: "OPEN", label: "입찰중" },
+  { key: "PENDING_PAYMENT", label: "결제대기" },
   { key: "SELECTED", label: "선정완료" },
   { key: "IN_PROGRESS", label: "시공중" },
   { key: "DONE", label: "시공완료" },
   { key: "CANCELLED", label: "취소됨" },
 ];
 
-// 선정완료(SELECTED) 요청은 이후 실제 시공건(Reservation)의 진행상태(progressStatus)에 따라
-// 선정완료(착수전)/시공중/시공완료로 더 세분화해서 보여준다 — progressByRequest는 requestNo -> progressStatus 맵
+// 선정완료(SELECTED) 요청은 이후 실제 시공건(Reservation)의 상태에 따라 결제대기(선정만 하고 결제 전)/
+// 선정완료(착수전, 결제완료)/시공중/시공완료로 더 세분화해서 보여준다 — progressByRequest는 requestNo ->
+// Reservation.status가 PENDING_PAYMENT면 그 값 그대로, 아니면 progressStatus(APPLIED/IN_PROGRESS/DONE)를 담은 맵
 export function displayStatus(request: BidRequestApi, progressByRequest: Record<string, string>): ReqStatusFilter | "CLOSED" {
   if (request.status !== "SELECTED") return request.status as ReqStatusFilter | "CLOSED";
   const progress = progressByRequest[request.requestNo];
+  if (progress === "PENDING_PAYMENT") return "PENDING_PAYMENT";
   if (progress === "IN_PROGRESS") return "IN_PROGRESS";
   if (progress === "DONE") return "DONE";
   return "SELECTED";
@@ -58,6 +62,7 @@ export function displayStatus(request: BidRequestApi, progressByRequest: Record<
 const STATUS_BADGE_META: Record<ReqStatusFilter | "CLOSED", { label: string; className: string }> = {
   ALL: { label: "", className: "" }, // displayStatus는 ALL을 반환하지 않음(타입 완전성용)
   OPEN: { label: "입찰중", className: "bg-status-warning-bg text-status-warning" },
+  PENDING_PAYMENT: { label: "결제대기", className: "bg-status-warning-bg text-status-warning" },
   SELECTED: { label: "선정완료", className: "bg-status-success-bg text-status-success" },
   IN_PROGRESS: { label: "시공중", className: "bg-brand-subtle text-brand" },
   DONE: { label: "시공완료", className: "text-[#0E9A96] bg-[#0E9A9614]" },
@@ -80,6 +85,7 @@ interface BookingScreenProps {
   onOpenShop: () => void;
   onOpenMyPage: () => void;
   onNavToast: (label: string) => void;
+  onRefresh: () => Promise<void>;
 }
 
 export default function BookingScreen({
@@ -96,6 +102,7 @@ export default function BookingScreen({
   onOpenShop,
   onOpenMyPage,
   onNavToast,
+  onRefresh,
 }: BookingScreenProps) {
   const filtered =
     filter === "ALL" ? requests : requests.filter((r) => displayStatus(r, progressByRequest) === filter);
@@ -106,7 +113,7 @@ export default function BookingScreen({
         <span className="text-[19px] font-extrabold tracking-tight text-gray-900">예약시공</span>
       </div>
 
-      <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-5 pb-[26px]">
+      <PullToRefresh onRefresh={onRefresh} className="mp-scroll flex-1 overflow-y-auto px-5 pt-5 pb-[26px]">
         <div className="mx-0.5 mb-3 flex items-center justify-between">
           <span className="text-[15px] font-extrabold text-gray-900">진행중인 요청</span>
           <span className="text-xs font-bold text-gray-500">{filtered.length}건</span>
@@ -203,7 +210,7 @@ export default function BookingScreen({
         <div className="mt-[18px] rounded-xl bg-gray-100 p-3.5 text-[12.5px] leading-relaxed text-gray-600">
           직접 항목·제품을 고르는 <b>일반 입찰</b>과, 예산만 알려주면 전문가가 추천하는 <b>전문가 추천</b> 중 선택할 수 있어요.
         </div>
-      </div>
+      </PullToRefresh>
 
       <div className="flex-none border-t border-gray-100 bg-white px-5 py-3">
         <Button size="xl" onClick={onStartRequest}>

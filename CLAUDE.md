@@ -13,10 +13,10 @@
 ## 3. Technology Stack & Environment Rules
 - **Framework**:
   - Web: React.js SPA (Vite) — `apps/customer-app`
-  - Mobile (Android now, iOS planned): React Native (Expo SDK 57) as a thin **WebView shell** around `apps/customer-app` — NOT a native UI rewrite. The web app renders unmodified inside a WebView; device-only features (camera, photo library, hardware back button) go through a `window.MotoBridge` message bridge to the native side. See `apps/customer-mobile`.
+  - Mobile (Android now, iOS planned): React Native (Expo SDK 57) as a thin **WebView shell** around `apps/customer-app` — NOT a native UI rewrite. The web app renders unmodified inside a WebView; device-only features (camera, photo library, hardware back button) go through a `window.MotoBridge` message bridge to the native side. See `apps/motopay-mobile` (single native shell that hosts both customer-app and partner-app, switching WebView URL based on last-used app).
   - Admin/Partner apps: not started yet (web-only, per project overview below, once built).
-- **Language**: TypeScript across both `customer-app` and `customer-mobile`. `customer-mobile`'s tsconfig sets `strict: true`; `customer-app` does not set the `strict` umbrella flag explicitly (only `noUnusedLocals`/`noUnusedParameters`/`noFallthroughCasesInSwitch`), though code in practice avoids `any`.
-- **Styling & UI**: Tailwind CSS v4 (Mobile-First responsive design) — web only. The native shell (`customer-mobile`) has no styling framework of its own; it's just the WebView container plus native bridge code.
+- **Language**: TypeScript across both `customer-app` and `motopay-mobile`. `motopay-mobile`'s tsconfig sets `strict: true`; `customer-app` does not set the `strict` umbrella flag explicitly (only `noUnusedLocals`/`noUnusedParameters`/`noFallthroughCasesInSwitch`), though code in practice avoids `any`.
+- **Styling & UI**: Tailwind CSS v4 (Mobile-First responsive design) — web only. The native shell (`motopay-mobile`) has no styling framework of its own; it's just the WebView container plus native bridge code.
 - **State Management**: Plain React `useState`, no Zustand/Redux/Context adopted. Each feature module (쇼핑몰, 마이페이지, 예약시공, 신차패키지, 포인트, 고객센터, 인증 등) has a single "Flow" container component (e.g. `ShopFlow.tsx`) that owns all local state for that module and renders its sub-screens/sheets as props-driven children.
 - **Component Strategy**: Feature-based folder structure (`src/screens/<module>/`) with a shared UI primitives library in `src/components/ui/` (Button, Input, BottomSheet, Toast, etc.) — not Atomic Design.
 - **Target Platform**: Responsive Web + Android/iOS hybrid app (WebView-based, React Native/Expo shell + native bridge for camera/album/back-button). Desktop/tablet/mobile web all supported via the same responsive `customer-app` codebase.
@@ -42,6 +42,7 @@
   - **Dry & Clean**: No placeholders, no `// TODO: implement later`. Generate fully functional files.
   - **Type Safety**: Enforce strict type definitions. Avoid `any`.
   - **Error Handling**: Wrap async-await operations (API fetches) in thorough try-catch blocks with clear error UI state handling (loading/error bounds).
+  - **Pull-to-Refresh**: New list/dashboard-style screens (a screen whose main content is a re-fetchable API list or stats — home screens, request/reservation lists, notification inboxes, etc.) must wrap their scrollable content in `PullToRefresh` (`src/components/ui/PullToRefresh.tsx`, mirrored identically in both `customer-app` and `partner-app`) by default, wired to an `onRefresh` that re-runs the screen's own data fetch (state-preserving, not a full page/WebView reload). Skip only for screens with no re-fetchable list/API data (pure input forms, static confirmation screens, etc.).
 
 ### Phase 4: Quality Assurance & Testing
 - **Core Principle**: Zero tolerance for breaking changes.

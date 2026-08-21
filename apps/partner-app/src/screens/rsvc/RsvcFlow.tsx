@@ -134,25 +134,32 @@ export default function RsvcFlow({
       .finally(() => setLoadingReqs(false));
   }, []);
 
-  // 입찰함(bidbox) 등 다른 화면에서 뒤로가기로 예약시공관리 홈(main)에 다시 들어올 때마다 입찰함·시공 현황 목록을
-  // 새로 조회 — 마운트 시 최초 조회는 위 effect가 이미 하므로 여기서는 "main으로 되돌아온" 경우만 처리한다
-  const prevRsvcScreenRef = useRef(screen);
-  useEffect(() => {
-    const prevScreen = prevRsvcScreenRef.current;
-    prevRsvcScreenRef.current = screen;
-    if (screen !== "main" || prevScreen === "main" || carBrandCodes.length === 0) return;
+  // 입찰함(bidbox)·시공 현황(waitlist) 목록 새로고침 — "main으로 되돌아왔을 때"와 당겨서 새로고침
+  // (PullToRefresh)에서 공용으로 사용. carBrandCodes/carModelCodes는 마운트 시 이미 로드돼 있어야 함
+  const refreshLists = () => {
     const carLabel = (car: ShopBidRequestCarApi | null): string | null => {
       if (!car) return null;
       const brand = carBrandCodes.find((d) => d.detailCode === car.carBrandCode)?.detailName ?? car.carBrandCode;
       const model = carModelCodes.find((d) => d.detailCode === car.carModelCode)?.detailName ?? car.carModelCode;
       return car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`;
     };
-    Promise.all([getMyBidRequests(), getBidJobs()])
+    return Promise.all([getMyBidRequests(), getBidJobs()])
       .then(([rows, bidJobs]) => {
         setReqs(rows.map((r) => mapBidRequest(r, carLabel)));
         setJobs(bidJobs.map((j) => mapBidJob(j, carLabel)));
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "목록을 다시 불러오지 못했습니다", "danger"));
+  };
+
+  // 입찰함(bidbox) 등 다른 화면에서 뒤로가기로 예약시공관리 홈(main)에 다시 들어올 때마다 목록을 새로 조회
+  // — 마운트 시 최초 조회는 위 effect가 이미 하므로 여기서는 "main으로 되돌아온" 경우만 처리한다
+  const prevRsvcScreenRef = useRef(screen);
+  useEffect(() => {
+    const prevScreen = prevRsvcScreenRef.current;
+    prevRsvcScreenRef.current = screen;
+    if (screen !== "main" || prevScreen === "main" || carBrandCodes.length === 0) return;
+    refreshLists();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, carBrandCodes, carModelCodes]);
 
   const [bidTab, setBidTab] = useState<BidTab>(initialBidTab);
@@ -452,7 +459,8 @@ export default function RsvcFlow({
   }, [screen, sheet, planPosIdx]);
 
   const activeGeneralCount = reqs.filter((r) => r.type === "general" && r.status === "active").length + 1;
-  // "착수전·시공중 건"만 시공 현황으로 집계(완료 건은 제외) — jobStatusChipClass 라벨과 동일 기준
+  // "진행 중인 시공" 미리보기 전용(완료 건은 이미 끝난 일이라 미리보기에서는 제외) — 시공 현황 카드의 총 건수(jobTotalCount)는
+  // 착수전·시공중·완료를 모두 포함해야 시공 현황 화면(탭 전체 합)과 숫자가 일치함(2026-08-21 완료 건도 세지 않던 버그 수정)
   const waitingJobs = jobs.filter((j) => j.status !== "완료");
   const waitlistTabCounts: Record<JobStatus, number> = { 착수전: 0, 시공중: 0, 완료: 0 };
   for (const j of jobs) waitlistTabCounts[j.status] += 1;
@@ -464,7 +472,7 @@ export default function RsvcFlow({
         <RsvcMainScreen
           newReqCount={reqs.filter((r) => r.status === "open").length}
           bidTotalCount={reqs.filter((r) => r.status !== "closed").length}
-          jobTotalCount={waitingJobs.length}
+          jobTotalCount={jobs.length}
           jobPreview={waitingJobs.slice(0, 2)}
           onOpenBidbox={() => {
             setBidTab("new");
@@ -500,6 +508,7 @@ export default function RsvcFlow({
           onOpenStl={onOpenStl}
           onOpenMyPage={onOpenMyPage}
           onPlaceholder={(label) => showToast(`${label}으로 이동해요`)}
+          onRefresh={refreshLists}
         />
       )}
 

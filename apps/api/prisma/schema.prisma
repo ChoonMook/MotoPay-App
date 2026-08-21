@@ -995,6 +995,25 @@ model Notification {
   @@map("notifications")
 }
 
+// 앱 강제 업데이트 정책(AD-SYS-06 앱버전관리) — 플랫폼별 최소 지원 버전 미만은 앱 사용을 차단하고 업데이트를 유도.
+// platform이 자체 PK라 CommonCodeDetail 참조 대신 직접 관리(코어 시스템 값, 향후 'IOS' 등 값 추가 예정)
+model AppVersionPolicy {
+  platform          String   @id // 'ANDROID' (iOS 출시 시 'IOS' 행 추가)
+  minVersionCode    Int // 이 값 미만 versionCode는 강제 업데이트 대상(motopay-mobile의 android.versionCode 기준)
+  minVersionName    String // 최소 지원 버전 표시명(예: "0.0.0.3") — 안내 문구용, 비교 로직은 minVersionCode만 사용
+  latestVersionCode Int? // 최신 배포 버전코드(참고용 표시, 강제 차단 기준 아님)
+  latestVersionName String?
+  downloadUrl       String // 강제 업데이트 화면에서 안내할 APK 다운로드 URL(스토어 미출시 상태라 직접 배포 링크)
+  message           String   @db.Text // 강제 업데이트 화면에 노출할 안내 문구
+  useYn             Boolean  @default(false) // 기능 자체 on/off — 관리자가 명시적으로 켜기 전까진 차단하지 않음(안전 기본값)
+  createdBy         String? // -> AdminAccount.username(FK 없음)
+  createdAt         DateTime @default(now()) @db.Timestamp(3)
+  updatedBy         String? // -> AdminAccount.username(FK 없음)
+  updatedAt         DateTime @updatedAt @db.Timestamp(3)
+
+  @@map("app_version_policies")
+}
+
 // 관리자가 회원/시공업체 사용자에게 임의로 보낸 공지성 푸시 발송 이력(AD-CS-04) — 발송 시점 스냅샷 저장.
 // 수정 UI 없는 로그성 테이블이라 createdBy만 두고 updatedBy/updatedAt은 제외
 model AdminPushBroadcast {

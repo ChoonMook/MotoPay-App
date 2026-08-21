@@ -77,3 +77,8 @@ export function cancelBidRequest(id: number, input: CancelBidRequestInput): Prom
     body: JSON.stringify(input),
   });
 }
+
+/** 업체/추천안 선정 취소(결제 전에만 가능) — 성공 시 status가 다시 OPEN으로 돌아간 요청을 반환 */
+export function cancelBidSelection(id: number): Promise<BidRequestApi> {
+  return authedRequest<BidRequestApi>(`/bid-requests/${id}/cancel-selection`, { method: "PATCH" });
+}

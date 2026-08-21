@@ -75,7 +75,7 @@ export default function RsvcMainScreen({
             </span>
             <div className="text-[22px] font-extrabold tabular-nums text-gray-900">{jobTotalCount}</div>
             <div className="mt-0.5 text-[13.5px] font-bold text-gray-900">시공 현황</div>
-            <div className="mt-0.5 text-[11.5px] text-gray-500">착수전·시공중 건</div>
+            <div className="mt-0.5 text-[11.5px] text-gray-500">착수전·시공중·완료 건</div>
           </div>
         </div>
 

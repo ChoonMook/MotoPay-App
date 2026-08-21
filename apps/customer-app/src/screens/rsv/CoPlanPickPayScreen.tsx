@@ -27,6 +27,7 @@ interface CoPlanPickPayScreenProps {
   onBack: () => void;
   submitting?: boolean;
   onPay: () => void;
+  onCancelSelection: () => void;
 }
 
 export default function CoPlanPickPayScreen({
@@ -48,6 +49,7 @@ export default function CoPlanPickPayScreen({
   onBack,
   submitting = false,
   onPay,
+  onCancelSelection,
 }: CoPlanPickPayScreenProps) {
   const { isRec, bidder, reco, name: selName } = selectedEntry(selId, isExpert, bidders, recos);
   const selItemsLabel = isRec ? reco?.itemSummary ?? "" : (bidder?.items ?? []).map(([n]) => n.split(" · ")[0]).join(" · ");
@@ -189,6 +191,11 @@ export default function CoPlanPickPayScreen({
         <Button size="xl" disabled={submitting} onClick={onPay}>
           {ctaLabel}
         </Button>
+        <div className="mt-3 text-center">
+          <span onClick={submitting ? undefined : onCancelSelection} className="cursor-pointer text-xs font-semibold text-gray-500 underline">
+            선정 취소하고 다른 업체 다시 고르기
+          </span>
+        </div>
       </div>
 
       {couponSheetOpen && (

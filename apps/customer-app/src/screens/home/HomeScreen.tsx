@@ -1,6 +1,7 @@
 // CU-HOME-01: 로그인 후 진입하는 서비스 홈 - 상태별 배너(3종) + 빠른메뉴 + 예약시공 진행현황 + 프로모션 + 하단 내비게이션
 import { useEffect, useState } from "react";
 import Button from "../../components/ui/Button";
+import PullToRefresh from "../../components/ui/PullToRefresh";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import carImg from "../../assets/images/car.png";
@@ -145,8 +146,9 @@ export default function HomeScreen({
   const [bidQuote, setBidQuote] = useState<BidQuoteCard | null>(null);
   const [bidProgress, setBidProgress] = useState<BidProgressCard | null>(null);
 
-  useEffect(() => {
-    Promise.all([listMyCars(), listMyReservations(), listShops(), listMyBidRequests()])
+  // 아래 로직을 마운트 시 1회뿐 아니라 당겨서 새로고침(PullToRefresh)에서도 재사용
+  const loadHomeData = () => {
+    return Promise.all([listMyCars(), listMyReservations(), listShops(), listMyBidRequests()])
       .then(([cars, reservations, shops, bidRequests]) => {
         const defaultCar = cars.find((c) => c.isDefault) ?? cars[0];
 
@@ -253,17 +255,28 @@ export default function HomeScreen({
         }
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 정보를 불러오지 못했어요", "danger"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  };
+
+  const loadTopBarInfo = () => {
+    return Promise.all([
+      getMyPointsSummary()
+        .then((s) => setPointBalance(s.balance))
+        .catch(() => {}), // 상단바 보조 정보라 실패해도 토스트 없이 0으로 유지
+      getUnreadNotificationCount()
+        .then(setUnreadNotiCount)
+        .catch(() => {}),
+    ]);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadHomeData();
+    loadTopBarInfo();
   }, []);
 
-  useEffect(() => {
-    getMyPointsSummary()
-      .then((s) => setPointBalance(s.balance))
-      .catch(() => {}); // 상단바 보조 정보라 실패해도 토스트 없이 0으로 유지
-    getUnreadNotificationCount()
-      .then(setUnreadNotiCount)
-      .catch(() => {});
-  }, []);
+  const handleRefresh = async () => {
+    await Promise.all([loadHomeData(), loadTopBarInfo()]);
+  };
 
   return (
     <div className="absolute inset-0 bg-gray-50">
@@ -294,7 +307,8 @@ export default function HomeScreen({
       </div>
 
       {/* scroll body */}
-      <div
+      <PullToRefresh
+        onRefresh={handleRefresh}
         className="mp-scroll absolute inset-x-0 top-[98px] bottom-[66px] overflow-y-auto px-[18px] pt-4 pb-6"
         style={{ animation: "mp-screen .32s ease" }}
       >
@@ -525,7 +539,7 @@ export default function HomeScreen({
           </div>
           <span className="text-accent">›</span>
         </div>
-      </div>
+      </PullToRefresh>
 
       {/* ===== bottom navigation ===== */}
       <div className="absolute inset-x-0 bottom-0 z-50 flex h-[66px] border-t border-gray-100 bg-white pb-2">

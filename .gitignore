@@ -39,4 +39,4 @@ android/
 ios/
 
 # firebase service account keys
-apps/customer-mobile/*firebase-adminsdk*.json
+apps/motopay-mobile/*firebase-adminsdk*.json

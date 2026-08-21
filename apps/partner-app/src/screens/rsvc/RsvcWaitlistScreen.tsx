@@ -1,5 +1,6 @@
 // PT-RSVC-02: 시공 현황 - 착수전·시공중·완료 상태 탭으로 필터링된 카드 목록. 카드 탭 시 착수전은 시공 착수 등록, 시공중은 완료 처리로 이동
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon } from "../home/homeIcons";
+import PullToRefresh from "../../components/ui/PullToRefresh";
 import { JOB_TAB_META, jobStatusChipClass, itemSummary } from "./rsvcData";
 import type { JobStatus, RsvcJob } from "./rsvcTypes";
 import { PhoneCallIcon } from "./rsvcIcons";
@@ -24,6 +25,7 @@ interface RsvcWaitlistScreenProps {
   onOpenStl: () => void;
   onOpenMyPage: () => void;
   onPlaceholder: (label: string) => void;
+  onRefresh: () => Promise<void>;
 }
 
 export default function RsvcWaitlistScreen({
@@ -39,6 +41,7 @@ export default function RsvcWaitlistScreen({
   onOpenStl,
   onOpenMyPage,
   onPlaceholder,
+  onRefresh,
 }: RsvcWaitlistScreenProps) {
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -64,7 +67,7 @@ export default function RsvcWaitlistScreen({
         </div>
       </div>
 
-      <div className="mp-scroll flex-1 overflow-y-auto px-[18px] py-4">
+      <PullToRefresh onRefresh={onRefresh} className="mp-scroll flex-1 overflow-y-auto px-[18px] py-4">
         {jobs.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white py-10 text-center text-sm text-gray-400 shadow-sm">
             해당하는 시공 건이 없어요
@@ -124,7 +127,7 @@ export default function RsvcWaitlistScreen({
             ))}
           </div>
         )}
-      </div>
+      </PullToRefresh>
 
       <div className="flex h-[66px] flex-none border-t border-gray-100 bg-white pb-2">
         {NAV_ITEMS.map(({ key, label, Icon, active }) => (

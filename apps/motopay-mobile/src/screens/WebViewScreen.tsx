@@ -5,7 +5,7 @@
 // 고객앱/파트너앱 중 마지막으로 보던 쪽을 기억: 두 앱이 서로 다른 origin(포트)이라 각자의 localStorage로는
 // 공유가 안 되므로, 네이티브 레이어(AsyncStorage)에서 웹뷰의 최초 진입 URL 자체를 결정한다
 import { useEffect, useRef, useState } from "react";
-import { BackHandler, Linking, StyleSheet, View } from "react-native";
+import { AppState, BackHandler, Linking, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from "react-native-webview";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -39,6 +39,15 @@ const CONSUME_BACK_SCRIPT = `
     if (!handled) {
       window.MotoBridge.postMessage({ type: "nav:exit" });
     }
+    true;
+  })();
+`;
+
+// 백그라운드→포그라운드 복귀 시 웹의 강제 업데이트 재확인 트리거(App.tsx의 window.__motoHandleForeground) — 앱을 오래
+// 켜둔 채 쓰는 사용자도 다음 포그라운드 복귀 시점엔 최신 정책을 반영하도록
+const FOREGROUND_SCRIPT = `
+  (function () {
+    window.__motoHandleForeground && window.__motoHandleForeground();
     true;
   })();
 `;
@@ -87,6 +96,17 @@ export default function WebViewScreen() {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       webViewRef.current?.injectJavaScript(CONSUME_BACK_SCRIPT);
       return true;
+    });
+    return () => sub.remove();
+  }, []);
+
+  const appStateRef = useRef(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
+        webViewRef.current?.injectJavaScript(FOREGROUND_SCRIPT);
+      }
+      appStateRef.current = nextState;
     });
     return () => sub.remove();
   }, []);
@@ -140,6 +160,16 @@ export default function WebViewScreen() {
   // Linking.openURL은 canOpenURL 검사를 거치지 않아 Android의 패키지 가시성 제한(API 30+)에 걸리지 않음
   const onShouldStartLoadWithRequest = (request: WebViewNavigation) => {
     if (request.url.startsWith("tel:")) {
+      Linking.openURL(request.url);
+      return false;
+    }
+    // 우리 웹앱(customer-app/partner-app) origin이 아닌 http(s) 링크(예: 앱버전관리 강제 업데이트 화면의 APK
+    // 다운로드 URL)는 웹뷰 안에서 열지 않고 시스템 브라우저로 넘김 — 안드로이드 WebView는 APK 다운로드를 자체 처리하지 못함
+    if (
+      (request.url.startsWith("http://") || request.url.startsWith("https://")) &&
+      !request.url.startsWith(WEB_URL) &&
+      !request.url.startsWith(PARTNER_APP_URL)
+    ) {
       Linking.openURL(request.url);
       return false;
     }

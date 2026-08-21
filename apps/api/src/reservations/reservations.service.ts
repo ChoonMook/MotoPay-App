@@ -680,13 +680,18 @@ export class ReservationsService {
    * 이 시점의 스냅샷만 저장하지만, 포인트는 실제 PointHistory·User.pointBalance를 사용(2026-08-18)해서
    * pointsUsed>0이면 잔액을 실제로 차감한다(잔액 부족 시 결제 자체가 실패).
    */
+  /**
+   * 결제 확정(CU-RSVC-14) — 업체/추천안 선정(selectOffer/selectPlan) 시점엔 결제 전이라 예약이
+   * status='PENDING_PAYMENT'로만 생성돼 있음(선정만으로 확정 처리되던 버그 수정, 2026-08-21). 실제 결제가
+   * 완료되는 이 시점에야 status='CONFIRMED'로 전환하고, 예약 확정·낙찰/미선정 알림도 여기서 비로소 발송한다.
+   */
   async confirmPayment(
     memberId: string,
     id: number,
     dto: ConfirmPaymentDto,
   ): Promise<ReservationView> {
     const reservation = await this.findOwnedOrThrow(memberId, id);
-    if (reservation.status !== 'CONFIRMED') {
+    if (reservation.status !== 'PENDING_PAYMENT') {
       throw new BadRequestException('결제할 수 없는 예약입니다.');
     }
     if (reservation.paidAt) {
@@ -704,6 +709,7 @@ export class ReservationsService {
     const updated = await this.prisma.reservation.update({
       where: { id },
       data: {
+        status: 'CONFIRMED',
         paymentMethod: dto.paymentMethod,
         couponName: dto.couponName ?? null,
         couponDiscount: dto.couponDiscount ?? null,
@@ -712,6 +718,68 @@ export class ReservationsService {
         paidAt: new Date(),
       },
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 예약시공(BID)만 해당(신차패키지는 create() 시점에 이미
+    // 결제까지 끝난 상태로 생성되므로 이 메서드를 거치지 않음)
+    if (updated.reservationType === 'BID' && updated.requestNo) {
+      const bidRequest = await this.prisma.bidRequest.findUnique({
+        where: { requestNo: updated.requestNo },
+      });
+      if (bidRequest) {
+        const date = formatDateOnly(updated.date);
+        const time = formatTimeOnly(updated.time);
+        this.pushService
+          .sendToOwner('USER', memberId, {
+            type: 'RSV_CONFIRMED',
+            vars: { date, time },
+            data: {
+              requestNo: updated.requestNo,
+              reservationNo: updated.reservationNo,
+              reservationType: 'BID',
+            },
+          })
+          .catch(() => {});
+        this.pushService
+          .sendToShopPartners(updated.shopCode, {
+            type: 'BID_SELECTED',
+            vars: { date, time },
+            data: {
+              requestNo: updated.requestNo,
+              reservationNo: updated.reservationNo,
+              reservationType: 'BID',
+            },
+          })
+          .catch(() => {});
+
+        const otherShops =
+          bidRequest.reqType === 'EXPERT'
+            ? await this.prisma.bidPlan.findMany({
+                where: {
+                  requestNo: updated.requestNo,
+                  planNo: { not: bidRequest.selectedPlanNo ?? undefined },
+                },
+                select: { shopCode: true },
+                distinct: ['shopCode'],
+              })
+            : await this.prisma.bidOffer.findMany({
+                where: {
+                  requestNo: updated.requestNo,
+                  offerNo: { not: bidRequest.selectedOfferNo ?? undefined },
+                },
+                select: { shopCode: true },
+                distinct: ['shopCode'],
+              });
+        for (const shop of otherShops) {
+          this.pushService
+            .sendToShopPartners(shop.shopCode, {
+              type: 'BID_NOT_SELECTED',
+              data: { requestNo: updated.requestNo },
+            })
+            .catch(() => {});
+        }
+      }
+    }
+
     return toView(updated);
   }
 

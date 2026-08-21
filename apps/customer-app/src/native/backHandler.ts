@@ -1,5 +1,5 @@
 // 안드로이드 하드웨어 백버튼을 화면별 뒤로가기로 연결하는 핸들러 스택
-// 네이티브(customer-mobile)가 하드웨어 백버튼을 누르면 window.__motoConsumeBack()을 호출해
+// 네이티브(motopay-mobile)가 하드웨어 백버튼을 누르면 window.__motoConsumeBack()을 호출해
 // 현재 열려 있는 화면·시트가 자체 뒤로가기를 처리했는지 확인함(처리 못 하면 네이티브가 앱을 종료)
 type BackAction = () => void;
 

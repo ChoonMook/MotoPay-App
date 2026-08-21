@@ -99,4 +99,13 @@ export class BidRequestsController {
   ) {
     return this.bidRequestsService.selectPlan(user.id, id, dto.planNo);
   }
+
+  @Patch(':id/cancel-selection')
+  @ApiOperation({
+    summary:
+      '업체/추천안 선정 취소 — 결제 전(PENDING_PAYMENT)에만 가능, 요청을 다시 입찰중(OPEN)으로 되돌려 재선택 가능하게 함',
+  })
+  cancelSelection(@CurrentUser() user: SafeUser, @Param('id', ParseIntPipe) id: number) {
+    return this.bidRequestsService.cancelSelection(user.id, id);
+  }
 }

@@ -1,6 +1,6 @@
 // 시공완료 등록 화면(신차패키지 NcpkDoneScreen·예약시공 RsvcDoneScreen)이 공유하는 "시공 사진" 섹션.
 // 두 화면이 항상 동일하게 동작하도록 공용 컴포넌트로 분리했다.
-// 파트너센터도 customer-mobile의 웹뷰 셸에 그대로 로드되므로 apps/customer-app과 동일한 네이티브 브릿지
+// 파트너센터도 motopay-mobile의 웹뷰 셸에 그대로 로드되므로 apps/customer-app과 동일한 네이티브 브릿지
 // (window.MotoBridge, ReviewWriteScreen.tsx와 동일 패턴)를 우선 사용한다 — 브라우저 기본 <input type="file">의
 // 파일선택창은 이 웹뷰에서 아예 뜨지 않는 문제가 있어(실기기·에뮬레이터 모두 재현) 브릿지가 없을 때만
 // (일반 브라우저로 직접 접속한 경우) input 방식으로 대체한다

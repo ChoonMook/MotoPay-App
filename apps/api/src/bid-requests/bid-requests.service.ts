@@ -531,6 +531,14 @@ export class BidRequestsService {
         })),
       });
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 최초 제출·재제출(수정) 모두 발송
+    this.pushService
+      .sendToOwner('USER', request.memberId, {
+        type: 'BID_OFFER_RECEIVED',
+        data: { requestNo },
+      })
+      .catch(() => {});
   }
 
   /**
@@ -671,6 +679,14 @@ export class BidRequestsService {
         });
       }
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 최초 제출·재제출(수정) 모두 발송
+    this.pushService
+      .sendToOwner('USER', request.memberId, {
+        type: 'BID_PLAN_RECEIVED',
+        data: { requestNo },
+      })
+      .catch(() => {});
   }
 
   /** 고객이 보는 특정 요청의 입찰 목록(비교화면) */
@@ -774,9 +790,11 @@ export class BidRequestsService {
           shopCode: offer.shopCode,
           date: offerDate,
           time: offer.scheduledTime,
-          status: 'CONFIRMED',
+          status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
         },
       });
+      // 결제 전까지는 확정이 아니므로 CONFIRMED가 아니라 PENDING_PAYMENT로 생성 — 실제 확정·알림은
+      // ReservationsService.confirmPayment()가 결제 완료 시점에 처리한다(선정만으로 확정 처리되던 버그 수정, 2026-08-21)
       const created = await tx.reservation.create({
         data: {
           reservationNo: '0'.repeat(10),
@@ -785,51 +803,20 @@ export class BidRequestsService {
           time: offer.scheduledTime,
           seq: reservedCount + 1,
           reservationType: 'BID',
+          status: 'PENDING_PAYMENT',
           memberId,
           requestNo: request.requestNo,
         },
       });
-      const reservationNo = String(created.id).padStart(10, '0');
       await tx.reservation.update({
         where: { id: created.id },
-        data: { reservationNo },
+        data: { reservationNo: String(created.id).padStart(10, '0') },
       });
 
-      // 낙찰 안내(선정 업체)/미선정 안내(같은 요청에 응찰했던 나머지 업체) 대상 조회
-      const otherShops = await tx.bidOffer.findMany({
-        where: { requestNo: request.requestNo, offerNo: { not: offerNo } },
-        select: { shopCode: true },
-        distinct: ['shopCode'],
-      });
-
-      return { req, offerDate, offerTime: offer.scheduledTime, otherShops, reservationNo };
+      return req;
     });
 
-    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
-    this.pushService
-      .sendToOwner('USER', memberId, {
-        type: 'RSV_CONFIRMED',
-        vars: { date: formatDateOnly(updated.offerDate), time: formatTimeOnly(updated.offerTime) },
-        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
-      })
-      .catch(() => {});
-    this.pushService
-      .sendToShopPartners(offer.shopCode, {
-        type: 'BID_SELECTED',
-        vars: { date: formatDateOnly(updated.offerDate), time: formatTimeOnly(updated.offerTime) },
-        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
-      })
-      .catch(() => {});
-    for (const shop of updated.otherShops) {
-      this.pushService
-        .sendToShopPartners(shop.shopCode, {
-          type: 'BID_NOT_SELECTED',
-          data: { requestNo: request.requestNo },
-        })
-        .catch(() => {});
-    }
-
-    return toView(updated.req);
+    return toView(updated);
   }
 
   /**
@@ -873,9 +860,11 @@ export class BidRequestsService {
           shopCode: plan.shopCode,
           date: planDate,
           time: plan.scheduledTime,
-          status: 'CONFIRMED',
+          status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
         },
       });
+      // 결제 전까지는 확정이 아니므로 CONFIRMED가 아니라 PENDING_PAYMENT로 생성 — 실제 확정·알림은
+      // ReservationsService.confirmPayment()가 결제 완료 시점에 처리한다(선정만으로 확정 처리되던 버그 수정, 2026-08-21)
       const created = await tx.reservation.create({
         data: {
           reservationNo: '0'.repeat(10),
@@ -884,51 +873,56 @@ export class BidRequestsService {
           time: plan.scheduledTime,
           seq: reservedCount + 1,
           reservationType: 'BID',
+          status: 'PENDING_PAYMENT',
           memberId,
           requestNo: request.requestNo,
         },
       });
-      const reservationNo = String(created.id).padStart(10, '0');
       await tx.reservation.update({
         where: { id: created.id },
-        data: { reservationNo },
+        data: { reservationNo: String(created.id).padStart(10, '0') },
       });
 
-      // 낙찰 안내(선정 업체)/미선정 안내(같은 요청에 추천안을 냈던 나머지 업체) 대상 조회
-      const otherShops = await tx.bidPlan.findMany({
-        where: { requestNo: request.requestNo, planNo: { not: planNo } },
-        select: { shopCode: true },
-        distinct: ['shopCode'],
-      });
-
-      return { req, planDate, planTime: plan.scheduledTime, otherShops, reservationNo };
+      return req;
     });
 
-    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
-    this.pushService
-      .sendToOwner('USER', memberId, {
-        type: 'RSV_CONFIRMED',
-        vars: { date: formatDateOnly(updated.planDate), time: formatTimeOnly(updated.planTime) },
-        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
-      })
-      .catch(() => {});
-    this.pushService
-      .sendToShopPartners(plan.shopCode, {
-        type: 'BID_SELECTED',
-        vars: { date: formatDateOnly(updated.planDate), time: formatTimeOnly(updated.planTime) },
-        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
-      })
-      .catch(() => {});
-    for (const shop of updated.otherShops) {
-      this.pushService
-        .sendToShopPartners(shop.shopCode, {
-          type: 'BID_NOT_SELECTED',
-          data: { requestNo: request.requestNo },
-        })
-        .catch(() => {});
+    return toView(updated);
+  }
+
+  /**
+   * 업체/추천안 선정 취소(결제 전에만 가능, 2026-08-21 추가) — selectOffer/selectPlan의 역방향.
+   * 결제 완료(status='CONFIRMED') 후에는 대상이 아니며, 기존 예약취소(ReservationsService.cancel)를 대신 써야 함.
+   * PENDING_PAYMENT 예약을 CANCELLED로 돌리고 요청을 다시 OPEN으로 열어(선택 항목 초기화) 다른 업체를 재선택할 수 있게 한다 —
+   * 결제 전이라 아직 아무 알림도 안 나간 상태라 별도로 취소 통지할 대상도 없다.
+   */
+  async cancelSelection(memberId: string, id: number): Promise<BidRequestView> {
+    const request = await this.prisma.bidRequest.findUnique({ where: { id } });
+    if (!request || request.memberId !== memberId) {
+      throw new NotFoundException('요청을 찾을 수 없습니다.');
+    }
+    if (request.status !== 'SELECTED') {
+      throw new BadRequestException('선정을 취소할 수 없는 요청입니다.');
+    }
+    const reservation = await this.prisma.reservation.findFirst({
+      where: { requestNo: request.requestNo, status: 'PENDING_PAYMENT' },
+    });
+    if (!reservation) {
+      throw new BadRequestException('결제 전에만 선정을 취소할 수 있습니다.');
     }
 
-    return toView(updated.req);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservation.id },
+        data: { status: 'CANCELLED', cancelReason: 'OTHER_SHOP', cancelledAt: new Date() },
+      });
+      return tx.bidRequest.update({
+        where: { id },
+        data: { status: 'OPEN', selectedOfferNo: null, selectedPlanNo: null },
+        include: { items: true, positions: true, myCar: { select: CAR_SELECT } },
+      });
+    });
+
+    return toView(updated);
   }
 
   // ── 관리자 예약시공현황(AD-RSVC-02) — 일반입찰(GENERAL)·전문가추천(EXPERT) 통합 모니터링 ──────────────────

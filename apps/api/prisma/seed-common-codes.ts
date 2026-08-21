@@ -160,8 +160,11 @@ const DETAILS: DetailRow[] = [
   { code: 'RESERVATION_TYPE', detailCode: 'PKG', detailName: '신차패키지' },
   { code: 'RESERVATION_TYPE', detailCode: 'BID', detailName: '일반입찰' },
 
-  // RESERVATION_STATUS — 예약 상태
+  // RESERVATION_STATUS — 예약 상태. PENDING_PAYMENT는 예약시공(BID) 업체/추천안 선정 직후~결제 완료 전까지의
+  // 과도 상태(2026-08-21 추가) — 이 상태인 동안은 파트너·고객 양쪽 목록에서 CONFIRMED만 걸러내는 기존 조회 로직에
+  // 자연히 안 잡혀 노출되지 않는다(신차패키지는 결제까지 끝난 뒤에야 예약이 생성돼 이 상태를 거치지 않음)
   { code: 'RESERVATION_STATUS', detailCode: 'CONFIRMED', detailName: '예약확정' },
+  { code: 'RESERVATION_STATUS', detailCode: 'PENDING_PAYMENT', detailName: '결제대기' },
   { code: 'RESERVATION_STATUS', detailCode: 'CANCELLED', detailName: '예약취소' },
 
   // RESERVATION_PROGRESS — 예약확정(CONFIRMED) 건의 시공 진행상태
@@ -297,6 +300,8 @@ const DETAILS: DetailRow[] = [
   { code: 'NOTI_TYPE', detailCode: 'BID_NEW', detailName: '새 입찰 요청(파트너)' },
   { code: 'NOTI_TYPE', detailCode: 'BID_SELECTED', detailName: '입찰 확정(파트너)' },
   { code: 'NOTI_TYPE', detailCode: 'BID_NOT_SELECTED', detailName: '입찰 미선정(파트너)' },
+  { code: 'NOTI_TYPE', detailCode: 'BID_OFFER_RECEIVED', detailName: '새 입찰 도착' },
+  { code: 'NOTI_TYPE', detailCode: 'BID_PLAN_RECEIVED', detailName: '새 추천안 도착' },
   { code: 'NOTI_TYPE', detailCode: 'ADMIN_NOTICE', detailName: '관리자 공지' },
 
   // PUSH_MSG_TYPE — 푸시 발송 제목/본문/탭 시 이동 경로. detailName=제목, ref1=본문 템플릿({date} {time} 같은 플레이스홀더 치환됨),
@@ -316,6 +321,8 @@ const DETAILS: DetailRow[] = [
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_NEW', detailName: '새 입찰 요청이 도착했어요', ref1: '{date} 희망 시공 요청이 도착했어요. 입찰함에서 확인해보세요.', ref2: 'bidbox/new' },
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_SELECTED', detailName: '예약이 확정됐어요', ref1: '{date} {time} 시공이 확정됐어요.', ref2: 'bidbox' },
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_NOT_SELECTED', detailName: '다른 업체가 선정됐어요', ref1: '아쉽지만 이번 요청은 다른 업체가 선정됐어요.', ref2: 'bidbox' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'BID_OFFER_RECEIVED', detailName: '새 입찰이 도착했어요', ref1: '업체가 입찰을 제출했어요. 비교해보세요.', ref2: 'rsv' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'BID_PLAN_RECEIVED', detailName: '새 추천안이 도착했어요', ref1: '업체가 추천안을 제출했어요. 비교해보세요.', ref2: 'rsv' },
 ];
 
 async function main() {

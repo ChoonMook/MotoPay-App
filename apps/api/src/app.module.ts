@@ -5,6 +5,7 @@ import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminMembersModule } from './admin-members/admin-members.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AppVersionModule } from './app-version/app-version.module';
 import { AuthModule } from './auth/auth.module';
 import { BidRequestsModule } from './bid-requests/bid-requests.module';
 import { CarsModule } from './cars/cars.module';
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     CarsModule,
     CommonCodesModule,
+    AppVersionModule,
     CompaniesModule,
     ProductsModule,
     ShopsModule,

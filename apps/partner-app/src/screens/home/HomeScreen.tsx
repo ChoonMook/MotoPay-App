@@ -1,6 +1,7 @@
 // PT-HOME-01: 파트너(시공업체) 로그인 후 진입하는 업무 홈 - 확인 대기 알림 + 신차패키지 시공관리/예약시공 입찰 현황 + 오늘의 시공 일정 + 하단내비
 // 확인 대기 알림 배너는 아직 연계할 백엔드(Notification 모델)가 없어 mock 유지, 나머지는 실 API 연동
 import { useEffect, useState } from "react";
+import PullToRefresh from "../../components/ui/PullToRefresh";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { getMyBidRequests } from "../../api/bidRequests";
@@ -78,13 +79,46 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
   const [pkgStats, setPkgStats] = useState<PackageProgressStats | null>(null);
   const [bidStats, setBidStats] = useState<BidStats>({ newCount: 0, activeCount: 0, waitCount: 0 });
 
+  // 자주 안 바뀌는 참조 데이터(계정정보·공통코드)는 마운트 시 1회만, 실제 변동되는 현황성 데이터는
+  // 당겨서 새로고침(PullToRefresh)에서도 재사용할 수 있게 별도 함수로 분리
+  const loadDashboardData = async () => {
+    await Promise.all([
+      getUnreadNotificationCount()
+        .then(setUnreadNotiCount)
+        .catch(() => {}),
+      getTodayReservations()
+        .then(setTodayResv)
+        .catch((err) => showToast(err instanceof Error ? err.message : "오늘의 시공 일정을 불러오지 못했어요", "danger"))
+        .finally(() => setLoadingToday(false)),
+      getPackageStats()
+        .then(setPkgStats)
+        .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 통계를 불러오지 못했어요", "danger")),
+      // 신규요청·참여중은 입찰함(신규/진행중 상태) 기준, 시공현황은 착수전·시공중·완료를 모두 포함한 실제 시공건(Reservation)
+      // 전체 건수 기준(2026-08-21 완료 건도 세지 않던 버그 수정 — 시공 현황 화면의 탭 전체 합과 일치해야 함)
+      // — 별도 통계 API 없이 목록 응답을 그대로 집계(RsvcFlow.tsx와 동일 방식), car 라벨은 통계에 쓰이지 않아 조회 생략
+      getMyBidRequests()
+        .then((rows) => {
+          const reqs = rows.map((r) => mapBidRequest(r, () => null));
+          setBidStats((prev) => ({
+            ...prev,
+            newCount: reqs.filter((r) => r.status === "open").length,
+            activeCount: reqs.filter((r) => r.status === "active").length,
+          }));
+        })
+        .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 입찰 현황을 불러오지 못했어요", "danger")),
+      getBidJobs()
+        .then((rows) => {
+          const jobs = rows.map((j) => mapBidJob(j, () => null));
+          setBidStats((prev) => ({ ...prev, waitCount: jobs.length }));
+        })
+        .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 시공 현황을 불러오지 못했어요", "danger")),
+    ]);
+  };
+
   useEffect(() => {
     getMe()
       .then(setPartnerUser)
       .catch((err) => showToast(err instanceof Error ? err.message : "계정 정보를 불러오지 못했어요", "danger"));
-    getUnreadNotificationCount()
-      .then(setUnreadNotiCount)
-      .catch(() => {});
     getCommonCodeDetails("RESERVATION_TYPE")
       .then(setReservationTypes)
       .catch(() => {});
@@ -94,31 +128,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
     getCommonCodeDetails("CAR_MODEL")
       .then(setCarModelCodes)
       .catch(() => {});
-    getTodayReservations()
-      .then(setTodayResv)
-      .catch((err) => showToast(err instanceof Error ? err.message : "오늘의 시공 일정을 불러오지 못했어요", "danger"))
-      .finally(() => setLoadingToday(false));
-    getPackageStats()
-      .then(setPkgStats)
-      .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 통계를 불러오지 못했어요", "danger"));
-    // 신규요청·참여중은 입찰함(신규/진행중 상태) 기준, 시공현황은 착수전·시공중 상태의 실제 시공건(Reservation) 기준
-    // — 별도 통계 API 없이 목록 응답을 그대로 집계(RsvcFlow.tsx와 동일 방식), car 라벨은 통계에 쓰이지 않아 조회 생략
-    getMyBidRequests()
-      .then((rows) => {
-        const reqs = rows.map((r) => mapBidRequest(r, () => null));
-        setBidStats((prev) => ({
-          ...prev,
-          newCount: reqs.filter((r) => r.status === "open").length,
-          activeCount: reqs.filter((r) => r.status === "active").length,
-        }));
-      })
-      .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 입찰 현황을 불러오지 못했어요", "danger"));
-    getBidJobs()
-      .then((rows) => {
-        const jobs = rows.map((j) => mapBidJob(j, () => null));
-        setBidStats((prev) => ({ ...prev, waitCount: jobs.filter((j) => j.status !== "완료").length }));
-      })
-      .catch((err) => showToast(err instanceof Error ? err.message : "예약시공 시공 현황을 불러오지 못했어요", "danger"));
+    loadDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -159,7 +169,8 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
       </div>
 
       {/* scroll body */}
-      <div
+      <PullToRefresh
+        onRefresh={loadDashboardData}
         className="mp-scroll absolute inset-x-0 top-[98px] bottom-[66px] overflow-y-auto px-[18px] pt-4 pb-6"
         style={{ animation: "mp-screen .32s ease" }}
       >
@@ -272,7 +283,7 @@ export default function HomeScreen({ onOpenMyPage, onOpenNcpk, onOpenRsvc, onOpe
             })
           )}
         </div>
-      </div>
+      </PullToRefresh>
 
       {/* ===== bottom navigation ===== */}
       <div className="absolute inset-x-0 bottom-0 z-50 flex h-[66px] border-t border-gray-100 bg-white pb-2">

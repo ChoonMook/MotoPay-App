@@ -62,6 +62,7 @@ import {
   createBidRequest,
   listMyBidRequests,
   cancelBidRequest,
+  cancelBidSelection,
   type BidRequestApi,
   type BidRequestCarApi,
   type CreateBidRequestInput,
@@ -95,6 +96,12 @@ const INITIAL_ITEMS: Record<ItemKey, boolean> = { tint: false, blackbox: false, 
 // 제품명은 이제 실제 카탈로그 조회 결과로 채워짐(RsvFlow의 제품 목록 fetch 참고) — 로딩 전까지는 빈 값
 const INITIAL_PROD: Record<ProdItemKey, string> = { blackbox: "", glass: "", under: "", ppf: "", detail: "" };
 const INITIAL_POS_LEVELS: Record<string, TintLevel> = Object.fromEntries(TINT_POSITIONS.map((p) => [p, "15"]));
+
+// reqProgress 맵에 저장할 값 — 결제 전(PENDING_PAYMENT)이면 그 자체를, 아니면 시공 진행상태(progressStatus)를 사용.
+// displayStatus(BookingScreen.tsx)가 이 값으로 "결제대기"와 "선정완료(결제완료)"를 구분해 배지·라우팅을 나눈다
+function effectiveReservationStatus(reservation: { status: string; progressStatus: string }): string {
+  return reservation.status === "PENDING_PAYMENT" ? "PENDING_PAYMENT" : reservation.progressStatus;
+}
 
 interface RsvFlowProps {
   onExit: () => void;
@@ -231,25 +238,33 @@ export default function RsvFlow({
 
   const { toast, showToast } = useToast();
 
-  useEffect(() => {
-    listMyBidRequests()
-      .then(setMyRequests)
-      .catch((err) => showToast(err instanceof Error ? err.message : "요청 목록을 불러오지 못했어요", "danger"))
-      .finally(() => setLoadingRequests(false));
-    listMyReservations()
-      .then((reservations) => {
-        const progress: Record<string, string> = {};
-        const byRequest: Record<string, ReservationApi> = {};
-        for (const r of reservations) {
-          if (r.reservationType === "BID" && r.requestNo) {
-            progress[r.requestNo] = r.progressStatus;
-            byRequest[r.requestNo] = r;
+  // CU-RSVC-01 목록 새로고침 — 마운트 시 + 당겨서 새로고침(PullToRefresh)에서 공용으로 사용.
+  // 나머지(공통코드·상품카탈로그 등)는 자주 안 바뀌는 참조 데이터라 새로고침 대상에서 제외
+  const refreshRequests = async () => {
+    await Promise.all([
+      listMyBidRequests()
+        .then(setMyRequests)
+        .catch((err) => showToast(err instanceof Error ? err.message : "요청 목록을 불러오지 못했어요", "danger"))
+        .finally(() => setLoadingRequests(false)),
+      listMyReservations()
+        .then((reservations) => {
+          const progress: Record<string, string> = {};
+          const byRequest: Record<string, ReservationApi> = {};
+          for (const r of reservations) {
+            if (r.reservationType === "BID" && r.requestNo) {
+              progress[r.requestNo] = effectiveReservationStatus(r);
+              byRequest[r.requestNo] = r;
+            }
           }
-        }
-        setReqProgress(progress);
-        setReqReservation(byRequest);
-      })
-      .catch(() => {}); // 실패해도 선정완료로 폴백 표시되므로 별도 에러 토스트 불필요
+          setReqProgress(progress);
+          setReqReservation(byRequest);
+        })
+        .catch(() => {}), // 실패해도 선정완료로 폴백 표시되므로 별도 에러 토스트 불필요
+    ]);
+  };
+
+  useEffect(() => {
+    refreshRequests();
     listShops()
       .then((shops) => {
         setShopNameByCode(Object.fromEntries(shops.map((s) => [s.shopCode, s.name])));
@@ -670,7 +685,7 @@ export default function RsvFlow({
       if (!reservation) return;
       setActiveReservation(reservation);
       setReqReservation((prev) => ({ ...prev, [requestNo]: reservation }));
-      setReqProgress((prev) => ({ ...prev, [requestNo]: reservation.progressStatus }));
+      setReqProgress((prev) => ({ ...prev, [requestNo]: effectiveReservationStatus(reservation) }));
     } catch {
       // 예약번호 표시만 영향받고 결제완료 자체는 이미 끝난 뒤라 별도 에러 토스트 없이 조용히 실패
     }
@@ -699,7 +714,10 @@ export default function RsvFlow({
       return;
     }
 
-    const isSelected = status === "SELECTED" || status === "IN_PROGRESS";
+    // 결제대기(선정만 하고 결제 전 이탈)도 선정완료·시공중과 마찬가지로 activeReservation·selId를 채워야
+    // 결제 화면(pay)이 정상 렌더링됨 — 없으면 "선정만 했는데 확정 알림이 가고 결제 화면엔 다시 못 들어가는" 버그였음
+    const needsPayment = status === "PENDING_PAYMENT";
+    const isSelected = needsPayment || status === "SELECTED" || status === "IN_PROGRESS";
     setFlow(request.reqType === "EXPERT" ? "expert" : "gen");
     setActiveBidRequest(request);
     if (isSelected) {
@@ -724,7 +742,7 @@ export default function RsvFlow({
         .catch((err) => showToast(err instanceof Error ? err.message : "입찰 목록을 불러오지 못했어요", "danger"))
         .finally(() => setLoadingOffers(false));
     }
-    setScreen(isSelected ? "bookingdtl" : request.reqType === "EXPERT" ? "plancmp" : "bidcmp");
+    setScreen(needsPayment ? "pay" : isSelected ? "bookingdtl" : request.reqType === "EXPERT" ? "plancmp" : "bidcmp");
   };
 
   // 푸시 알림 탭 등 외부 진입점(App.tsx의 targetRequestNo) — 내 요청 목록이 로드되면 해당 요청을 찾아
@@ -854,6 +872,7 @@ export default function RsvFlow({
           onOpenShop={onOpenShop}
           onOpenMyPage={onOpenMyPage}
           onNavToast={(label) => showToast(`${label} 탭으로 이동해요`)}
+          onRefresh={refreshRequests}
         />
       )}
 
@@ -1126,6 +1145,18 @@ export default function RsvFlow({
               showToast(err instanceof Error ? err.message : "결제 확정에 실패했어요", "danger");
             } finally {
               setSubmittingPayment(false);
+            }
+          }}
+          onCancelSelection={async () => {
+            if (!activeBidRequest || submittingPayment) return;
+            try {
+              const updated = await cancelBidSelection(activeBidRequest.id);
+              setMyRequests((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+              setActiveReservation(null);
+              showToast("선정을 취소했어요. 다른 업체를 다시 골라주세요", "success");
+              openMyRequest(updated);
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "선정 취소에 실패했어요", "danger");
             }
           }}
         />

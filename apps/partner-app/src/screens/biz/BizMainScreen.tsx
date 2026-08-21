@@ -1,8 +1,11 @@
-// PT-PROF-01: 내 업체 관리 메인 - 업체 프로필 요약 + 4개 메뉴 진입점(기본정보/휴무일/예약가능시간/예약현황) + 부가메뉴(알림함/비밀번호변경/로그아웃)
+// PT-PROF-01: 내 업체 관리 메인 - 업체 프로필 요약 + 4개 메뉴 진입점(기본정보/휴무일/예약가능시간/예약현황) + 부가메뉴(알림함/비밀번호변경/앱 정보/로그아웃)
+import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../../api/config";
+import { BUILD_TIME } from "../../buildInfo";
+import { isNativeBridgeAvailable, requestAppVersion } from "../../native/bridge";
 import type { MyShop } from "../../api/shops";
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon } from "../home/homeIcons";
-import { BasicInfoIcon, HolidayIcon, AvailTimeIcon, StatIcon, PwdIcon, LogoutIcon } from "./bizIcons";
+import { BasicInfoIcon, HolidayIcon, AvailTimeIcon, StatIcon, PwdIcon, InfoIcon, LogoutIcon } from "./bizIcons";
 
 interface MenuMeta {
   key: string;
@@ -55,6 +58,16 @@ export default function BizMainScreen({
   onPlaceholder,
 }: BizMainScreenProps) {
   const mainPhoto = shop?.photos.find((p) => p.photoType === "MAIN") ?? null;
+
+  // 안드로이드 앱(motopay-mobile 웹뷰 셸) 안에서 실행 중이면 실제 설치된 APK 빌드버전을, 일반 브라우저면 웹 번들 빌드 시각을 표시
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isNativeBridgeAvailable()) return;
+    requestAppVersion()
+      .then(({ versionName, versionCode }) => setAppVersion(`v${versionName} (${versionCode})`))
+      .catch(() => {});
+  }, []);
+  const buildVersionLabel = appVersion ?? `웹 ${BUILD_TIME}`;
 
   return (
     <div className="absolute inset-0 bg-gray-50">
@@ -137,6 +150,13 @@ export default function BizMainScreen({
                 </span>
                 <span className="flex-1 text-[14.5px] font-semibold text-gray-900">비밀번호 변경</span>
                 <span className="text-lg text-gray-400">›</span>
+              </div>
+              <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-[15px]">
+                <span className="flex-none text-gray-700">
+                  <InfoIcon />
+                </span>
+                <span className="flex-1 text-[14.5px] font-semibold text-gray-900">앱 정보</span>
+                <span className="text-xs text-gray-400">{buildVersionLabel}</span>
               </div>
               <div onClick={onOpenLogoutConfirm} className="flex items-center gap-3 px-4 py-[15px]">
                 <span className="flex-none text-status-danger">

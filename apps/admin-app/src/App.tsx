@@ -33,6 +33,7 @@ import InquiryMgmtPage from "./pages/cs/InquiryMgmtPage";
 import FaqMgmtPage from "./pages/cs/FaqMgmtPage";
 import PushBroadcastPage from "./pages/cs/PushBroadcastPage";
 import ReviewMgmtPage from "./pages/review/ReviewMgmtPage";
+import AppVersionMgmtPage from "./pages/system/AppVersionMgmtPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
 import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
 import UserAcctMgmtPage from "./pages/system/UserAcctMgmtPage";
@@ -44,6 +45,7 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/system/user-acct-mgmt") return <UserAcctMgmtPage />;
   if (path === "/system/common-code-mgmt") return <CommonCodeMgmtPage />;
   if (path === "/system/menu-perm-mgmt") return <MenuPermMgmtPage />;
+  if (path === "/system/app-version-mgmt") return <AppVersionMgmtPage />;
   if (path === "/catalog/car-model-mst") return <CarModelMstPage />;
   if (path === "/catalog/cst-item-mgmt") return <CstItemMgmtPage />;
   if (path === "/catalog/brand-mgmt") return <BrandMgmtPage />;

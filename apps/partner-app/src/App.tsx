@@ -13,9 +13,11 @@ import { setOnSessionExpired, getAccessToken, clearTokens } from "./api/tokenSto
 import { getMe } from "./api/partnerAuth";
 import type { TodayReservation } from "./api/reservations";
 import { pushBackAction } from "./native/backHandler";
-import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
+import { isNativeBridgeAvailable, requestAppVersion, requestPushToken } from "./native/bridge";
 import { registerPushToken } from "./api/pushToken";
 import { getCommonCodeDetails } from "./api/commonCodes";
+import { getAppVersionPolicy, type AppVersionPolicy } from "./api/appVersion";
+import ForceUpdateScreen from "./components/ui/ForceUpdateScreen";
 
 type View = "home" | "biz" | "ncpk" | "rsvc" | "stl";
 type RsvcTarget = { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" } | undefined;
@@ -33,6 +35,26 @@ function App() {
   const [rsvcTargetReservationNo, setRsvcTargetReservationNo] = useState<string | undefined>(undefined);
   // 푸시 알림 탭(입찰안내/낙찰/미선정) — RsvcFlow의 입찰함(bidbox)에서 해당 요청 상세를 바로 연다
   const [rsvcTargetRequestNo, setRsvcTargetRequestNo] = useState<string | undefined>(undefined);
+
+  // 안드로이드 앱(motopay-mobile) 안에서 실행 중일 때만 강제 업데이트 여부 확인 — 일반 브라우저는 항상 최신 웹 번들이라 대상 아님.
+  // 앱 최초 실행 시 1회 + 백그라운드에서 포그라운드로 돌아올 때마다 재확인(네이티브가 __motoHandleForeground를 호출) —
+  // 그렇지 않으면 오래 켜둔 채로 쓰는 사용자는 관리자가 강제 업데이트를 켜도 재시작 전까진 계속 구버전을 쓸 수 있음
+  const [forceUpdatePolicy, setForceUpdatePolicy] = useState<AppVersionPolicy | null>(null);
+  useEffect(() => {
+    if (!isNativeBridgeAvailable()) return;
+    const checkForceUpdate = () => {
+      Promise.all([requestAppVersion(), getAppVersionPolicy("ANDROID")])
+        .then(([{ versionCode }, policy]) => {
+          setForceUpdatePolicy(policy.useYn && Number(versionCode) < policy.minVersionCode ? policy : null);
+        })
+        .catch(() => {}); // 조회 실패 시 차단하지 않고 조용히 무시(네트워크 문제로 앱 전체가 막히면 안 됨)
+    };
+    checkForceUpdate();
+    window.__motoHandleForeground = checkForceUpdate;
+    return () => {
+      window.__motoHandleForeground = undefined;
+    };
+  }, []);
 
   const openNcpk = (tab: NcpkTab) => {
     setNcpkTab(tab);
@@ -162,6 +184,14 @@ function App() {
     if (view === "home") return;
     return pushBackAction(() => setView("home"));
   }, [view]);
+
+  if (forceUpdatePolicy) {
+    return (
+      <AppShell>
+        <ForceUpdateScreen policy={forceUpdatePolicy} />
+      </AppShell>
+    );
+  }
 
   if (booting) {
     return (

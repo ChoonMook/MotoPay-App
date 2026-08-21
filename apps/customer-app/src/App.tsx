@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import AppShell from "./components/AppShell";
 import { pushBackAction } from "./native/backHandler";
 import { clearTokens, getAccessToken, setOnSessionExpired } from "./api/tokenStorage";
-import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
+import { isNativeBridgeAvailable, requestAppVersion, requestPushToken } from "./native/bridge";
 import { registerPushToken, unregisterPushToken } from "./api/pushToken";
+import { getAppVersionPolicy, type AppVersionPolicy } from "./api/appVersion";
+import ForceUpdateScreen from "./components/ui/ForceUpdateScreen";
 import AuthFlow from "./screens/auth/AuthFlow";
 import { getMe, type LoginUser } from "./api/auth";
 import { getCommonCodeDetails } from "./api/commonCodes";
@@ -46,8 +48,30 @@ function App() {
     NCPK_MAPPED: "ncpk",
     POINT_GRANTED: "point",
     COUPON_ISSUED: "myp/couponbox",
+    BID_OFFER_RECEIVED: "rsv",
+    BID_PLAN_RECEIVED: "rsv",
   };
   const [pushRoutes, setPushRoutes] = useState<Record<string, string>>(DEFAULT_PUSH_ROUTES);
+
+  // 안드로이드 앱(motopay-mobile) 안에서 실행 중일 때만 강제 업데이트 여부 확인 — 일반 브라우저는 항상 최신 웹 번들이라 대상 아님.
+  // 앱 최초 실행 시 1회 + 백그라운드에서 포그라운드로 돌아올 때마다 재확인(네이티브가 __motoHandleForeground를 호출) —
+  // 그렇지 않으면 오래 켜둔 채로 쓰는 사용자는 관리자가 강제 업데이트를 켜도 재시작 전까진 계속 구버전을 쓸 수 있음
+  const [forceUpdatePolicy, setForceUpdatePolicy] = useState<AppVersionPolicy | null>(null);
+  useEffect(() => {
+    if (!isNativeBridgeAvailable()) return;
+    const checkForceUpdate = () => {
+      Promise.all([requestAppVersion(), getAppVersionPolicy("ANDROID")])
+        .then(([{ versionCode }, policy]) => {
+          setForceUpdatePolicy(policy.useYn && Number(versionCode) < policy.minVersionCode ? policy : null);
+        })
+        .catch(() => {}); // 조회 실패 시 차단하지 않고 조용히 무시(네트워크 문제로 앱 전체가 막히면 안 됨)
+    };
+    checkForceUpdate();
+    window.__motoHandleForeground = checkForceUpdate;
+    return () => {
+      window.__motoHandleForeground = undefined;
+    };
+  }, []);
 
   useEffect(() => {
     getCommonCodeDetails("PUSH_MSG_TYPE")
@@ -63,7 +87,7 @@ function App() {
   }, []);
 
   // "view" 또는 "view/screen" 경로 문자열을 실제 네비게이션으로 적용 — 예약 관련 타입 이외의 단순 이동에 사용
-  const applyRoute = (route: string) => {
+  const applyRoute = (route: string, data?: Record<string, string> | null) => {
     const [v, sub] = route.split("/");
     switch (v) {
       case "ncpk":
@@ -76,6 +100,10 @@ function App() {
         break;
       case "point":
         setView("point");
+        break;
+      case "rsv":
+        if (data?.requestNo) setRsvTargetRequestNo(data.requestNo);
+        setView("rsv");
         break;
       default:
         break;
@@ -102,7 +130,7 @@ function App() {
     }
 
     const route = pushRoutes[type];
-    if (route) applyRoute(route);
+    if (route) applyRoute(route, data);
     // 모르는 타입은 조용히 무시 — 알림함 읽음 처리는 이미 별도로 됨
   };
 
@@ -162,6 +190,14 @@ function App() {
     const target = view === "cs" ? "myp" : "home";
     return pushBackAction(() => setView(target));
   }, [view]);
+
+  if (forceUpdatePolicy) {
+    return (
+      <AppShell>
+        <ForceUpdateScreen policy={forceUpdatePolicy} />
+      </AppShell>
+    );
+  }
 
   if (booting) {
     return (

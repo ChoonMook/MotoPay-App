@@ -174,6 +174,8 @@ export const MENU_GROUPS: MenuGroup[] = [
       { pgId: "AD-SYS-03", label: "공통 코드 관리", path: "/system/common-code-mgmt" },
       { pgId: "AD-SYS-04", label: "사용자 계정 관리", path: "/system/user-acct-mgmt" },
       { pgId: "AD-SYS-05", label: "메뉴권한관리", path: "/system/menu-perm-mgmt" },
+      // AD-SYS-06(앱버전관리) 신규 추가 — 원본 사이트맵엔 없던 화면, motopay-mobile 강제 업데이트 정책 관리(2026-08-21 사용자 확정)
+      { pgId: "AD-SYS-06", label: "앱버전관리", path: "/system/app-version-mgmt" },
     ],
   },
 ];

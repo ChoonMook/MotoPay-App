@@ -43,6 +43,7 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'INQUIRY_STATUS', name: '1:1문의 상태' },
   { code: 'FAQ_CATEGORY', name: 'FAQ 카테고리' },
   { code: 'NOTI_TYPE', name: '알림함 알림 유형' },
+  { code: 'PUSH_MSG_TYPE', name: '푸시 알림 메시지' },
 ];
 
 interface DetailRow {
@@ -286,6 +287,35 @@ const DETAILS: DetailRow[] = [
   { code: 'NOTI_TYPE', detailCode: 'RSV_CONFIRMED', detailName: '예약 확정' },
   { code: 'NOTI_TYPE', detailCode: 'RSV_COMPLETED', detailName: '시공 완료' },
   { code: 'NOTI_TYPE', detailCode: 'RSV_NEW', detailName: '새 예약 접수(파트너)' },
+  { code: 'NOTI_TYPE', detailCode: 'NCPK_MAPPED', detailName: '신차패키지 매핑' },
+  { code: 'NOTI_TYPE', detailCode: 'POINT_GRANTED', detailName: '포인트 적립' },
+  { code: 'NOTI_TYPE', detailCode: 'COUPON_ISSUED', detailName: '쿠폰 발급' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_RESCHED_REQUESTED', detailName: '일정변경 요청' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_RESCHED_ACCEPTED', detailName: '일정변경 승인' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_RESCHED_REJECTED', detailName: '일정변경 거절' },
+  { code: 'NOTI_TYPE', detailCode: 'RSV_HANDOVER_CONFIRMED', detailName: '인수확인 완료' },
+  { code: 'NOTI_TYPE', detailCode: 'BID_NEW', detailName: '새 입찰 요청(파트너)' },
+  { code: 'NOTI_TYPE', detailCode: 'BID_SELECTED', detailName: '입찰 확정(파트너)' },
+  { code: 'NOTI_TYPE', detailCode: 'BID_NOT_SELECTED', detailName: '입찰 미선정(파트너)' },
+  { code: 'NOTI_TYPE', detailCode: 'ADMIN_NOTICE', detailName: '관리자 공지' },
+
+  // PUSH_MSG_TYPE — 푸시 발송 제목/본문/탭 시 이동 경로. detailName=제목, ref1=본문 템플릿({date} {time} 같은 플레이스홀더 치환됨),
+  // ref2="view" 또는 "view/screen"(탭 시 이동 대상, 앱의 App.tsx handlePushTarget이 해석). 신차패키지(PKG)·예약시공(BID)
+  // 중 어느 예약인지에 따라 Flow 자체가 갈리는 타입(RSV_CONFIRMED 등)은 PKG일 때만 ref2를 쓰고 BID는 코드가 자동 판단한다
+  // PushNotificationService.resolveMessage()가 발송 시점에 조회해 사용 — 문구만 바꿀 땐 소스 수정 없이 여기서 관리
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_CONFIRMED', detailName: '예약이 확정됐어요', ref1: '{date} {time} 예약이 정상적으로 접수됐어요.', ref2: 'ncpk/bookingdtl' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_NEW', detailName: '새 예약이 접수됐어요', ref1: '{date} {time} 예약이 새로 접수됐어요.', ref2: 'ncpk' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_COMPLETED', detailName: '시공이 완료됐어요', ref1: '인수확인을 진행해 주세요.', ref2: 'ncpk/handover' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'NCPK_MAPPED', detailName: '신차패키지가 연결됐어요', ref1: '보유 차량정보로 신차패키지가 매핑됐어요. 지금 확인해보세요.', ref2: 'ncpk' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'POINT_GRANTED', detailName: '포인트가 적립됐어요', ref1: '{amount}P가 적립됐어요.', ref2: 'point' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'COUPON_ISSUED', detailName: '쿠폰이 도착했어요', ref1: '새 쿠폰이 발급됐어요. 보유 쿠폰함에서 확인해보세요.', ref2: 'myp/couponbox' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_RESCHED_REQUESTED', detailName: '일정 변경 요청이 왔어요', ref1: '{date} {time}로 일정 변경을 요청했어요. 확인해주세요.', ref2: 'ncpk/bookingdtl' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_RESCHED_ACCEPTED', detailName: '일정변경이 승인됐어요', ref1: '{date} {time}로 일정이 변경됐어요.', ref2: 'ncpk' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_RESCHED_REJECTED', detailName: '일정변경 요청이 거절됐어요', ref1: '고객이 일정변경 요청을 거절했어요. 기존 일정대로 진행해주세요.', ref2: 'ncpk' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'RSV_HANDOVER_CONFIRMED', detailName: '고객이 인수확인을 완료했어요', ref1: '시공 건에 대한 고객 인수확인이 완료됐어요.', ref2: 'ncpk' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'BID_NEW', detailName: '새 입찰 요청이 도착했어요', ref1: '{date} 희망 시공 요청이 도착했어요. 입찰함에서 확인해보세요.', ref2: 'bidbox/new' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'BID_SELECTED', detailName: '예약이 확정됐어요', ref1: '{date} {time} 시공이 확정됐어요.', ref2: 'bidbox' },
+  { code: 'PUSH_MSG_TYPE', detailCode: 'BID_NOT_SELECTED', detailName: '다른 업체가 선정됐어요', ref1: '아쉽지만 이번 요청은 다른 업체가 선정됐어요.', ref2: 'bidbox' },
 ];
 
 async function main() {

@@ -24,10 +24,18 @@ interface BizFlowProps {
   onLogout: () => void;
   onOpenRsvc: () => void;
   onOpenStl: () => void;
+  onOpenTarget: (type: string, data: Record<string, string> | null) => void;
   initialScreen?: Screen;
 }
 
-export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl, initialScreen = "main" }: BizFlowProps) {
+export default function BizFlow({
+  onExit,
+  onLogout,
+  onOpenRsvc,
+  onOpenStl,
+  onOpenTarget,
+  initialScreen = "main",
+}: BizFlowProps) {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [shop, setShop] = useState<MyShop | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -98,6 +106,7 @@ export default function BizFlow({ onExit, onLogout, onOpenRsvc, onOpenStl, initi
             setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
             markNotificationRead(id).catch(() => {});
           }}
+          onOpenTarget={onOpenTarget}
         />
       )}
 

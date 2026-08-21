@@ -161,6 +161,9 @@ export const MENU_GROUPS: MenuGroup[] = [
       { pgId: "AD-CS-02", label: "1:1 문의 관리", path: "/cs/inquiry-mgmt" },
       { pgId: "AD-CS-03", label: "FAQ 관리", path: "/cs/faq-mgmt" },
       { pgId: "AD-NOTI-02", label: "후기 관리", path: "/review/review-mgmt" },
+      // AD-CS-04(푸시 발송) 신규 추가 — 원본 사이트맵엔 없던 화면, 회원/시공업체 사용자 대상 임의 공지 푸시
+      // 발송 + 발송이력 조회(2026-08-20 사용자 확정)
+      { pgId: "AD-CS-04", label: "푸시 발송", path: "/cs/push-broadcast" },
     ],
   },
   {

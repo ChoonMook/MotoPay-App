@@ -9,7 +9,7 @@ import type {
 import type { BidJob } from "../../api/reservations";
 import type { BidReq, JobStatus, PlanLine, ReqStatus, ReqType, RsvcItem, RsvcJob, RsvcProduct } from "./rsvcTypes";
 
-// PT-RSVC-02 시공 대기 목록 상태 탭(신차패키지 시공관리의 NCPK_TAB_META와 동일 패턴)
+// PT-RSVC-02 시공 현황 상태 탭(신차패키지 시공관리의 NCPK_TAB_META와 동일 패턴)
 export const JOB_TAB_META: { key: JobStatus; label: string }[] = [
   { key: "착수전", label: "착수전" },
   { key: "시공중", label: "시공중" },

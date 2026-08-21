@@ -48,11 +48,14 @@ export type NotiIconKey = "clock" | "coupon" | "truck" | "caralert";
 
 export interface NotiItem {
   id: string;
+  type: string;
   icon: NotiIconKey;
   title: string;
   body: string;
   time: string;
   isRead: boolean;
+  // 탭 시 이동 대상(reservationNo/requestNo/reservationType 등) — App.tsx의 handlePushTarget이 해석
+  data: Record<string, string> | null;
 }
 
 /** 알림 유형(NOTI_TYPE 코드) -> 알림함 아이콘 매핑, 모르는 유형은 clock으로 대체 */
@@ -79,14 +82,24 @@ function formatRelativeTime(iso: string): string {
   return `${days}일 전`;
 }
 
-export function toNotiItem(row: { id: number; type: string; title: string; body: string; createdAt: string; isRead: boolean }): NotiItem {
+export function toNotiItem(row: {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, string> | null;
+  createdAt: string;
+  isRead: boolean;
+}): NotiItem {
   return {
     id: String(row.id),
+    type: row.type,
     icon: notiTypeIcon(row.type),
     title: row.title,
     body: row.body,
     time: formatRelativeTime(row.createdAt),
     isRead: row.isRead,
+    data: row.data,
   };
 }
 

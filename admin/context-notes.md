@@ -35,6 +35,26 @@ v1_30 이후, 스펙 문서 버전업 없이 코드에만 남은 추가 결정(2
 - 포인트 유효기간: 관리 화면 자체가 없고(AD-PNT-03 삭제됨), 만료를 처리하는 엔진도 없다.
 - 입찰 마감시간(`BID_DEADLINE_DAYS`): 화면은 없고 `bid-requests.service.ts`의 코드 상수로만 존재.
 
+## 관리자 알림(할일) 벨 — 설계 방향만 확정, 구현은 보류 (2026-08-20)
+
+`Header.tsx:20-24`의 종 아이콘은 클릭 핸들러도 실제 카운트도 없는 순수 목업이다. "로그인한 관리자의 권한(permGroup)에 따라 놓치면 안 될 업무를 알려달라"는 요청을 받고 방향을 정했으나, 사용자가 "지금은 방향만 기록, 구현은 나중에"라고 해서 설계만 남긴다.
+
+**방식 결정 — 이벤트 로그형이 아니라 "할일 카운트형"**: 고객/파트너 대상 `Notification` 인박스(읽음/안읽음 이력)와는 성격이 다르다. 관리자 벨은 "지금 미처리 상태인 게 몇 건인가"를 실시간 쿼리로 집계하는 것이지, 별도 이력 테이블에 이벤트를 쌓는 게 아니다. 처리되면 자동으로 개수에서 빠지는 게 자연스럽고, 안읽음 상태 관리 같은 부가 로직이 필요 없다.
+
+**권한 매핑 — 기존 `PERM_GROUP` 공통코드 그대로 재사용**: `SUPER_ADMIN`/`OPS_MD`/`CS_OPERATOR`/`SETTLEMENT` 4종이 이미 있고([seed-common-codes.ts:206-210](../apps/api/prisma/seed-common-codes.ts#L206-L210)), `AdminAccount.permGroup`에 관리자 1인당 1개가 배정된다. 메뉴 권한 필터링([App.tsx:90-100](../apps/admin-app/src/App.tsx#L90-L100))과 동일한 패턴으로 `SUPER_ADMIN`은 전체 항목을 보고, 나머지는 자기 그룹에 매핑된 항목만 본다.
+
+**항목별 데이터 소스 조사 결과 — 4개 예시 중 2개만 지금 실제로 구현 가능**:
+- ✅ **신규 1:1문의**(`CS_OPERATOR`) — `Inquiry.status='PENDING'`([schema.prisma:751](../apps/api/prisma/schema.prisma#L751)) 카운트. 화면·API 모두 이미 있음, count 전용 엔드포인트만 추가하면 됨.
+- ✅ **신규 업체 승인 대기**(`OPS_MD`) — `Company.approved=false`([schema.prisma:495](../apps/api/prisma/schema.prisma#L495)) 카운트. 승인/취소 API(`POST /admin/companies/:id/approve`)도 이미 존재.
+- ❌ **정산 요청** — 백엔드에 정산 모델 자체가 없다. `DashboardPage.tsx:22`의 "정산 대기 8건"은 하드코딩 목업, 파트너앱 정산 화면도 로컬 state 목업(`stlData.ts:1-2`)이라 실제 데이터가 없다. `AD-STL-02~06` 정산 관리 메뉴 자체도 미구현(위 "확인된 미구현 영역" 참고) — 정산 모듈을 먼저 만들어야 알림도 의미가 생긴다.
+- ❌ **회원 탈퇴 요청** — "요청"이라는 개념 자체가 없다. `User.withdrawnAt`은 관리자가 즉시 토글하는 필드([admin-members.service.ts:135-151](../apps/api/src/admin-members/admin-members.service.ts#L135-L151))이고, 고객앱의 탈퇴 확인 버튼은 API 호출 없이 그냥 로그아웃만 시킨다([MypFlow.tsx:469-472](../apps/customer-app/src/screens/myp/MypFlow.tsx#L469-L472)) — 고객이 탈퇴를 신청해서 대기시키는 흐름 자체를 새로 설계해야 한다.
+
+**엔드포인트/UI 설계(안)**:
+- `GET /admin/alerts` 신규 — 로그인 관리자의 `permGroup`으로 매핑 테이블을 조회해, 해당 그룹에 속한 항목들의 카운트만 쿼리해서 `{ key, label, count, menuPgId }[]`로 반환. `SUPER_ADMIN`은 매핑 무시하고 전체 반환(메뉴 권한 로직과 동일 원칙).
+- `Header.tsx`의 벨 뱃지 = 합계 개수(현재 하드코딩된 빨간 점 대체), 클릭 시 드롭다운으로 항목별 라벨+카운트 나열, 항목 클릭 시 해당 관리 화면(`menuPgId` 라우팅)으로 이동.
+- 실시간(웹소켓) 불필요 — 60초 정도 폴링이면 이 용도엔 충분하다고 판단(관리자 대시보드 성격상 초단위 실시간성이 필요 없음).
+- 정산·탈퇴 요청은 각각의 백엔드 모듈/흐름이 먼저 만들어진 뒤, `GET /admin/alerts`의 매핑 테이블에 항목만 추가하면 확장되는 구조로 설계 — 지금 만드는 카운트 집계 방식을 바꿀 필요는 없다.
+
 ## 확인된 미구현 영역
 
 - AD-SHOP-02~05(쇼핑몰 관리), AD-STL-02~06(정산 관리) 메뉴 9종은 `menuConfig.ts`엔 등록돼 있지만 `apps/admin-app/src/pages/shop/`·`pages/settle/` 폴더 자체가 없고 `App.tsx`에도 라우팅이 없다 — 전부 `PlaceholderPage`로 떨어진다(재확인 완료, 2026-08-18).

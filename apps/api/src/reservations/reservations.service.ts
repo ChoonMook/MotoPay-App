@@ -379,17 +379,15 @@ export class ReservationsService {
     this.pushService
       .sendToOwner('USER', reservation.memberId, {
         type: 'RSV_CONFIRMED',
-        title: '예약이 확정됐어요',
-        body: `${date} ${time} 예약이 정상적으로 접수됐어요.`,
-        data: { reservationNo: reservation.reservationNo },
+        vars: { date, time },
+        data: { reservationNo: reservation.reservationNo, reservationType: reservation.reservationType },
       })
       .catch(() => {});
     this.pushService
       .sendToShopPartners(shopCode, {
         type: 'RSV_NEW',
-        title: '새 예약이 접수됐어요',
-        body: `${date} ${time} 예약이 새로 접수됐어요.`,
-        data: { reservationNo: reservation.reservationNo },
+        vars: { date, time },
+        data: { reservationNo: reservation.reservationNo, reservationType: reservation.reservationType },
       })
       .catch(() => {});
 
@@ -575,6 +573,19 @@ export class ReservationsService {
         reschedRespondedAt: null,
       },
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToOwner('USER', reservation.memberId, {
+        type: 'RSV_RESCHED_REQUESTED',
+        vars: { date: formatDateOnly(targetDate), time: formatTimeOnly(targetTime) },
+        data: {
+          reservationNo,
+          reservationType: reservation.reservationType,
+          ...(reservation.requestNo ? { requestNo: reservation.requestNo } : {}),
+        },
+      })
+      .catch(() => {});
   }
 
   /**
@@ -610,6 +621,20 @@ export class ReservationsService {
         reschedRespondedAt: null,
       },
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToShopPartners(reservation.shopCode, {
+        type: 'RSV_RESCHED_ACCEPTED',
+        vars: { date: formatDateOnly(targetDate), time: formatTimeOnly(targetTime) },
+        data: {
+          reservationNo: reservation.reservationNo,
+          reservationType: reservation.reservationType,
+          ...(reservation.requestNo ? { requestNo: reservation.requestNo } : {}),
+        },
+      })
+      .catch(() => {});
+
     return toView(updated);
   }
 
@@ -632,6 +657,19 @@ export class ReservationsService {
         reschedRespondedAt: new Date(),
       },
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToShopPartners(reservation.shopCode, {
+        type: 'RSV_RESCHED_REJECTED',
+        data: {
+          reservationNo: reservation.reservationNo,
+          reservationType: reservation.reservationType,
+          ...(reservation.requestNo ? { requestNo: reservation.requestNo } : {}),
+        },
+      })
+      .catch(() => {});
+
     return toView(updated);
   }
 
@@ -823,9 +861,11 @@ export class ReservationsService {
     this.pushService
       .sendToOwner('USER', reservation.memberId, {
         type: 'RSV_COMPLETED',
-        title: '시공이 완료됐어요',
-        body: '인수확인을 진행해 주세요.',
-        data: { reservationNo },
+        data: {
+          reservationNo,
+          reservationType: reservation.reservationType,
+          ...(reservation.requestNo ? { requestNo: reservation.requestNo } : {}),
+        },
       })
       .catch(() => {});
   }
@@ -1329,6 +1369,18 @@ export class ReservationsService {
       where: { id },
       data: { handoverConfirmedAt: new Date() },
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToShopPartners(reservation.shopCode, {
+        type: 'RSV_HANDOVER_CONFIRMED',
+        data: {
+          reservationNo: reservation.reservationNo,
+          reservationType: reservation.reservationType,
+          ...(reservation.requestNo ? { requestNo: reservation.requestNo } : {}),
+        },
+      })
+      .catch(() => {});
   }
 
   async getReview(memberId: string, id: number): Promise<ReviewView | null> {

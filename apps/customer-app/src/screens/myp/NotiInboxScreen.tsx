@@ -8,10 +8,18 @@ interface NotiInboxScreenProps {
   onOpenSettings: () => void;
   notifications: NotiItem[];
   onMarkRead: (id: string) => void;
+  onOpenTarget: (type: string, data: Record<string, string> | null) => void;
   loading?: boolean;
 }
 
-export default function NotiInboxScreen({ onBack, onOpenSettings, notifications, onMarkRead, loading = false }: NotiInboxScreenProps) {
+export default function NotiInboxScreen({
+  onBack,
+  onOpenSettings,
+  notifications,
+  onMarkRead,
+  onOpenTarget,
+  loading = false,
+}: NotiInboxScreenProps) {
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
       <div className="flex-none bg-white pt-[50px] pr-2.5 pl-2.5">
@@ -42,7 +50,10 @@ export default function NotiInboxScreen({ onBack, onOpenSettings, notifications,
               return (
                 <div
                   key={n.id}
-                  onClick={() => onMarkRead(n.id)}
+                  onClick={() => {
+                    onMarkRead(n.id);
+                    onOpenTarget(n.type, n.data);
+                  }}
                   className={`flex cursor-pointer gap-2.5 py-3.5 ${i < notifications.length - 1 ? "border-b border-gray-100" : ""}`}
                 >
                   <span className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[11px] bg-brand-subtle text-brand">

@@ -64,7 +64,14 @@
 - [x] `MenuPermission`/`filterMenuGroups`가 32개 메뉴 리프 전체를 커버, `PlaceholderPage`로 남은 항목 없음(전수 확인)
 - [x] 전체 admin 컨트롤러 17개가 `JwtAdminAuthGuard`+`@ApiBearerAuth()`로 일괄 보호(로그인 엔드포인트 제외)
 
-## 미해결/후속 (2026-08-18 기준)
+## 미해결/후속 (2026-08-20 기준)
+
+- [ ] **관리자 알림(할일 카운트) 벨 — 설계만 완료, 미착수.** `Header.tsx`의 종 아이콘(현재 클릭 핸들러·카운트 없는 목업)에 `permGroup`별 미처리 업무 개수를 붙이는 기능. 상세 설계·데이터 소스 조사 결과는 위 "관리자 알림(할일) 벨" 절 참고. 착수 시 순서:
+  - [ ] `GET /admin/alerts` 엔드포인트(로그인 관리자 permGroup 기반 카운트 매핑) + 신규 1:1문의(`Inquiry.status='PENDING'`) count
+  - [ ] 신규 업체 승인 대기(`Company.approved=false`) count
+  - [ ] `Header.tsx` 벨 아이콘에 실제 카운트·드롭다운·항목 클릭 시 이동 연결
+  - [ ] (후속, 별도 스코프) 정산 모듈 자체가 없어 "정산 요청" 알림은 정산 백엔드부터 구현해야 함
+  - [ ] (후속, 별도 스코프) "회원 탈퇴 요청" 알림은 고객앱 탈퇴 흐름을 실제 API 호출 + 대기 상태로 재설계해야 함(현재는 API 호출 없이 로그아웃만 함)
 
 - [ ] **AD-SHOP-02~05(쇼핑몰 관리 4종), AD-STL-02~06(정산·수수료 관리 5종) — 미구현 확인됨.** `apps/admin-app/src/pages/shop/`, `pages/settle/` 폴더 자체가 없고 `App.tsx`에도 대응 라우팅이 없어, 9개 메뉴 모두 `ContentSwitch`의 기본 분기로 떨어져 `PlaceholderPage`(준비중 안내)만 뜬다. 다음 admin-app 작업 후보.
 - [ ] `DashboardPage.tsx`가 AD-DASH-01을 자처하지만 menuConfig엔 AD-DASH-01이라는 리프가 없음(AD-DASH-02/03만 존재) — 원본 xlsx의 부모/자식 pgId 체계 차이로 추정, 실제 동작엔 문제 없어 보이나 확인 필요

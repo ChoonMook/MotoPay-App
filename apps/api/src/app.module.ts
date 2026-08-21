@@ -15,6 +15,7 @@ import { FaqsModule } from './faqs/faqs.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PushModule } from './push/push.module';
+import { AdminPushModule } from './admin-push/admin-push.module';
 import { MemberGradeRulesModule } from './member-grade-rules/member-grade-rules.module';
 import { MenuPermissionsModule } from './menu-permissions/menu-permissions.module';
 import { NewCarPurchasesModule } from './new-car-purchases/new-car-purchases.module';
@@ -56,6 +57,7 @@ import { UsersModule } from './users/users.module';
     ReviewsModule,
     NotificationsModule,
     PushModule,
+    AdminPushModule,
   ],
   controllers: [AppController],
   providers: [AppService],

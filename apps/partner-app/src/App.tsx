@@ -15,6 +15,7 @@ import type { TodayReservation } from "./api/reservations";
 import { pushBackAction } from "./native/backHandler";
 import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
 import { registerPushToken } from "./api/pushToken";
+import { getCommonCodeDetails } from "./api/commonCodes";
 
 type View = "home" | "biz" | "ncpk" | "rsvc" | "stl";
 type RsvcTarget = { screen: "bidbox"; tab: BidTab } | { screen: "waitlist" } | undefined;
@@ -30,6 +31,8 @@ function App() {
   // 홈 "오늘의 시공 일정" 카드에서 특정 예약을 바로 열 때만 값이 설정됨 — 그 외 진입 경로(바로가기·하단내비 등)는 항상 초기화
   const [ncpkTargetReservationNo, setNcpkTargetReservationNo] = useState<string | undefined>(undefined);
   const [rsvcTargetReservationNo, setRsvcTargetReservationNo] = useState<string | undefined>(undefined);
+  // 푸시 알림 탭(입찰안내/낙찰/미선정) — RsvcFlow의 입찰함(bidbox)에서 해당 요청 상세를 바로 연다
+  const [rsvcTargetRequestNo, setRsvcTargetRequestNo] = useState<string | undefined>(undefined);
 
   const openNcpk = (tab: NcpkTab) => {
     setNcpkTab(tab);
@@ -58,6 +61,72 @@ function App() {
       setView("rsvc");
     }
   };
+
+  // 푸시 타입(RSV_NEW 등) -> "view" 또는 "view/screen" 이동 경로. 공통코드(PUSH_MSG_TYPE.ref2)에서 조회 —
+  // 문구처럼 소스 수정 없이 관리자 화면에서 바꿀 수 있음. 로드 전/미등록 타입 대비 기본값을 같이 둔다
+  const DEFAULT_PUSH_ROUTES: Record<string, string> = {
+    RSV_NEW: "ncpk",
+    RSV_RESCHED_ACCEPTED: "ncpk",
+    RSV_RESCHED_REJECTED: "ncpk",
+    RSV_HANDOVER_CONFIRMED: "ncpk",
+    BID_NEW: "bidbox/new",
+    BID_SELECTED: "bidbox",
+    BID_NOT_SELECTED: "bidbox",
+  };
+  const [pushRoutes, setPushRoutes] = useState<Record<string, string>>(DEFAULT_PUSH_ROUTES);
+
+  useEffect(() => {
+    getCommonCodeDetails("PUSH_MSG_TYPE")
+      .then((rows) => {
+        const map: Record<string, string> = { ...DEFAULT_PUSH_ROUTES };
+        for (const row of rows) {
+          if (row.ref2) map[row.detailCode] = row.ref2;
+        }
+        setPushRoutes(map);
+      })
+      .catch(() => {}); // 실패해도 기본값(DEFAULT_PUSH_ROUTES)으로 계속 동작
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 푸시 알림 탭(알림함 탭 포함) 공통 처리 — window.__motoHandlePushTap(네이티브 셸)과 NotiInboxScreen onOpenTarget이 공유
+  const handlePushTarget = (type: string, data: Record<string, string> | null | undefined) => {
+    // 신차패키지(PKG)·예약시공(BID) 중 어느 예약인지에 따라 Flow 자체가 갈리는 타입 — PKG일 때만 ref2(공통코드)로
+    // 탭을 정하고(NcpkFlow는 reservationNo가 있으면 상태를 보고 스스로 화면을 고름), BID는 항상 시공 현황(waitlist)으로 보낸다
+    if (type === "RSV_NEW" || type === "RSV_RESCHED_ACCEPTED" || type === "RSV_RESCHED_REJECTED" || type === "RSV_HANDOVER_CONFIRMED") {
+      const reservationNo = data?.reservationNo;
+      if (!reservationNo) return;
+      if (data?.reservationType === "PKG") {
+        const [, sub] = (pushRoutes[type] ?? DEFAULT_PUSH_ROUTES[type]).split("/");
+        setNcpkTab((sub as NcpkTab) ?? "wait");
+        setNcpkTargetReservationNo(reservationNo);
+        setView("ncpk");
+      } else {
+        setRsvcTarget({ screen: "waitlist" });
+        setRsvcTargetReservationNo(reservationNo);
+        setView("rsvc");
+      }
+      return;
+    }
+
+    if (type === "BID_NEW" || type === "BID_SELECTED" || type === "BID_NOT_SELECTED") {
+      const requestNo = data?.requestNo;
+      if (!requestNo) return;
+      const [, sub] = (pushRoutes[type] ?? DEFAULT_PUSH_ROUTES[type]).split("/");
+      setRsvcTarget({ screen: "bidbox", tab: (sub as BidTab) ?? "new" });
+      setRsvcTargetRequestNo(requestNo);
+      setView("rsvc");
+      return;
+    }
+    // 모르는 타입은 조용히 무시 — 알림함 읽음 처리는 이미 별도로 됨
+  };
+
+  useEffect(() => {
+    window.__motoHandlePushTap = (payload) => handlePushTarget(payload.type, payload);
+    return () => {
+      window.__motoHandlePushTap = undefined;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pushRoutes]);
 
   // 로그인 상태가 확정될 때마다(로그인·세션 복원 공통) 이 기기의 푸시 토큰을 등록 —
   // 네이티브 앱(웹뷰 셸)이 아니거나 아직 푸시 설정 전이면 조용히 건너뜀
@@ -131,6 +200,7 @@ function App() {
             }}
             onOpenRsvc={() => openRsvc()}
             onOpenStl={openStl}
+            onOpenTarget={handlePushTarget}
           />
         )}
         {view === "ncpk" && (
@@ -138,12 +208,16 @@ function App() {
         )}
         {view === "rsvc" && (
           <RsvcFlow
-            onExit={() => setView("home")}
+            onExit={() => {
+              setRsvcTargetRequestNo(undefined);
+              setView("home");
+            }}
             onOpenStl={openStl}
             onOpenMyPage={() => setView("biz")}
             initialScreen={rsvcTarget?.screen ?? "main"}
             initialBidTab={rsvcTarget?.screen === "bidbox" ? rsvcTarget.tab : undefined}
             initialReservationNo={rsvcTargetReservationNo}
+            targetRequestNo={rsvcTargetRequestNo}
           />
         )}
         {view === "stl" && (

@@ -29,9 +29,10 @@ interface NotiInboxScreenProps {
   notifications: NotificationApi[];
   loading: boolean;
   onMarkRead: (id: number) => void;
+  onOpenTarget: (type: string, data: Record<string, string> | null) => void;
 }
 
-export default function NotiInboxScreen({ onBack, notifications, loading, onMarkRead }: NotiInboxScreenProps) {
+export default function NotiInboxScreen({ onBack, notifications, loading, onMarkRead, onOpenTarget }: NotiInboxScreenProps) {
   return (
     <div className="absolute inset-0 bg-gray-50">
       <div className="absolute inset-x-0 top-[46px] z-50 flex h-[52px] items-center gap-1.5 border-b border-gray-100 bg-white px-1.5">
@@ -60,7 +61,10 @@ export default function NotiInboxScreen({ onBack, notifications, loading, onMark
               return (
                 <div
                   key={n.id}
-                  onClick={() => onMarkRead(n.id)}
+                  onClick={() => {
+                    onMarkRead(n.id);
+                    onOpenTarget(n.type, n.data);
+                  }}
                   className={`flex cursor-pointer gap-2.5 py-3.5 ${i < notifications.length - 1 ? "border-b border-gray-100" : ""}`}
                 >
                   <span className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-[11px] bg-brand-subtle text-brand">

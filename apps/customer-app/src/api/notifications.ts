@@ -6,6 +6,8 @@ export interface NotificationApi {
   type: string; // -> CommonCodeDetail(code='NOTI_TYPE')
   title: string;
   body: string;
+  // 탭 시 이동 대상(reservationNo/requestNo/reservationType 등) — 없으면 이동 없이 읽음 처리만
+  data: Record<string, string> | null;
   isRead: boolean;
   createdAt: string;
 }

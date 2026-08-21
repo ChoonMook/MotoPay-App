@@ -57,10 +57,21 @@ interface MypFlowProps {
   onOpenCs: () => void;
   onUpdateUser: (user: LoginUser) => void;
   onLogout: () => void;
+  onOpenTarget: (type: string, data: Record<string, string> | null) => void;
   initialScreen?: MypScreenId;
 }
 
-export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs, onUpdateUser, onLogout, initialScreen = "main" }: MypFlowProps) {
+export default function MypFlow({
+  user,
+  onExit,
+  onOpenShop,
+  onOpenRsv,
+  onOpenCs,
+  onUpdateUser,
+  onLogout,
+  onOpenTarget,
+  initialScreen = "main",
+}: MypFlowProps) {
   const [screen, setScreen] = useState<MypScreenId>(initialScreen);
   const [sheet, setSheet] = useState<MypSheetId>(null);
 
@@ -451,6 +462,7 @@ export default function MypFlow({ user, onExit, onOpenShop, onOpenRsv, onOpenCs,
             setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
             markNotificationRead(Number(id)).catch(() => {});
           }}
+          onOpenTarget={onOpenTarget}
         />
       )}
 

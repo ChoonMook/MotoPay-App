@@ -31,6 +31,7 @@ import NcpkStatPage from "./pages/rsv/NcpkStatPage";
 import RsvStatPage from "./pages/rsv/RsvStatPage";
 import InquiryMgmtPage from "./pages/cs/InquiryMgmtPage";
 import FaqMgmtPage from "./pages/cs/FaqMgmtPage";
+import PushBroadcastPage from "./pages/cs/PushBroadcastPage";
 import ReviewMgmtPage from "./pages/review/ReviewMgmtPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
 import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
@@ -60,6 +61,7 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/coupon/cpn-hist") return <CpnHistPage />;
   if (path === "/cs/inquiry-mgmt") return <InquiryMgmtPage />;
   if (path === "/cs/faq-mgmt") return <FaqMgmtPage />;
+  if (path === "/cs/push-broadcast") return <PushBroadcastPage />;
   if (path === "/review/review-mgmt") return <ReviewMgmtPage />;
   return <PlaceholderPage path={path} />;
 }

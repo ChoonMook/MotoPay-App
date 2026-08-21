@@ -3,6 +3,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MemberGradeRulesService } from '../member-grade-rules/member-grade-rules.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushNotificationService } from '../push/push-notification.service';
 import {
   formatDateOnly,
   parseDateOnly,
@@ -81,6 +82,7 @@ export class CouponsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly memberGradeRulesService: MemberGradeRulesService,
+    private readonly pushService: PushNotificationService,
   ) {}
 
   async adminList(params: {
@@ -329,6 +331,13 @@ export class CouponsService {
       });
       return confirmed;
     });
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 대상 회원 다수라 개별 실패가 발급 자체에 영향 주지 않게 함
+    for (const memberId of targetMemberIds) {
+      this.pushService
+        .sendToOwner('USER', memberId, { type: 'COUPON_ISSUED' })
+        .catch(() => {});
+    }
 
     return this.adminGetDetail(coupon.couponNo);
   }

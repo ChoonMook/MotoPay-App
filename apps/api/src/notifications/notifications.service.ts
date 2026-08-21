@@ -10,6 +10,8 @@ export interface NotificationView {
   type: string;
   title: string;
   body: string;
+  // 알림 탭 시 이동 대상(reservationNo/requestNo/reservationType 등) — PushNotificationService가 발송한 data 그대로
+  data: Record<string, string> | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -21,10 +23,16 @@ export class NotificationsService {
   async create(
     ownerType: NotificationOwnerType,
     ownerId: string,
-    data: { type: string; title: string; body: string },
+    data: { type: string; title: string; body: string; data?: Record<string, unknown> },
   ): Promise<void> {
+    const { data: linkData, ...rest } = data;
     await this.prisma.notification.create({
-      data: { ownerType, ownerId, ...data },
+      data: {
+        ownerType,
+        ownerId,
+        ...rest,
+        dataJson: linkData ? JSON.stringify(linkData) : null,
+      },
     });
   }
 
@@ -38,6 +46,7 @@ export class NotificationsService {
       type: r.type,
       title: r.title,
       body: r.body,
+      data: r.dataJson ? (JSON.parse(r.dataJson) as Record<string, string>) : null,
       isRead: r.isRead,
       createdAt: r.createdAt.toISOString(),
     }));

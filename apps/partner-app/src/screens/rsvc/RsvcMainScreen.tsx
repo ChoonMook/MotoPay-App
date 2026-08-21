@@ -1,4 +1,4 @@
-// PT-RSVC-01: 예약시공관리 메인 허브 - 신규 요청 배너, 입찰함·시공 대기 목록 진입 카드, 진행 중인 시공 미리보기
+// PT-RSVC-01: 예약시공관리 메인 허브 - 신규 요청 배너, 입찰함·시공 현황 진입 카드, 진행 중인 시공 미리보기
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon, BellIcon } from "../home/homeIcons";
 import { jobStatusChipClass } from "./rsvcData";
 import type { RsvcJob } from "./rsvcTypes";
@@ -74,7 +74,7 @@ export default function RsvcMainScreen({
               <WaitIcon />
             </span>
             <div className="text-[22px] font-extrabold tabular-nums text-gray-900">{jobTotalCount}</div>
-            <div className="mt-0.5 text-[13.5px] font-bold text-gray-900">시공 대기 목록</div>
+            <div className="mt-0.5 text-[13.5px] font-bold text-gray-900">시공 현황</div>
             <div className="mt-0.5 text-[11.5px] text-gray-500">착수전·시공중 건</div>
           </div>
         </div>

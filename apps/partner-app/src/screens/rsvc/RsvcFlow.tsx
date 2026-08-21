@@ -1,4 +1,4 @@
-// PT-RSVC-01~13 예약시공관리(입찰) 상태 컨테이너 - 입찰함↔요청상세↔입찰참여/추천안작성 및 시공대기↔착수↔완료↔일정변경 흐름을 엮음
+// PT-RSVC-01~13 예약시공관리(입찰) 상태 컨테이너 - 입찰함↔요청상세↔입찰참여/추천안작성 및 시공현황↔착수↔완료↔일정변경 흐름을 엮음
 // 입찰함(신규 요청 목록)·입찰 참여·추천안 작성/제출·상품 카탈로그·시공 착수/완료·해피콜 이력 모두 실API 연동.
 // 일정변경 요청만 아직 백엔드 모델이 없어 로컬 state 목업으로 시연
 import { useEffect, useRef, useState } from "react";
@@ -63,6 +63,8 @@ interface RsvcFlowProps {
   initialBidTab?: BidTab;
   /** 홈 "오늘의 시공 일정"에서 특정 예약을 바로 열 때만 값이 전달됨 — 있으면 목록 진입 직후 그 건을 바로 연다 */
   initialReservationNo?: string;
+  /** 푸시 알림 탭(입찰안내/낙찰/미선정) — 있으면 목록 진입 직후 해당 요청 상세(reqdetail)를 바로 연다 */
+  targetRequestNo?: string;
 }
 
 export default function RsvcFlow({
@@ -72,6 +74,7 @@ export default function RsvcFlow({
   initialScreen = "main",
   initialBidTab = "new",
   initialReservationNo,
+  targetRequestNo,
 }: RsvcFlowProps) {
   const { toast, showToast } = useToast();
 
@@ -108,7 +111,8 @@ export default function RsvcFlow({
           const model = carModelCodes.find((d: CommonCodeDetailApi) => d.detailCode === car.carModelCode)?.detailName ?? car.carModelCode;
           return car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`;
         };
-        setReqs(rows.map((r) => mapBidRequest(r, carLabel)));
+        const mappedReqs = rows.map((r) => mapBidRequest(r, carLabel));
+        setReqs(mappedReqs);
         setShopCode(shop.shopCode);
         setCarBrandCodes(carBrandCodes);
         setCarModelCodes(carModelCodes);
@@ -120,12 +124,17 @@ export default function RsvcFlow({
           const target = mappedJobs.find((j) => j.id === initialReservationNo);
           if (target) openJob(target);
         }
+        // 푸시 알림 탭(입찰안내/낙찰/미선정) — 해당 요청 상세를 바로 연다
+        if (targetRequestNo) {
+          const targetReq = mappedReqs.find((r) => r.id === targetRequestNo);
+          if (targetReq) openReq(targetReq);
+        }
       })
       .catch((err) => showToast(err instanceof Error ? err.message : "입찰함을 불러오지 못했습니다", "danger"))
       .finally(() => setLoadingReqs(false));
   }, []);
 
-  // 입찰함(bidbox) 등 다른 화면에서 뒤로가기로 예약시공관리 홈(main)에 다시 들어올 때마다 입찰함·시공대기 목록을
+  // 입찰함(bidbox) 등 다른 화면에서 뒤로가기로 예약시공관리 홈(main)에 다시 들어올 때마다 입찰함·시공 현황 목록을
   // 새로 조회 — 마운트 시 최초 조회는 위 effect가 이미 하므로 여기서는 "main으로 되돌아온" 경우만 처리한다
   const prevRsvcScreenRef = useRef(screen);
   useEffect(() => {
@@ -201,7 +210,7 @@ export default function RsvcFlow({
     desiredDate: "",
     status: "open",
   };
-  // 시공 대기 목록 로딩 중이거나 0건일 때의 안전 기본값(실제 화면 전환은 openJob을 거쳐야만 발생하므로 도달하지 않음)
+  // 시공 현황 로딩 중이거나 0건일 때의 안전 기본값(실제 화면 전환은 openJob을 거쳐야만 발생하므로 도달하지 않음)
   const emptyJob: RsvcJob = {
     id: "",
     requestNo: "",
@@ -311,7 +320,7 @@ export default function RsvcFlow({
 
   const openJob = (job: RsvcJob) => {
     setActiveJobId(job.id);
-    // 시공 대기 목록으로 돌아갔을 때 이 job이 보이는 탭과 항상 맞춰둠(홈 "오늘의 시공 일정"처럼 목록을 거치지 않고
+    // 시공 현황으로 돌아갔을 때 이 job이 보이는 탭과 항상 맞춰둠(홈 "오늘의 시공 일정"처럼 목록을 거치지 않고
     // 바로 들어온 경우에도 완료 건이면 완료 탭이 보여야 함)
     setWaitlistTab(job.status);
     if (job.status === "착수전") {
@@ -443,7 +452,7 @@ export default function RsvcFlow({
   }, [screen, sheet, planPosIdx]);
 
   const activeGeneralCount = reqs.filter((r) => r.type === "general" && r.status === "active").length + 1;
-  // "착수전·시공중 건"만 시공 대기로 집계(완료 건은 제외) — jobStatusChipClass 라벨과 동일 기준
+  // "착수전·시공중 건"만 시공 현황으로 집계(완료 건은 제외) — jobStatusChipClass 라벨과 동일 기준
   const waitingJobs = jobs.filter((j) => j.status !== "완료");
   const waitlistTabCounts: Record<JobStatus, number> = { 착수전: 0, 시공중: 0, 완료: 0 };
   for (const j of jobs) waitlistTabCounts[j.status] += 1;

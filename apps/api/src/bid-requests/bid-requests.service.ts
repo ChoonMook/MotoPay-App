@@ -15,6 +15,7 @@ import type {
   MyCar,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushNotificationService } from '../push/push-notification.service';
 import { ShopScheduleService } from '../shops/shop-schedule.service';
 import {
   formatDateOnly,
@@ -166,6 +167,7 @@ export class BidRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly shopScheduleService: ShopScheduleService,
+    private readonly pushService: PushNotificationService,
   ) {}
 
   async create(
@@ -289,7 +291,7 @@ export class BidRequestsService {
         });
       }
 
-      return tx.bidRequest.findUniqueOrThrow({
+      const request = await tx.bidRequest.findUniqueOrThrow({
         where: { requestNo },
         include: {
           items: true,
@@ -297,9 +299,21 @@ export class BidRequestsService {
           myCar: { select: CAR_SELECT },
         },
       });
+      return { request, matchedShops };
     });
 
-    return toView(created);
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 입찰의뢰 발송 대상 업체 전체
+    for (const shop of created.matchedShops) {
+      this.pushService
+        .sendToShopPartners(shop.shopCode, {
+          type: 'BID_NEW',
+          vars: { date: formatDateOnly(created.request.desiredDate) },
+          data: { requestNo: created.request.requestNo },
+        })
+        .catch(() => {});
+    }
+
+    return toView(created.request);
   }
 
   async listMine(memberId: string): Promise<BidRequestView[]> {
@@ -775,14 +789,47 @@ export class BidRequestsService {
           requestNo: request.requestNo,
         },
       });
+      const reservationNo = String(created.id).padStart(10, '0');
       await tx.reservation.update({
         where: { id: created.id },
-        data: { reservationNo: String(created.id).padStart(10, '0') },
+        data: { reservationNo },
       });
 
-      return req;
+      // 낙찰 안내(선정 업체)/미선정 안내(같은 요청에 응찰했던 나머지 업체) 대상 조회
+      const otherShops = await tx.bidOffer.findMany({
+        where: { requestNo: request.requestNo, offerNo: { not: offerNo } },
+        select: { shopCode: true },
+        distinct: ['shopCode'],
+      });
+
+      return { req, offerDate, offerTime: offer.scheduledTime, otherShops, reservationNo };
     });
-    return toView(updated);
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToOwner('USER', memberId, {
+        type: 'RSV_CONFIRMED',
+        vars: { date: formatDateOnly(updated.offerDate), time: formatTimeOnly(updated.offerTime) },
+        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
+      })
+      .catch(() => {});
+    this.pushService
+      .sendToShopPartners(offer.shopCode, {
+        type: 'BID_SELECTED',
+        vars: { date: formatDateOnly(updated.offerDate), time: formatTimeOnly(updated.offerTime) },
+        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
+      })
+      .catch(() => {});
+    for (const shop of updated.otherShops) {
+      this.pushService
+        .sendToShopPartners(shop.shopCode, {
+          type: 'BID_NOT_SELECTED',
+          data: { requestNo: request.requestNo },
+        })
+        .catch(() => {});
+    }
+
+    return toView(updated.req);
   }
 
   /**
@@ -841,14 +888,47 @@ export class BidRequestsService {
           requestNo: request.requestNo,
         },
       });
+      const reservationNo = String(created.id).padStart(10, '0');
       await tx.reservation.update({
         where: { id: created.id },
-        data: { reservationNo: String(created.id).padStart(10, '0') },
+        data: { reservationNo },
       });
 
-      return req;
+      // 낙찰 안내(선정 업체)/미선정 안내(같은 요청에 추천안을 냈던 나머지 업체) 대상 조회
+      const otherShops = await tx.bidPlan.findMany({
+        where: { requestNo: request.requestNo, planNo: { not: planNo } },
+        select: { shopCode: true },
+        distinct: ['shopCode'],
+      });
+
+      return { req, planDate, planTime: plan.scheduledTime, otherShops, reservationNo };
     });
-    return toView(updated);
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송)
+    this.pushService
+      .sendToOwner('USER', memberId, {
+        type: 'RSV_CONFIRMED',
+        vars: { date: formatDateOnly(updated.planDate), time: formatTimeOnly(updated.planTime) },
+        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
+      })
+      .catch(() => {});
+    this.pushService
+      .sendToShopPartners(plan.shopCode, {
+        type: 'BID_SELECTED',
+        vars: { date: formatDateOnly(updated.planDate), time: formatTimeOnly(updated.planTime) },
+        data: { requestNo: request.requestNo, reservationNo: updated.reservationNo, reservationType: 'BID' },
+      })
+      .catch(() => {});
+    for (const shop of updated.otherShops) {
+      this.pushService
+        .sendToShopPartners(shop.shopCode, {
+          type: 'BID_NOT_SELECTED',
+          data: { requestNo: request.requestNo },
+        })
+        .catch(() => {});
+    }
+
+    return toView(updated.req);
   }
 
   // ── 관리자 예약시공현황(AD-RSVC-02) — 일반입찰(GENERAL)·전문가추천(EXPERT) 통합 모니터링 ──────────────────

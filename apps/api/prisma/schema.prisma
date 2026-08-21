@@ -987,9 +987,25 @@ model Notification {
   type      String // -> CommonCodeDetail(code='NOTI_TYPE') 클라이언트 아이콘 매핑용
   title     String
   body      String
+  dataJson  String? @db.Text // JSON.stringify(reservationNo/requestNo 등) — 알림 탭 시 이동 대상 판별용
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamp(3)
 
   @@index([ownerType, ownerId])
   @@map("notifications")
+}
+
+// 관리자가 회원/시공업체 사용자에게 임의로 보낸 공지성 푸시 발송 이력(AD-CS-04) — 발송 시점 스냅샷 저장.
+// 수정 UI 없는 로그성 테이블이라 createdBy만 두고 updatedBy/updatedAt은 제외
+model AdminPushBroadcast {
+  id          Int      @id @default(autoincrement())
+  targetType  String // 'USER' | 'PARTNER' -> User.id 또는 PartnerUser.id 대상
+  scope       String // 'ALL' | 'INDIVIDUAL'
+  targetCount Int // 실제 발송 대상 인원 수(스냅샷)
+  title       String
+  body        String
+  createdBy   String? // -> AdminAccount.username(FK 없음)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+
+  @@map("admin_push_broadcasts")
 }

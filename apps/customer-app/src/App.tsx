@@ -7,6 +7,7 @@ import { isNativeBridgeAvailable, requestPushToken } from "./native/bridge";
 import { registerPushToken, unregisterPushToken } from "./api/pushToken";
 import AuthFlow from "./screens/auth/AuthFlow";
 import { getMe, type LoginUser } from "./api/auth";
+import { getCommonCodeDetails } from "./api/commonCodes";
 import HomeScreen from "./screens/home/HomeScreen";
 import NcpkFlow from "./screens/ncp/NcpkFlow";
 import RsvFlow from "./screens/rsv/RsvFlow";
@@ -32,6 +33,86 @@ function App() {
   const [ncpkTargetReservationNo, setNcpkTargetReservationNo] = useState<string | undefined>(undefined);
   const [mypEntryScreen, setMypEntryScreen] = useState<MypScreenId>("main");
   const [rsvEntryFilter, setRsvEntryFilter] = useState<ReqStatusFilter>("ALL");
+  // 푸시 알림 탭(예약시공/BID) — 위 ncpkTargetReservationNo와 동일한 목적, RsvFlow.openMyRequest가 자체적으로
+  // 상태(완료/진행중 등)를 보고 화면을 고르므로 여기선 requestNo만 전달하면 됨
+  const [rsvTargetRequestNo, setRsvTargetRequestNo] = useState<string | undefined>(undefined);
+
+  // 푸시 타입(RSV_CONFIRMED 등) -> "view" 또는 "view/screen" 이동 경로. 공통코드(PUSH_MSG_TYPE.ref2)에서
+  // 조회 — 문구처럼 소스 수정 없이 관리자 화면에서 바꿀 수 있음. 로드 전/미등록 타입 대비 기본값을 같이 둔다
+  const DEFAULT_PUSH_ROUTES: Record<string, string> = {
+    RSV_CONFIRMED: "ncpk/bookingdtl",
+    RSV_RESCHED_REQUESTED: "ncpk/bookingdtl",
+    RSV_COMPLETED: "ncpk/handover",
+    NCPK_MAPPED: "ncpk",
+    POINT_GRANTED: "point",
+    COUPON_ISSUED: "myp/couponbox",
+  };
+  const [pushRoutes, setPushRoutes] = useState<Record<string, string>>(DEFAULT_PUSH_ROUTES);
+
+  useEffect(() => {
+    getCommonCodeDetails("PUSH_MSG_TYPE")
+      .then((rows) => {
+        const map: Record<string, string> = { ...DEFAULT_PUSH_ROUTES };
+        for (const row of rows) {
+          if (row.ref2) map[row.detailCode] = row.ref2;
+        }
+        setPushRoutes(map);
+      })
+      .catch(() => {}); // 실패해도 기본값(DEFAULT_PUSH_ROUTES)으로 계속 동작
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "view" 또는 "view/screen" 경로 문자열을 실제 네비게이션으로 적용 — 예약 관련 타입 이외의 단순 이동에 사용
+  const applyRoute = (route: string) => {
+    const [v, sub] = route.split("/");
+    switch (v) {
+      case "ncpk":
+        setNcpkTargetReservationNo(undefined);
+        setNcpkEntryScreen((sub as NcpScreen) ?? "main");
+        setView("ncpk");
+        break;
+      case "myp":
+        openMyPageAt((sub as MypScreenId) ?? "main");
+        break;
+      case "point":
+        setView("point");
+        break;
+      default:
+        break;
+    }
+  };
+
+  // 푸시 알림 탭(알림함 탭 포함) 공통 처리 — window.__motoHandlePushTap(네이티브 셸)과 NotiInboxScreen onOpenTarget이 공유
+  const handlePushTarget = (type: string, data: Record<string, string> | null | undefined) => {
+    // 신차패키지(PKG)·예약시공(BID) 중 어느 예약인지에 따라 Flow 자체가 갈리는 타입 — PKG일 때만 ref2(공통코드)로
+    // 화면을 정하고, BID는 RsvFlow.openMyRequest가 예약 상태를 보고 스스로 화면을 고르므로 requestNo만 넘긴다
+    if (type === "RSV_CONFIRMED" || type === "RSV_COMPLETED" || type === "RSV_RESCHED_REQUESTED") {
+      const reservationNo = data?.reservationNo;
+      const requestNo = data?.requestNo;
+      if (data?.reservationType === "BID" && requestNo) {
+        setRsvTargetRequestNo(requestNo);
+        setView("rsv");
+      } else if (reservationNo) {
+        const [, sub] = (pushRoutes[type] ?? DEFAULT_PUSH_ROUTES[type]).split("/");
+        setNcpkTargetReservationNo(reservationNo);
+        setNcpkEntryScreen((sub as NcpScreen) ?? "bookingdtl");
+        setView("ncpk");
+      }
+      return;
+    }
+
+    const route = pushRoutes[type];
+    if (route) applyRoute(route);
+    // 모르는 타입은 조용히 무시 — 알림함 읽음 처리는 이미 별도로 됨
+  };
+
+  useEffect(() => {
+    window.__motoHandlePushTap = (payload) => handlePushTarget(payload.type, payload);
+    return () => {
+      window.__motoHandlePushTap = undefined;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pushRoutes]);
 
   // accessToken/refreshToken 둘 다 만료되면 http.ts가 이 콜백을 호출해 로그인 화면으로 돌려보냄
   useEffect(() => {
@@ -135,7 +216,11 @@ function App() {
         {view === "rsv" && (
           <RsvFlow
             initialFilter={rsvEntryFilter}
-            onExit={() => setView("home")}
+            targetRequestNo={rsvTargetRequestNo}
+            onExit={() => {
+              setRsvTargetRequestNo(undefined);
+              setView("home");
+            }}
             onOpenShop={() => setView("shop")}
             onOpenMyPage={openMyPage}
           />
@@ -158,6 +243,7 @@ function App() {
             onOpenRsv={openRsv}
             onOpenCs={() => setView("cs")}
             onUpdateUser={setUser}
+            onOpenTarget={handlePushTarget}
             onLogout={async () => {
               // 토큰을 지우기 전에(그래야 인증된 상태로 해제 요청을 보낼 수 있음) 먼저 이 기기의 푸시 토큰을 해제
               if (isNativeBridgeAvailable()) {

@@ -21,6 +21,9 @@ export interface CapturedImage {
 declare global {
   interface Window {
     MotoBridge?: { postMessage: (message: BridgeRequest) => void };
+    // 네이티브 셸(customer-mobile)이 푸시 알림 탭 시 injectJavaScript로 호출 — App.tsx가 마운트 시 할당
+    // 실제 페이로드는 { type, ...나머지 data 필드 } 하나로 평평한 객체(push-notification.service.ts의 Expo data와 동일)
+    __motoHandlePushTap?: (payload: Record<string, string> & { type: string }) => void;
   }
 }
 

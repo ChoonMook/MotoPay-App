@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { MyCar, NewCarPurchaseCustomer } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushNotificationService } from '../push/push-notification.service';
 import type { CreateMyCarDto } from './dto/create-my-car.dto';
 import type { UpdateMyCarDto } from './dto/update-my-car.dto';
 
@@ -20,7 +21,10 @@ export interface MyCarView extends MyCar {
 
 @Injectable()
 export class CarsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pushService: PushNotificationService,
+  ) {}
 
   /** 내 차량 목록 조회 — 대표차량이 먼저 오도록 정렬 */
   async listMyCars(userId: string): Promise<MyCarView[]> {
@@ -179,6 +183,11 @@ export class CarsService {
         },
       }),
     ]);
+
+    // 서비스 필수 알림(마케팅 동의 여부와 무관하게 발송) — 실패해도 매핑 자체는 이미 완료된 상태
+    this.pushService
+      .sendToOwner('USER', userId, { type: 'NCPK_MAPPED' })
+      .catch(() => {});
   }
 
   /**

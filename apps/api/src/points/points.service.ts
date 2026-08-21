@@ -2,6 +2,7 @@
 // 포인트홈(CU-PNT-01)·포인트 내역(CU-PNT-06) 고객용 조회
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PushNotificationService } from '../push/push-notification.service';
 
 export interface AdminPointHistoryListItem {
   id: number;
@@ -40,7 +41,10 @@ const PURCHASE_GRANT_TITLE = '신차구매 포인트 지급';
 
 @Injectable()
 export class PointsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pushService: PushNotificationService,
+  ) {}
 
   // ── 고객 포인트홈(CU-PNT-01)·포인트 내역(CU-PNT-06) ──────────────────
 
@@ -274,6 +278,16 @@ export class PointsService {
         include: { member: { select: { name: true } } },
       }),
     ]);
+
+    // 관리자가 부여한 포인트만 알림(고객 본인이 충전한 CHARGE는 스스로 한 행동이라 불필요)
+    if (kind === 'GRANT' || kind === 'PURCHASE_GRANT') {
+      this.pushService
+        .sendToOwner('USER', memberId, {
+          type: 'POINT_GRANTED',
+          vars: { amount: signedAmount.toLocaleString() },
+        })
+        .catch(() => {});
+    }
 
     return {
       id: history.id,

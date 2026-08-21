@@ -51,10 +51,16 @@ export async function handleBridgeRequest(request: Exclude<BridgeRequest, { type
     return { type: "camera:result", requestId: request.requestId, ...outcome };
   }
 
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== "granted") {
-    return { type: "camera:result", requestId: request.requestId, ok: false, error: "앨범 접근 권한이 필요해요." };
+  if (request.type === "camera:pickFromLibrary") {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      return { type: "camera:result", requestId: request.requestId, ok: false, error: "앨범 접근 권한이 필요해요." };
+    }
+    const outcome = await pickImage(() => ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7, mediaTypes: ["images"] }));
+    return { type: "camera:result", requestId: request.requestId, ...outcome };
   }
-  const outcome = await pickImage(() => ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7, mediaTypes: ["images"] }));
-  return { type: "camera:result", requestId: request.requestId, ...outcome };
+
+  // 웹(customer-app/partner-app)은 Vite dev 서버로 실시간 반영되지만 이 네이티브 셸은 빌드 시점 코드로 고정되므로,
+  // 웹이 먼저 배포한 새 요청 타입을 네이티브가 아직 몰라 여기로 떨어질 수 있다 — 이때 조용히 앨범을 여는 대신 명시적으로 실패 처리한다
+  return { type: "camera:result", requestId: (request as { requestId: string }).requestId, ok: false, error: "지원하지 않는 요청이에요." };
 }

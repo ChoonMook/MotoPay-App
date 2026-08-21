@@ -1,5 +1,5 @@
 // 고객앱 "예약시공" 20개 화면(CU-RSVC-01~20)을 엮는 상태 컨테이너 (NcpkFlow.tsx와 동일한 패턴)
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
@@ -102,6 +102,8 @@ interface RsvFlowProps {
   onOpenMyPage: () => void;
   initialScreen?: RsvScreen;
   initialFilter?: ReqStatusFilter;
+  // 푸시 알림 탭 등 외부 진입점에서 특정 요청을 바로 열 때만 값이 설정됨(App.tsx 참고)
+  targetRequestNo?: string;
 }
 
 export default function RsvFlow({
@@ -110,8 +112,10 @@ export default function RsvFlow({
   onOpenMyPage,
   initialScreen = "main",
   initialFilter = "ALL",
+  targetRequestNo,
 }: RsvFlowProps) {
   const [screen, setScreen] = useState<RsvScreen>(initialScreen);
+  const targetRequestConsumedRef = useRef(false);
   const [sheet, setSheet] = useState<RsvSheet>(null);
   const [flow, setFlow] = useState<RsvFlowKind>("gen");
 
@@ -722,6 +726,17 @@ export default function RsvFlow({
     }
     setScreen(isSelected ? "bookingdtl" : request.reqType === "EXPERT" ? "plancmp" : "bidcmp");
   };
+
+  // 푸시 알림 탭 등 외부 진입점(App.tsx의 targetRequestNo) — 내 요청 목록이 로드되면 해당 요청을 찾아
+  // openMyRequest와 동일한 로직(상태별 화면 분기)으로 바로 연다. 한 번만 동작하도록 targetRequestId 소비 여부를 ref로 추적
+  useEffect(() => {
+    if (!targetRequestNo || loadingRequests || targetRequestConsumedRef.current) return;
+    const request = myRequests.find((r) => r.requestNo === targetRequestNo);
+    if (!request) return;
+    targetRequestConsumedRef.current = true;
+    openMyRequest(request);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myRequests, loadingRequests, targetRequestNo]);
 
   // 내 요청 상세 진입 — 입찰/추천 도착 여부와 무관하게 언제든 볼 수 있어야 해서 비교 화면(bidcmp/plancmp)에서 별도로 연다.
   // 요청 시점에 고른 제품명이 있으면(일반입찰만) 그 카테고리의 실 카탈로그를 조회해 참고 판매가를 채워둔다

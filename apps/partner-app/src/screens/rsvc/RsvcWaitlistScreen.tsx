@@ -1,4 +1,4 @@
-// PT-RSVC-02: 시공 대기 목록 - 착수전·시공중·완료 상태 탭으로 필터링된 카드 목록. 카드 탭 시 착수전은 시공 착수 등록, 시공중은 완료 처리로 이동
+// PT-RSVC-02: 시공 현황 - 착수전·시공중·완료 상태 탭으로 필터링된 카드 목록. 카드 탭 시 착수전은 시공 착수 등록, 시공중은 완료 처리로 이동
 import { NavHomeIcon, NavResvIcon, NavPayIcon, NavMyIcon } from "../home/homeIcons";
 import { JOB_TAB_META, jobStatusChipClass, itemSummary } from "./rsvcData";
 import type { JobStatus, RsvcJob } from "./rsvcTypes";
@@ -47,7 +47,7 @@ export default function RsvcWaitlistScreen({
           <span onClick={onBack} className="flex h-9 w-9 cursor-pointer items-center justify-center text-[22px] text-gray-800">
             ‹
           </span>
-          <span className="text-[17px] font-bold text-gray-900">시공 대기 목록</span>
+          <span className="text-[17px] font-bold text-gray-900">시공 현황</span>
         </div>
         <div className="mb-1.5 flex gap-1">
           {JOB_TAB_META.map((t) => (

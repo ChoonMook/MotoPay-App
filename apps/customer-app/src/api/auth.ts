@@ -20,9 +20,9 @@ export interface LoginResult {
 export interface SignupInput {
   username: string;
   password: string;
-  name: string;
   email: string;
-  phone: string;
+  /** PortOne 본인인증 건 ID — 이름·휴대폰번호는 서버가 이 값으로 PortOne에서 직접 조회해 확정함 */
+  identityVerificationId: string;
   agreedTerms: boolean;
   agreedPrivacy: boolean;
   agreedMarketingSms?: boolean;
@@ -48,18 +48,18 @@ export async function checkUsernameAvailable(username: string): Promise<boolean>
   return result.available;
 }
 
-export async function findUsername(phone: string): Promise<string> {
+export async function findUsername(name: string, phone: string): Promise<string> {
   const result = await apiRequest<{ username: string }>("/auth/find-username", {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ name, phone }),
   });
   return result.username;
 }
 
-export async function requestPasswordReset(phone: string): Promise<string> {
+export async function requestPasswordReset(username: string, name: string, phone: string): Promise<string> {
   const result = await apiRequest<{ resetToken: string }>("/auth/request-password-reset", {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ username, name, phone }),
   });
   return result.resetToken;
 }

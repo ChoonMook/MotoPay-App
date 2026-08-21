@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppVersionModule } from './app-version/app-version.module';
 import { AuthModule } from './auth/auth.module';
+import { IdentityVerificationModule } from './identity-verification/identity-verification.module';
 import { BidRequestsModule } from './bid-requests/bid-requests.module';
 import { CarsModule } from './cars/cars.module';
 import { CommonCodesModule } from './common-codes/common-codes.module';
@@ -19,8 +20,10 @@ import { PushModule } from './push/push.module';
 import { AdminPushModule } from './admin-push/admin-push.module';
 import { MemberGradeRulesModule } from './member-grade-rules/member-grade-rules.module';
 import { MenuPermissionsModule } from './menu-permissions/menu-permissions.module';
+import { MsgHubModule } from './msg-hub/msg-hub.module';
 import { NewCarPurchasesModule } from './new-car-purchases/new-car-purchases.module';
 import { PartnerAuthModule } from './partner-auth/partner-auth.module';
+import { PhoneVerificationModule } from './phone-verification/phone-verification.module';
 import { PointsModule } from './points/points.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
@@ -44,6 +47,9 @@ import { UsersModule } from './users/users.module';
     CarsModule,
     CommonCodesModule,
     AppVersionModule,
+    MsgHubModule,
+    PhoneVerificationModule,
+    IdentityVerificationModule,
     CompaniesModule,
     ProductsModule,
     ShopsModule,

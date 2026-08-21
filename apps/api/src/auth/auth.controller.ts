@@ -64,19 +64,19 @@ export class AuthController {
 
   @Post('find-username')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '아이디 찾기 — 휴대폰번호로 마스킹된 아이디 조회' })
+  @ApiOperation({ summary: '아이디 찾기 — 이름+휴대폰번호로 마스킹된 아이디 조회' })
   findUsername(@Body() dto: FindUsernameDto) {
-    return this.authService.findUsernameByPhone(dto.phone);
+    return this.authService.findUsernameByPhone(dto.name, dto.phone);
   }
 
   @Post('request-password-reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      '비밀번호 찾기 1단계 — 휴대폰번호로 계정 확인 후 재설정 토큰 발급(10분 유효)',
+      '비밀번호 찾기 1단계 — 아이디+이름+휴대폰번호 확인 후 재설정 토큰 발급(10분 유효)',
   })
   requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
-    return this.authService.issuePasswordResetToken(dto.phone);
+    return this.authService.issuePasswordResetToken(dto.username, dto.name, dto.phone);
   }
 
   @Post('reset-password')

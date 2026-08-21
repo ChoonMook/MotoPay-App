@@ -1,10 +1,14 @@
 // 브릿지 요청을 실제 네이티브 동작(카메라 촬영·앨범 선택·푸시 토큰 발급)으로 실행하고 결과를 BridgeResponse로 반환
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import * as Application from "expo-application";
 import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import type { BridgeRequest, BridgeResponse } from "./protocol";
+
+const { SmsRetrieverModule } = NativeModules as {
+  SmsRetrieverModule?: { startSmsRetriever: () => Promise<boolean> };
+};
 
 type PickResult = { ok: true; base64: string; mimeType: string } | { ok: false; error: string };
 
@@ -52,6 +56,24 @@ export async function handleBridgeRequest(request: Exclude<BridgeRequest, { type
       versionName: Application.nativeApplicationVersion ?? "?",
       versionCode: String(Application.nativeBuildVersion ?? "?"),
     };
+  }
+
+  if (request.type === "sms:startRetriever") {
+    // iOS는 SMS Retriever API가 없음(플랫폼 자체 자동완성에 맡김) — Android에서만 의미 있는 요청
+    if (Platform.OS !== "android" || !SmsRetrieverModule) {
+      return { type: "sms:result", requestId: request.requestId, ok: false, error: "지원하지 않는 플랫폼이에요." };
+    }
+    try {
+      await SmsRetrieverModule.startSmsRetriever();
+      return { type: "sms:result", requestId: request.requestId, ok: true };
+    } catch (err) {
+      return {
+        type: "sms:result",
+        requestId: request.requestId,
+        ok: false,
+        error: err instanceof Error ? err.message : "인증번호 자동 수신을 시작하지 못했어요.",
+      };
+    }
   }
 
   if (request.type === "camera:capture") {

@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { CarsModule } from '../cars/cars.module';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { IdentityVerificationModule } from '../identity-verification/identity-verification.module';
+import { PhoneVerificationModule } from '../phone-verification/phone-verification.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -23,6 +25,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
     CarsModule,
+    IdentityVerificationModule,
+    PhoneVerificationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, PhoneCryptoService],

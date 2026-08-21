@@ -5,6 +5,7 @@ export type BridgeRequest =
   | { type: "camera:pickFromLibrary"; requestId: string }
   | { type: "push:getToken"; requestId: string }
   | { type: "app:getVersion"; requestId: string }
+  | { type: "sms:startRetriever"; requestId: string }
   | { type: "nav:exit" };
 
 export type BridgeResponse =
@@ -12,4 +13,6 @@ export type BridgeResponse =
   | { type: "camera:result"; requestId: string; ok: false; error: string }
   | { type: "push:result"; requestId: string; ok: true; expoPushToken: string; platform: "ios" | "android" }
   | { type: "push:result"; requestId: string; ok: false; error: string }
-  | { type: "app:version"; requestId: string; versionName: string; versionCode: string };
+  | { type: "app:version"; requestId: string; versionName: string; versionCode: string }
+  | { type: "sms:result"; requestId: string; ok: true }
+  | { type: "sms:result"; requestId: string; ok: false; error: string };

@@ -1,6 +1,6 @@
 {
   "name": "motopay-mobile",
-  "version": "0.0.0.7",
+  "version": "0.0.0.16",
   "main": "index.ts",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

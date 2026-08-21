@@ -4,29 +4,38 @@ import BottomSheet from "../../components/ui/BottomSheet";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import { useOtpTimer } from "./useOtpTimer";
+import { useSmsAutoFill } from "./useSmsAutoFill";
 
 interface PwdFindScreenProps {
   onClose: () => void;
-  onVerified: (username: string, phone: string) => void;
+  onSendCode: (phone: string) => Promise<boolean>;
+  onVerified: (username: string, name: string, phone: string, code: string) => void;
   loading?: boolean;
 }
 
-export default function PwdFindScreen({ onClose, onVerified, loading }: PwdFindScreenProps) {
+export default function PwdFindScreen({ onClose, onSendCode, onVerified, loading }: PwdFindScreenProps) {
   const [id, setId] = useState("");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const timer = useOtpTimer();
+  useSmsAutoFill(sent, setOtp);
 
   return (
     <BottomSheet onClose={onClose} maxHeight="78%">
       <div className="mb-1 text-xl font-extrabold text-gray-900">비밀번호 찾기</div>
       <div className="mb-5 text-[13.5px] text-gray-600">
-        아이디와 등록된 휴대폰 인증 후 새 비밀번호로 재설정할 수 있어요.
+        아이디, 담당자명, 등록된 휴대폰 인증 후 새 비밀번호로 재설정할 수 있어요.
       </div>
       <div className="mb-2 text-sm font-semibold">아이디</div>
       <div className="mb-3.5">
         <Input placeholder="아이디를 입력하세요" value={id} onChange={(e) => setId(e.target.value)} />
+      </div>
+      <div className="mb-2 text-sm font-semibold">담당자명</div>
+      <div className="mb-3.5">
+        <Input placeholder="이름을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="mb-2 text-sm font-semibold">휴대폰 번호</div>
       <div className="mb-3.5 flex gap-2">
@@ -42,10 +51,15 @@ export default function PwdFindScreen({ onClose, onVerified, loading }: PwdFindS
           variant="secondary"
           size="lg"
           fullWidth={false}
-          disabled={id.length < 2 || phone.length < 10}
-          onClick={() => {
-            setSent(true);
-            timer.start();
+          disabled={id.length < 2 || name.length < 2 || phone.length < 10 || sending}
+          onClick={async () => {
+            setSending(true);
+            const ok = await onSendCode(phone);
+            setSending(false);
+            if (ok) {
+              setSent(true);
+              timer.start();
+            }
           }}
         >
           인증요청
@@ -60,6 +74,7 @@ export default function PwdFindScreen({ onClose, onVerified, loading }: PwdFindS
               <Input
                 placeholder="인증번호 6자리"
                 inputMode="numeric"
+                autoComplete="one-time-code"
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
@@ -76,7 +91,7 @@ export default function PwdFindScreen({ onClose, onVerified, loading }: PwdFindS
               disabled={otp.length < 4 || loading}
               onClick={() => {
                 timer.stop();
-                onVerified(id, phone);
+                onVerified(id, name, phone, otp);
               }}
             >
               확인

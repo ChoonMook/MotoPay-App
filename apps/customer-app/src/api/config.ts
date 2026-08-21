@@ -8,3 +8,8 @@ export const API_BASE_URL = import.meta.env.DEV ? "http://localhost:3000" : "htt
 // 발급 종류가 다른 별개의 키. .env의 VITE_KAKAO_JS_KEY로 주입(카카오 디벨로퍼스에 이 앱이 서비스되는 도메인이
 // "Web 플랫폼"으로 등록돼 있어야 정상 로드됨)
 export const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY as string | undefined;
+
+// PortOne(구 아임포트) 본인인증 — 회원가입 실명인증(CU-AUTH-05)에 사용. storeId/channelKey는 브라우저 SDK에서
+// 직접 쓰는 공개 식별자라 노출돼도 무방(실제 API 시크릿은 apps/api에만 있고 프런트에는 없음)
+export const PORTONE_STORE_ID = import.meta.env.VITE_PORTONE_STORE_ID as string;
+export const PORTONE_CHANNEL_KEY = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string;

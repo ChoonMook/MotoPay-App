@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { PhoneVerificationModule } from '../phone-verification/phone-verification.module';
 import { PartnerAuthController } from './partner-auth.controller';
 import { PartnerAuthService } from './partner-auth.service';
 import { JwtPartnerStrategy } from './strategies/jwt-partner.strategy';
@@ -20,6 +21,7 @@ import { JwtPartnerStrategy } from './strategies/jwt-partner.strategy';
         },
       }),
     }),
+    PhoneVerificationModule,
   ],
   controllers: [PartnerAuthController],
   providers: [PartnerAuthService, JwtPartnerStrategy, PhoneCryptoService],

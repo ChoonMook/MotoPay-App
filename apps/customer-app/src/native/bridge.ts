@@ -4,14 +4,17 @@ type BridgeRequest =
   | { type: "camera:capture"; requestId: string }
   | { type: "camera:pickFromLibrary"; requestId: string }
   | { type: "push:getToken"; requestId: string }
-  | { type: "app:getVersion"; requestId: string };
+  | { type: "app:getVersion"; requestId: string }
+  | { type: "sms:startRetriever"; requestId: string };
 
 type BridgeResponse =
   | { type: "camera:result"; requestId: string; ok: true; base64: string; mimeType: string }
   | { type: "camera:result"; requestId: string; ok: false; error: string }
   | { type: "push:result"; requestId: string; ok: true; expoPushToken: string; platform: "ios" | "android" }
   | { type: "push:result"; requestId: string; ok: false; error: string }
-  | { type: "app:version"; requestId: string; versionName: string; versionCode: string };
+  | { type: "app:version"; requestId: string; versionName: string; versionCode: string }
+  | { type: "sms:result"; requestId: string; ok: true }
+  | { type: "sms:result"; requestId: string; ok: false; error: string };
 
 export interface CapturedImage {
   base64: string;
@@ -26,6 +29,11 @@ declare global {
     __motoHandlePushTap?: (payload: Record<string, string> & { type: string }) => void;
     // 네이티브 셸이 백그라운드→포그라운드 복귀 시 injectJavaScript로 호출(강제 업데이트 재확인용) — App.tsx가 마운트 시 할당
     __motoHandleForeground?: () => void;
+    // 네이티브 셸의 PortOne 본인인증 팝업(모달 웹뷰)이 우리 origin으로 돌아와 닫혔을 때 호출 — SignupVerifyScreen이 할당
+    __motoHandlePortOneReturn?: () => void;
+    // 네이티브 셸이 SMS Retriever API로 인증번호 문자를 받으면 injectJavaScript로 호출 — 아이디/비밀번호 찾기
+    // 화면이 인증번호 입력 단계에서 할당(웹 브라우저에서는 안 쓰임, 안드로이드 앱 전용)
+    __motoHandleSmsCode?: (code: string) => void;
   }
 }
 
@@ -124,4 +132,34 @@ export function requestAppVersion(): Promise<AppVersionResult> {
       reject(new Error("빌드버전을 확인하지 못했어요."));
     }, 3000);
   });
+}
+
+/** SMS 인증번호 자동 수신 시작(안드로이드 앱 전용) — SMS 발송 요청 직후 호출. 실패해도(iOS·일반 브라우저·구버전
+ * 셸 등) 수동 입력엔 지장이 없으므로 호출부에서 에러를 굳이 처리할 필요는 없음 */
+export function startSmsAutoFill(): Promise<void> {
+  if (!isNativeBridgeAvailable()) {
+    return Promise.reject(new Error("모토페이 앱에서만 사용할 수 있어요."));
+  }
+
+  const requestId = `sms:startRetriever-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return new Promise<void>((resolve, reject) => {
+    const onEvent = (event: Event) => {
+      const detail = (event as CustomEvent<BridgeResponse>).detail;
+      if (!detail || detail.type !== "sms:result" || detail.requestId !== requestId) return;
+      window.removeEventListener("motobridge", onEvent);
+      if (detail.ok) resolve();
+      else reject(new Error(detail.error));
+    };
+    window.addEventListener("motobridge", onEvent);
+    window.MotoBridge!.postMessage({ type: "sms:startRetriever", requestId });
+  });
+}
+
+/** 네이티브 셸이 SMS로 받은 인증번호를 콜백으로 전달받도록 구독(안드로이드 앱 전용) — 반환값은 구독 해제 함수 */
+export function listenForSmsCode(onCode: (code: string) => void): () => void {
+  window.__motoHandleSmsCode = onCode;
+  return () => {
+    window.__motoHandleSmsCode = undefined;
+  };
 }

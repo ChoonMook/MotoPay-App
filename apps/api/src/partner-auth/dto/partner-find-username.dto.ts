@@ -3,6 +3,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Matches } from 'class-validator';
 
 export class PartnerFindUsernameDto {
+  @ApiProperty({ example: '홍길동', description: '계정 발급 시 등록한 담당자명' })
+  @IsString()
+  name: string;
+
   @ApiProperty({
     example: '010-1234-5678',
     description: '계정 발급 시 등록한 휴대폰번호(하이픈 있어도/없어도 됨)',

@@ -5,6 +5,7 @@ import AppShell from "../../components/AppShell";
 import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { login, changePassword, findUsername, requestPasswordReset, resetPassword } from "../../api/partnerAuth";
+import { sendPhoneVerificationCode, verifyPhoneCode } from "../../api/phoneVerification";
 import { setTokens } from "../../api/tokenStorage";
 import LoginScreen from "./LoginScreen";
 import AcctFindScreen from "./AcctFindScreen";
@@ -89,10 +90,20 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
           onClose={closeSheet}
           loading={findIdLoading}
           foundUsername={foundUsername}
-          onVerify={async (phone) => {
+          onSendCode={async (phone) => {
+            try {
+              await sendPhoneVerificationCode(phone, "FIND_USERNAME");
+              return true;
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "인증번호 발송에 실패했습니다", "danger");
+              return false;
+            }
+          }}
+          onVerify={async (name, phone, code) => {
             setFindIdLoading(true);
             try {
-              setFoundUsername(await findUsername(phone));
+              await verifyPhoneCode(phone, code, "FIND_USERNAME");
+              setFoundUsername(await findUsername(name, phone));
             } catch (err) {
               showToast(err instanceof Error ? err.message : "아이디 찾기에 실패했습니다", "danger");
             } finally {
@@ -110,10 +121,20 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         <PwdFindScreen
           onClose={closeSheet}
           loading={pwFindLoading}
-          onVerified={async (username, phone) => {
+          onSendCode={async (phone) => {
+            try {
+              await sendPhoneVerificationCode(phone, "RESET_PASSWORD");
+              return true;
+            } catch (err) {
+              showToast(err instanceof Error ? err.message : "인증번호 발송에 실패했습니다", "danger");
+              return false;
+            }
+          }}
+          onVerified={async (username, name, phone, code) => {
             setPwFindLoading(true);
             try {
-              setResetToken(await requestPasswordReset(username, phone));
+              await verifyPhoneCode(phone, code, "RESET_PASSWORD");
+              setResetToken(await requestPasswordReset(username, name, phone));
               setSheet("resetPw");
             } catch (err) {
               showToast(err instanceof Error ? err.message : "비밀번호 찾기에 실패했습니다", "danger");

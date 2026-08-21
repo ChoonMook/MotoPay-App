@@ -37,18 +37,18 @@ export function changePassword(currentPassword: string, newPassword: string): Pr
   });
 }
 
-export async function findUsername(phone: string): Promise<string> {
+export async function findUsername(name: string, phone: string): Promise<string> {
   const result = await apiRequest<{ username: string }>("/partner-auth/find-username", {
     method: "POST",
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ name, phone }),
   });
   return result.username;
 }
 
-export async function requestPasswordReset(username: string, phone: string): Promise<string> {
+export async function requestPasswordReset(username: string, name: string, phone: string): Promise<string> {
   const result = await apiRequest<{ resetToken: string }>("/partner-auth/request-password-reset", {
     method: "POST",
-    body: JSON.stringify({ username, phone }),
+    body: JSON.stringify({ username, name, phone }),
   });
   return result.resetToken;
 }

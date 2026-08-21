@@ -75,20 +75,21 @@ export class PartnerAuthController {
 
   @Post('find-username')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '아이디 찾기 — 휴대폰번호로 마스킹된 아이디 조회' })
+  @ApiOperation({ summary: '아이디 찾기 — 이름+휴대폰번호로 마스킹된 아이디 조회' })
   findUsername(@Body() dto: PartnerFindUsernameDto) {
-    return this.partnerAuthService.findUsernameByPhone(dto.phone);
+    return this.partnerAuthService.findUsernameByPhone(dto.name, dto.phone);
   }
 
   @Post('request-password-reset')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      '비밀번호 찾기 1단계 — 아이디+휴대폰번호로 계정 확인 후 재설정 토큰 발급(10분 유효)',
+      '비밀번호 찾기 1단계 — 아이디+이름+휴대폰번호로 계정 확인 후 재설정 토큰 발급(10분 유효)',
   })
   requestPasswordReset(@Body() dto: PartnerRequestPasswordResetDto) {
     return this.partnerAuthService.issuePasswordResetToken(
       dto.username,
+      dto.name,
       dto.phone,
     );
   }

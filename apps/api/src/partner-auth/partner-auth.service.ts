@@ -8,9 +8,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import type { PartnerUser } from '@prisma/client';
+import { PhoneVerifyPurpose, type PartnerUser } from '@prisma/client';
 import { maskUsername } from '../common/mask/mask-username';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { PhoneVerificationService } from '../phone-verification/phone-verification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { PartnerChangePasswordDto } from './dto/partner-change-password.dto';
 import type {
@@ -30,6 +31,7 @@ export class PartnerAuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly phoneCrypto: PhoneCryptoService,
+    private readonly phoneVerificationService: PhoneVerificationService,
   ) {}
 
   async login(
@@ -154,25 +156,37 @@ export class PartnerAuthService {
     });
   }
 
-  /** 아이디 찾기 — 휴대폰번호로 계정을 찾아 마스킹된 아이디를 반환 */
-  async findUsernameByPhone(phone: string): Promise<{ username: string }> {
-    const partnerUser = await this.findPartnerUserByPhoneOrThrow(phone);
+  /** 아이디 찾기 — 이름+휴대폰번호가 모두 일치하는 계정을 찾아 마스킹된 아이디를 반환(휴대폰 소유만으로는 부족) */
+  async findUsernameByPhone(
+    name: string,
+    phone: string,
+  ): Promise<{ username: string }> {
+    await this.phoneVerificationService.assertRecentlyVerified(
+      phone,
+      PhoneVerifyPurpose.FIND_USERNAME,
+    );
+    const partnerUser = await this.findPartnerUserByNameAndPhoneOrThrow(name, phone);
     return { username: maskUsername(partnerUser.username) };
   }
 
-  /** 비밀번호 찾기 1단계 — 아이디+휴대폰번호가 같은 계정을 가리킬 때만 짧게 유효한 재설정 토큰을 발급 */
+  /** 비밀번호 찾기 1단계 — 아이디+이름+휴대폰번호가 모두 일치할 때만 짧게 유효한 재설정 토큰을 발급 */
   async issuePasswordResetToken(
     username: string,
+    name: string,
     phone: string,
   ): Promise<{ resetToken: string }> {
+    await this.phoneVerificationService.assertRecentlyVerified(
+      phone,
+      PhoneVerifyPurpose.RESET_PASSWORD,
+    );
     const normalizedPhone = this.phoneCrypto.normalize(phone);
     const phoneHash = this.phoneCrypto.hash(normalizedPhone);
     const partnerUser = await this.prisma.partnerUser.findFirst({
-      where: { username, phoneHash },
+      where: { username, name, phoneHash },
     });
     if (!partnerUser || !partnerUser.useYn) {
       throw new NotFoundException(
-        '아이디와 휴대폰번호가 일치하는 계정을 찾을 수 없습니다.',
+        '아이디, 이름, 휴대폰번호가 일치하는 계정을 찾을 수 없습니다.',
       );
     }
 
@@ -230,17 +244,18 @@ export class PartnerAuthService {
     });
   }
 
-  private async findPartnerUserByPhoneOrThrow(
+  private async findPartnerUserByNameAndPhoneOrThrow(
+    name: string,
     phone: string,
   ): Promise<PartnerUser> {
     const normalizedPhone = this.phoneCrypto.normalize(phone);
     const phoneHash = this.phoneCrypto.hash(normalizedPhone);
     const partnerUser = await this.prisma.partnerUser.findFirst({
-      where: { phoneHash },
+      where: { phoneHash, name },
     });
     if (!partnerUser || !partnerUser.useYn) {
       throw new NotFoundException(
-        '해당 휴대폰번호로 등록된 파트너 계정을 찾을 수 없습니다.',
+        '이름과 휴대폰번호가 일치하는 파트너 계정을 찾을 수 없습니다.',
       );
     }
     return partnerUser;

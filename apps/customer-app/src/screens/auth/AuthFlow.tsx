@@ -14,6 +14,8 @@ import {
   type LoginUser,
 } from "../../api/auth";
 import { setTokens } from "../../api/tokenStorage";
+import { confirmIdentityVerification, PENDING_IDENTITY_VERIFICATION_KEY } from "../../api/identityVerification";
+import { sendPhoneVerificationCode, verifyPhoneCode } from "../../api/phoneVerification";
 import { PARTNER_APP_URL } from "../../config";
 import StartLoginSignupScreen from "./StartLoginSignupScreen";
 import LoginScreen, { type SnsProvider } from "./LoginScreen";
@@ -50,13 +52,19 @@ interface AuthFlowProps {
 }
 
 export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
-  const [screen, setScreen] = useState<Screen>(() =>
-    localStorage.getItem(SPLASH_SEEN_KEY) ? "login" : "splash",
-  );
+  // 회원가입 실명인증 도중 PG사 리디렉션으로 나갔다가 돌아온 경우(모바일 환경 대부분) SPA가 통째로
+  // 새로고침되어 이 컴포넌트도 새로 마운트된다 — 남겨둔 재개용 ID가 있으면 로그인 화면 대신 실명인증
+  // 단계로 바로 복귀시킨다(SignupVerifyScreen이 이 ID로 결과를 자동 재조회함)
+  const [resumeIdentityVerificationId] = useState(() => sessionStorage.getItem(PENDING_IDENTITY_VERIFICATION_KEY));
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (resumeIdentityVerificationId) return "verify";
+    return localStorage.getItem(SPLASH_SEEN_KEY) ? "login" : "splash";
+  });
   const [sheet, setSheet] = useState<Sheet>(null);
   const [snsProvider, setSnsProvider] = useState<SnsProvider>("카카오");
   const [signupName, setSignupName] = useState("");
   const [signupContact, setSignupContact] = useState("");
+  const [signupIdentityVerificationId, setSignupIdentityVerificationId] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
@@ -148,11 +156,14 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
         {screen === "verify" && (
           <SignupVerifyScreen
             onBack={() => setScreen("login")}
-            onNext={(name, phone) => {
+            onNext={(name, phone, identityVerificationId) => {
               setSignupName(name);
               setSignupContact(phone);
+              setSignupIdentityVerificationId(identityVerificationId);
               setScreen("info");
             }}
+            onVerifyIdentity={confirmIdentityVerification}
+            resumeIdentityVerificationId={resumeIdentityVerificationId ?? undefined}
           />
         )}
 
@@ -189,10 +200,20 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
             onGoLogin={() => { closeSheet(); showToast("로그인 화면으로 이동했어요"); }}
             loading={findIdLoading}
             foundUsername={foundUsername}
-            onVerify={async (phone) => {
+            onSendCode={async (phone) => {
+              try {
+                await sendPhoneVerificationCode(phone, "FIND_USERNAME");
+                return true;
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : "인증번호 발송에 실패했습니다", "danger");
+                return false;
+              }
+            }}
+            onVerify={async (name, phone, code) => {
               setFindIdLoading(true);
               try {
-                setFoundUsername(await findUsername(phone));
+                await verifyPhoneCode(phone, code, "FIND_USERNAME");
+                setFoundUsername(await findUsername(name, phone));
               } catch (err) {
                 showToast(err instanceof Error ? err.message : "아이디 찾기에 실패했습니다", "danger");
               } finally {
@@ -206,10 +227,20 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
           <PwdFindScreen
             onClose={closeSheet}
             loading={pwFindLoading}
-            onVerified={async (phone) => {
+            onSendCode={async (phone) => {
+              try {
+                await sendPhoneVerificationCode(phone, "RESET_PASSWORD");
+                return true;
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : "인증번호 발송에 실패했습니다", "danger");
+                return false;
+              }
+            }}
+            onVerified={async (username, name, phone, code) => {
               setPwFindLoading(true);
               try {
-                setResetToken(await requestPasswordReset(phone));
+                await verifyPhoneCode(phone, code, "RESET_PASSWORD");
+                setResetToken(await requestPasswordReset(username, name, phone));
                 setSheet("resetPw");
               } catch (err) {
                 showToast(err instanceof Error ? err.message : "비밀번호 찾기에 실패했습니다", "danger");
@@ -267,9 +298,8 @@ export default function AuthFlow({ onAuthComplete }: AuthFlowProps) {
                 const result = await signup({
                   username: signupUsername,
                   password: signupPassword,
-                  name: signupName,
                   email: signupEmail,
-                  phone: signupContact,
+                  identityVerificationId: signupIdentityVerificationId,
                   agreedTerms: signupAgreeService,
                   agreedPrivacy: signupAgreePrivacy,
                   agreedMarketingSms: signupAgreeMarketingSms,

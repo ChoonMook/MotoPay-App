@@ -1028,3 +1028,29 @@ model AdminPushBroadcast {
 
   @@map("admin_push_broadcasts")
 }
+
+// SMS 인증번호(OTP) 발송·검증 목적 — CI/DI 기반 실명인증(PASS/NICE 등)이 아니라 단순 휴대폰 소유 확인용.
+// 코어 인증 흐름의 고정 값이라 CommonCodeDetail이 아니라 UserRole처럼 Prisma enum으로 관리(2026-08-21)
+enum PhoneVerifyPurpose {
+  SIGNUP
+  FIND_USERNAME
+  RESET_PASSWORD
+}
+
+// SMS 인증번호(OTP) 발송·검증 이력 — LG U+ 메시지허브(MsgHubService)로 발송, 휴대폰 소유 확인용
+model PhoneVerification {
+  id        Int                @id @default(autoincrement())
+  phoneHash String // PhoneCryptoService.hash(normalized) 기준 조회 — 평문 번호는 저장하지 않음
+  purpose   PhoneVerifyPurpose
+  code      String // 6자리 인증번호(평문 — 5분 후 만료 + 시도횟수 제한으로 충분히 보호되어 해시 불필요)
+  attempts  Int                @default(0) // 검증 시도 횟수(5회 초과 시 재발송 필요 — 무차별 대입 방지)
+  verified  Boolean            @default(false)
+  // 실제 값은 항상 서비스 코드가 명시적으로 채움(더미 기본값) — MariaDB legacy 모드(explicit_defaults_for_timestamp=0)에서
+  // createdAt처럼 DEFAULT 없는 두 번째 TIMESTAMP 컬럼을 두면 자동으로 DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP가
+  // 붙어(attempts 증가 같은 UPDATE 때마다 만료시각이 "지금"으로 밀려버리는 실질적 버그) — 고정 더미값으로 그 자동 부여를 차단함
+  expiresAt DateTime           @default(dbgenerated("'1970-01-01 00:00:01.000'")) @db.Timestamp(3)
+  createdAt DateTime           @default(now()) @db.Timestamp(3)
+
+  @@index([phoneHash, purpose])
+  @@map("phone_verifications")
+}

@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, type User } from '@prisma/client';
+import { Prisma, PhoneVerifyPurpose, type User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { CarsService } from '../cars/cars.service';
 import { maskUsername } from '../common/mask/mask-username';
 import { PhoneCryptoService } from '../common/crypto/phone-crypto.service';
+import { IdentityVerificationService } from '../identity-verification/identity-verification.service';
+import { PhoneVerificationService } from '../phone-verification/phone-verification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AuthTokens,
@@ -32,6 +34,8 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly phoneCrypto: PhoneCryptoService,
     private readonly carsService: CarsService,
+    private readonly identityVerificationService: IdentityVerificationService,
+    private readonly phoneVerificationService: PhoneVerificationService,
   ) {}
 
   async login(
@@ -66,8 +70,13 @@ export class AuthService {
   async signup(
     dto: SignupDto,
   ): Promise<AuthTokens & { user: SafeUser; newCarPackageMapped: boolean }> {
+    // 클라이언트가 보낸 이름·번호를 그대로 믿지 않고, 서버가 PortOne에 본인인증 결과를 직접 재조회해 확정한다
+    const verified = await this.identityVerificationService.confirm(
+      dto.identityVerificationId,
+    );
+
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const normalizedPhone = this.phoneCrypto.normalize(dto.phone);
+    const normalizedPhone = this.phoneCrypto.normalize(verified.phone);
     // 저장·반환용은 "000-0000-0000" 형식으로 통일, 검색용 해시는 하이픈 유무와 무관하게 항상 정규화된 숫자만 사용
     const phoneEncrypted = this.phoneCrypto.encrypt(
       this.phoneCrypto.format(normalizedPhone),
@@ -87,7 +96,7 @@ export class AuthService {
         data: {
           username: dto.username,
           passwordHash,
-          name: dto.name,
+          name: verified.name,
           email: dto.email,
           phoneEncrypted,
           phoneHash,
@@ -154,17 +163,31 @@ export class AuthService {
     return this.issueTokens(this.toPayload(user));
   }
 
-  /** 아이디 찾기 — 휴대폰번호로 계정을 찾아 마스킹된 아이디를 반환 */
-  async findUsernameByPhone(phone: string): Promise<{ username: string }> {
-    const user = await this.findUserByPhoneOrThrow(phone);
+  /** 아이디 찾기 — 이름+휴대폰번호가 모두 일치하는 계정을 찾아 마스킹된 아이디를 반환(휴대폰 소유만으로는 부족 —
+   * 이름까지 대조해야 다른 사람이 재사용/도용한 번호로 남의 아이디를 알아내는 것을 막을 수 있음) */
+  async findUsernameByPhone(
+    name: string,
+    phone: string,
+  ): Promise<{ username: string }> {
+    await this.phoneVerificationService.assertRecentlyVerified(
+      phone,
+      PhoneVerifyPurpose.FIND_USERNAME,
+    );
+    const user = await this.findUserByNameAndPhoneOrThrow(name, phone);
     return { username: maskUsername(user.username) };
   }
 
-  /** 비밀번호 찾기 1단계 — 휴대폰번호로 계정을 찾아 짧게 유효한 재설정 토큰을 발급 */
+  /** 비밀번호 찾기 1단계 — 아이디+이름+휴대폰번호가 모두 일치할 때만 짧게 유효한 재설정 토큰을 발급 */
   async issuePasswordResetToken(
+    username: string,
+    name: string,
     phone: string,
   ): Promise<{ resetToken: string }> {
-    const user = await this.findUserByPhoneOrThrow(phone);
+    await this.phoneVerificationService.assertRecentlyVerified(
+      phone,
+      PhoneVerifyPurpose.RESET_PASSWORD,
+    );
+    const user = await this.findUserByNameAndPhoneOrThrow(name, phone, username);
     const payload: ResetTokenPayload = {
       sub: user.id,
       purpose: 'password-reset',
@@ -199,13 +222,21 @@ export class AuthService {
     });
   }
 
-  private async findUserByPhoneOrThrow(phone: string): Promise<User> {
+  private async findUserByNameAndPhoneOrThrow(
+    name: string,
+    phone: string,
+    username?: string,
+  ): Promise<User> {
     const normalizedPhone = this.phoneCrypto.normalize(phone);
     const phoneHash = this.phoneCrypto.hash(normalizedPhone);
-    const user = await this.prisma.user.findFirst({ where: { phoneHash } });
+    const user = await this.prisma.user.findFirst({
+      where: { phoneHash, name, ...(username ? { username } : {}) },
+    });
     if (!user) {
       throw new NotFoundException(
-        '해당 휴대폰번호로 가입된 계정을 찾을 수 없습니다.',
+        username
+          ? '아이디, 이름, 휴대폰번호가 일치하는 계정을 찾을 수 없습니다.'
+          : '이름과 휴대폰번호가 일치하는 계정을 찾을 수 없습니다.',
       );
     }
     return user;

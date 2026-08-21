@@ -31,11 +31,6 @@ export class SignupDto {
   })
   password: string;
 
-  @ApiProperty({ example: '홍길동' })
-  @IsString()
-  @MinLength(1)
-  name: string;
-
   @ApiProperty({
     example: 'user@example.com',
     description: '알림·영수증 수신용 이메일',
@@ -44,14 +39,12 @@ export class SignupDto {
   email: string;
 
   @ApiProperty({
-    example: '010-1234-5678',
-    description: '휴대폰번호(하이픈 있어도/없어도 됨)',
+    description:
+      'PortOne.requestIdentityVerification()으로 발급받은 본인인증 건 ID — 이름·휴대폰번호는 이 값으로 서버가 PortOne에서 직접 조회해 확정하므로 클라이언트가 별도로 보내지 않음',
   })
   @IsString()
-  @Matches(/^01[016789]-?\d{3,4}-?\d{4}$/, {
-    message: '올바른 휴대폰번호 형식이 아닙니다.',
-  })
-  phone: string;
+  @MinLength(1)
+  identityVerificationId: string;
 
   @ApiProperty({ description: '서비스 이용약관 동의(필수 — true여야 함)' })
   @IsBoolean()

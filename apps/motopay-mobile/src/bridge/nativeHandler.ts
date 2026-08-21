@@ -1,5 +1,6 @@
 // 브릿지 요청을 실제 네이티브 동작(카메라 촬영·앨범 선택·푸시 토큰 발급)으로 실행하고 결과를 BridgeResponse로 반환
 import { Platform } from "react-native";
+import * as Application from "expo-application";
 import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
@@ -40,6 +41,17 @@ async function getPushToken(requestId: string): Promise<BridgeResponse> {
 export async function handleBridgeRequest(request: Exclude<BridgeRequest, { type: "nav:exit" }>): Promise<BridgeResponse> {
   if (request.type === "push:getToken") {
     return getPushToken(request.requestId);
+  }
+
+  if (request.type === "app:getVersion") {
+    // app.json의 값이 아니라 설치된 APK의 실제 PackageInfo(versionName/versionCode)를 읽음
+    // — build.gradle을 수동으로 올릴 때 app.json 갱신을 깜빡해도 항상 실제 설치본과 일치함
+    return {
+      type: "app:version",
+      requestId: request.requestId,
+      versionName: Application.nativeApplicationVersion ?? "?",
+      versionCode: String(Application.nativeBuildVersion ?? "?"),
+    };
   }
 
   if (request.type === "camera:capture") {

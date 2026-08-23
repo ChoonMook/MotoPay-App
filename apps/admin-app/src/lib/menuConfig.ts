@@ -117,7 +117,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "결제·정산 관리",
     icon: Wallet,
     items: [
-      { pgId: "AD-STL-02", label: "정산 기준 관리", path: "/settle/settle-rule-mgmt" },
+      { pgId: "AD-STL-02", label: "패키지·시공 정산 기준 관리", path: "/settle/settle-rule-mgmt" },
       { pgId: "AD-STL-03", label: "수수료 관리", path: "/settle/fee-mgmt" },
       { pgId: "AD-STL-04", label: "정산 내역 조회", path: "/settle/settle-hist" },
       { pgId: "AD-STL-05", label: "매입 계산서 발행", path: "/settle/buy-invoice" },

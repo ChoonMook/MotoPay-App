@@ -86,6 +86,7 @@ export default function RsvcFlow({
   const [reqs, setReqs] = useState<BidReq[]>([]);
   const [loadingReqs, setLoadingReqs] = useState(true);
   const [shopCode, setShopCode] = useState("");
+  const [settlementDay, setSettlementDay] = useState<number | null>(null);
   const [carBrandCodes, setCarBrandCodes] = useState<CommonCodeDetailApi[]>([]);
   const [carModelCodes, setCarModelCodes] = useState<CommonCodeDetailApi[]>([]);
   // 추천안 작성(PT-RSVC-07) 시공항목 정렬 순서 — admin-app 시공항목 관리(AD-CTLG-03)에 등록된 순서를 그대로 따름
@@ -114,6 +115,7 @@ export default function RsvcFlow({
         const mappedReqs = rows.map((r) => mapBidRequest(r, carLabel));
         setReqs(mappedReqs);
         setShopCode(shop.shopCode);
+        setSettlementDay(shop.settlementDay);
         setCarBrandCodes(carBrandCodes);
         setCarModelCodes(carModelCodes);
         setCarInstCodes(carInstCodes);
@@ -689,6 +691,7 @@ export default function RsvcFlow({
         <RsvcHandoverScreen
           job={jobDetail}
           loading={loadingJobDetail}
+          settlementDay={settlementDay}
           onBack={() => setScreen("waitlist")}
           onRemind={() => showToast("인수확인 알림을 재발송했어요", "success")}
         />

@@ -18,13 +18,20 @@ function formatDateTimeLabel(iso: string): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}(${wd}) ${ampm} ${hour12}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+// 업체 기본 정산일(Shop.settlementDay, 관리자가 AD-CO-02에서 설정)을 그대로 문구로 노출 —
+// 이전엔 "익월 10일"로 고정 문구였는데 실제 업체별 정산일과 다를 수 있어 동적으로 바꿈(2026-08-23)
+function formatSettlementLabel(settlementDay: number | null): string {
+  return settlementDay ? `인수 확정 후 익월 ${settlementDay}일` : "정산일 미설정";
+}
+
 interface NcpkHandoverScreenProps {
   job: PackageJobDetail;
+  settlementDay: number | null;
   onBack: () => void;
   onRemind: () => void;
 }
 
-export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandoverScreenProps) {
+export default function NcpkHandoverScreen({ job, settlementDay, onBack, onRemind }: NcpkHandoverScreenProps) {
   const [viewingPhotoUrl, setViewingPhotoUrl] = useState<string | null>(null);
   const hoPending = !job.handoverConfirmedAt;
   const photos = job.photos.map((p) => `${API_BASE_URL}/uploads/${p}`);
@@ -44,7 +51,7 @@ export default function NcpkHandoverScreen({ job, onBack, onRemind }: NcpkHandov
             : "-",
         }
       : { k: "인수확인일", v: formatDateTimeLabel(job.handoverConfirmedAt!) },
-    { k: "정산 예정", v: "인수 확정 후 익월 10일" },
+    { k: "정산 예정", v: formatSettlementLabel(settlementDay) },
   ];
 
   return (

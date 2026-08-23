@@ -17,6 +17,7 @@ import {
   type PackageJobDetail,
 } from "../../api/reservations";
 import { getCommonCodeDetails, type CommonCodeDetailApi } from "../../api/commonCodes";
+import { getMyShop } from "../../api/shops";
 import { progressToTab, type NcpkTab } from "./ncpkData";
 import NcpkListScreen from "./NcpkListScreen";
 import NcpkDetailScreen from "./NcpkDetailScreen";
@@ -43,6 +44,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
   const [loadingJobs, setLoadingJobs] = useState(true);
   // 시공 항목 카드의 분류명(예: "썬팅") 표기용 — PROD_CAT은 관리자가 계속 추가할 수 있어 하드코딩하지 않고 조회
   const [prodCatOptions, setProdCatOptions] = useState<CommonCodeDetailApi[]>([]);
+  const [settlementDay, setSettlementDay] = useState<number | null>(null);
 
   const [selectedJob, setSelectedJob] = useState<PackageJobDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -64,6 +66,9 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       .catch((err) => showToast(err instanceof Error ? err.message : "신차패키지 목록을 불러오지 못했어요", "danger"))
       .finally(() => setLoadingJobs(false));
     getCommonCodeDetails("PROD_CAT").then(setProdCatOptions).catch(() => {});
+    getMyShop()
+      .then((shop) => setSettlementDay(shop.settlementDay))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -258,6 +263,7 @@ export default function NcpkFlow({ onExit, initialTab = "wait", initialReservati
       {screen === "handover" && selectedJob && (
         <NcpkHandoverScreen
           job={selectedJob}
+          settlementDay={settlementDay}
           onBack={() => setScreen("list")}
           onRemind={() => showToast("인수확인 알림을 재발송했어요", "success")}
         />

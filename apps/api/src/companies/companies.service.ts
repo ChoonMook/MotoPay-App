@@ -20,6 +20,7 @@ import {
   type DailyScheduleView,
 } from '../shops/shop-schedule.service';
 import type { UpdateShopDto } from '../shops/dto/update-shop.dto';
+import type { UpdateShopSettlementDto } from '../shops/dto/update-shop-settlement.dto';
 import type { UploadShopPhotoDto } from '../shops/dto/upload-shop-photo.dto';
 import type { CreateCompanyDto } from './dto/create-company.dto';
 import type { UpdateCompanyDto } from './dto/update-company.dto';
@@ -331,12 +332,22 @@ export class CompaniesService {
 
   async getShop(companyId: number): Promise<ShopDetail> {
     const company = await this.requireShopCompany(companyId);
-    return this.shopsService.getDetail(company.shopCode);
+    return this.shopsService.getDetail(company.shopCode, true);
   }
 
   async updateShop(companyId: number, dto: UpdateShopDto): Promise<ShopDetail> {
     const company = await this.requireShopCompany(companyId);
-    return this.shopsService.updateMyShop(company.shopCode, dto);
+    await this.shopsService.updateMyShop(company.shopCode, dto);
+    return this.shopsService.getDetail(company.shopCode, true);
+  }
+
+  /** 정산 기본값(기본 수수료·정산일) 수정 — 관리자 전용, AD-CO-02 업체관리 매장정보 탭 */
+  async updateShopSettlement(
+    companyId: number,
+    dto: UpdateShopSettlementDto,
+  ): Promise<ShopDetail> {
+    const company = await this.requireShopCompany(companyId);
+    return this.shopsService.updateSettlementInfo(company.shopCode, dto);
   }
 
   async listPartnerUsers(companyId: number): Promise<PartnerUserListItem[]> {

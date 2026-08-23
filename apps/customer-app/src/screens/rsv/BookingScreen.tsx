@@ -106,6 +106,9 @@ export default function BookingScreen({
 }: BookingScreenProps) {
   const filtered =
     filter === "ALL" ? requests : requests.filter((r) => displayStatus(r, progressByRequest) === filter);
+  // 선택된 필터와 무관하게 "진행중인 요청"으로 고정돼 있던 문구 — 필터를 바꿔도 헤더가 그대로라 사용자가
+  // 필터 상태를 혼동하는 원인이었음(2026-08-23 확정: 선택된 필터 라벨을 그대로 반영하도록 수정)
+  const sectionTitle = `${FILTER_DEFS.find((f) => f.key === filter)?.label ?? "전체"} 요청`;
 
   return (
     <div className="absolute inset-0 flex flex-col" style={{ animation: "mp-screen .32s ease" }}>
@@ -115,7 +118,7 @@ export default function BookingScreen({
 
       <PullToRefresh onRefresh={onRefresh} className="mp-scroll flex-1 overflow-y-auto px-5 pt-5 pb-[26px]">
         <div className="mx-0.5 mb-3 flex items-center justify-between">
-          <span className="text-[15px] font-extrabold text-gray-900">진행중인 요청</span>
+          <span className="text-[15px] font-extrabold text-gray-900">{sectionTitle}</span>
           <span className="text-xs font-bold text-gray-500">{filtered.length}건</span>
         </div>
 

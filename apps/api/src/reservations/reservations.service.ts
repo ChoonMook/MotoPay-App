@@ -345,6 +345,7 @@ export class ReservationsService {
       if (hasSelectedItems || hasTintPositions) {
         const car = await tx.myCar.findFirst({
           where: { memberId, regType: 'MAP', purchaseVin: { not: null } },
+          include: { purchase: { select: { packageCode: true } } },
           orderBy: { createdAt: 'desc' },
         });
         if (car?.purchaseVin) {
@@ -358,6 +359,27 @@ export class ReservationsService {
                 price: item.price,
               })),
             });
+
+            // 신차패키지 정산 기준액(packageValueAmount, 2026-08-22 확정) — 무상 기본상품(BASIC)도 실제로는
+            // 딜러사가 그 값을 부담하므로, 고객이 선택 시 전송한 price(기본상품은 항상 0)를 그대로 믿지 않고
+            // 패키지 카탈로그의 실제 판매가(effectivePrice)를 서버에서 다시 조회해 합산한다
+            const packageCode = car.purchase?.packageCode;
+            if (packageCode) {
+              const detail = await this.productsService.getPackageDetail(packageCode);
+              const realPriceByCode = new Map(
+                [...detail.basicItems, ...detail.optionItems, ...detail.addItems].map(
+                  (i) => [i.componentCode, i.effectivePrice ?? 0],
+                ),
+              );
+              const packageValueAmount = selectedItems.reduce(
+                (sum, item) => sum + (realPriceByCode.get(item.componentCode) ?? 0),
+                0,
+              );
+              await tx.reservation.update({
+                where: { id: created.id },
+                data: { packageValueAmount },
+              });
+            }
           }
           if (hasTintPositions) {
             await tx.newCarPurchaseTintPosition.deleteMany({ where: { vin } });

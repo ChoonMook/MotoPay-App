@@ -13,11 +13,19 @@ import {
 } from '../common/storage/shop-photo-storage';
 import { PrismaService } from '../prisma/prisma.service';
 import type { UpdateShopDto } from './dto/update-shop.dto';
+import type { UpdateShopSettlementDto } from './dto/update-shop-settlement.dto';
 import type { UploadShopPhotoDto } from './dto/upload-shop-photo.dto';
 
 const MAX_CASE_PHOTOS = 10;
 
-export interface ShopListItem extends Shop {
+// 정산 관련 내부 필드 2개(기본 매입가 정률·정산일) — Product.supplyPrice와 같은 이유로 공개 조회(/shops)·
+// 파트너 자기 조회(/shops/me)에는 노출하지 않고 관리자 조회(AD-CO-02)에만 내려준다(2026-08-23 확정).
+// defaultCommissionRate는 원본이 Prisma Decimal이라 관리자 노출 시 number로 변환해서 내려준다
+type SettlementFields = Pick<Shop, 'settlementDay'> & {
+  defaultCommissionRate: number | null;
+};
+
+export interface ShopListItem extends Omit<Shop, keyof SettlementFields>, SettlementFields {
   mainPhoto: ShopPhoto | null;
   categories: string[]; // 시공가능 자동차 시공코드 목록
   distanceKm: number | null; // 기준 위치(lat/lng) 지정 시에만 값 존재
@@ -25,11 +33,27 @@ export interface ShopListItem extends Shop {
   reviewCount: number;
 }
 
-export interface ShopDetail extends Shop {
+export interface ShopDetail extends Omit<Shop, keyof SettlementFields>, SettlementFields {
   photos: ShopPhoto[];
   categories: string[];
   avgRating: number | null;
   reviewCount: number;
+}
+
+/** 정산 필드 노출 여부 처리 — forAdmin=false면 응답에서 필드 자체를 생략(undefined, JSON 직렬화 시 키 생략됨),
+ * true면 Decimal(defaultCommissionRate)을 number로 변환해 그대로 내려준다(maskSupplyPrice와 동일 패턴) */
+function resolveSettlementFields(shop: Shop, forAdmin: boolean): SettlementFields {
+  if (!forAdmin) {
+    return {
+      defaultCommissionRate: undefined as unknown as null,
+      settlementDay: undefined as unknown as null,
+    };
+  }
+  return {
+    defaultCommissionRate:
+      shop.defaultCommissionRate === null ? null : Number(shop.defaultCommissionRate),
+    settlementDay: shop.settlementDay,
+  };
 }
 
 // CU-NCPK-06/CU-RSVC-18 업체 프로필의 후기 목록 — 예약(Reservation)당 1건씩 작성되는 Review를 그대로 노출.
@@ -127,6 +151,7 @@ export class ShopsService {
       const rating = ratingByShop.get(shop.shopCode);
       return {
         ...rest,
+        ...resolveSettlementFields(shop, false),
         mainPhoto: photos[0] ?? null,
         categories: categories.map((c) => c.instCode),
         distanceKm,
@@ -144,7 +169,7 @@ export class ShopsService {
     return items;
   }
 
-  async getDetail(shopCode: string): Promise<ShopDetail> {
+  async getDetail(shopCode: string, forAdmin = false): Promise<ShopDetail> {
     const shop = await this.prisma.shop.findUnique({
       where: { shopCode },
       include: {
@@ -160,6 +185,7 @@ export class ShopsService {
     const rating = (await this.aggregateRatings([shopCode])).get(shopCode);
     return {
       ...rest,
+      ...resolveSettlementFields(shop, forAdmin),
       categories: categories.map((c) => c.instCode),
       avgRating: rating?.avgRating ?? null,
       reviewCount: rating?.reviewCount ?? 0,
@@ -445,7 +471,34 @@ export class ShopsService {
       }
     }
 
-    return this.getDetail(shopCode);
+    return this.getDetail(shopCode, true);
+  }
+
+  /**
+   * 정산 기본값(기본 수수료·정산일) 수정 — 관리자 전용(AD-CO-02 업체관리 매장정보 탭, 2026-08-23 확정으로
+   * AD-STL-02 정산 기준 관리 화면에서 이쪽으로 이동). 파트너 자기 자신은 updateMyShop(UpdateShopDto)로는
+   * 이 필드들을 건드릴 수 없도록 DTO 자체를 분리해뒀다
+   */
+  async updateSettlementInfo(
+    shopCode: string,
+    dto: UpdateShopSettlementDto,
+  ): Promise<ShopDetail> {
+    const shop = await this.prisma.shop.findUnique({ where: { shopCode } });
+    if (!shop) {
+      throw new NotFoundException('시공업체를 찾을 수 없습니다.');
+    }
+    await this.prisma.shop.update({
+      where: { shopCode },
+      data: {
+        ...(dto.commissionRate !== undefined
+          ? { defaultCommissionRate: dto.commissionRate }
+          : {}),
+        ...(dto.settlementDay !== undefined
+          ? { settlementDay: dto.settlementDay }
+          : {}),
+      },
+    });
+    return this.getDetail(shopCode, true);
   }
 
   /** 내 업체 사진 업로드 — MAIN은 항상 1장(있으면 파일 교체), CASE는 추가(최대 10장) */
@@ -489,7 +542,7 @@ export class ShopsService {
       });
     }
 
-    return this.getDetail(shopCode);
+    return this.getDetail(shopCode, true);
   }
 
   /** 내 업체 사진 삭제 — 다른 업체 소속 photoId를 지정하는 걸 막기 위해 shopCode 일치까지 확인 */
@@ -504,6 +557,6 @@ export class ShopsService {
     await this.prisma.shopPhoto.delete({ where: { id: photoId } });
     await deleteShopPhoto(photo.photoPath);
 
-    return this.getDetail(shopCode);
+    return this.getDetail(shopCode, true);
   }
 }

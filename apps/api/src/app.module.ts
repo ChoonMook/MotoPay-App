@@ -29,6 +29,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { SettlementsModule } from './settlements/settlements.module';
 import { ShopsModule } from './shops/shops.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { UsersModule } from './users/users.module';
@@ -66,6 +67,7 @@ import { UsersModule } from './users/users.module';
     NotificationsModule,
     PushModule,
     AdminPushModule,
+    SettlementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

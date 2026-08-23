@@ -155,7 +155,10 @@ export class CarsService {
   }
 
   /** 매핑 실행 공통 로직 — NewCarPurchaseCustomer.isMapped/mappedAt/memberId 갱신 + 내 차량 정보(MyCar, MAP)를 생성.
-   * 이미 다른 차량을 보유한 회원일 수 있어(관리자 등록 시점 매핑) 대표차량 여부는 항상 true가 아니라 보유 차량 수로 판단 */
+   * 이미 다른 차량을 보유한 회원일 수 있어(관리자 등록 시점 매핑) 대표차량 여부는 항상 true가 아니라 보유 차량 수로 판단.
+   * 단, 신차패키지(packageCode)가 있는 매핑은 첫 차량이 아니어도 항상 대표차량으로 승격한다(2026-08-23 확정) —
+   * 홈 화면의 "신차패키지 도착" 배너(HomeScreen.tsx CU-HOME-01)가 대표차량의 packageCode만 보고 노출 여부를
+   * 판단하므로, 그렇게 하지 않으면 회원이 수동으로 대표차량을 바꿔야만 새로 도착한 패키지 배너가 뜨는 문제가 생김 */
   private async applyMapping(
     purchase: NewCarPurchaseCustomer,
     userId: string,
@@ -163,7 +166,16 @@ export class CarsService {
     const existingCount = await this.prisma.myCar.count({
       where: { memberId: userId },
     });
+    const shouldBeDefault = existingCount === 0 || !!purchase.packageCode;
     await this.prisma.$transaction([
+      ...(shouldBeDefault && existingCount > 0
+        ? [
+            this.prisma.myCar.updateMany({
+              where: { memberId: userId, isDefault: true },
+              data: { isDefault: false },
+            }),
+          ]
+        : []),
       this.prisma.newCarPurchaseCustomer.update({
         where: { vin: purchase.vin },
         data: { isMapped: true, mappedAt: new Date(), memberId: userId },
@@ -179,7 +191,7 @@ export class CarsService {
           trimName: purchase.trimName,
           modelYear: purchase.modelYear,
           vin: purchase.vin,
-          isDefault: existingCount === 0,
+          isDefault: shouldBeDefault,
         },
       }),
     ]);

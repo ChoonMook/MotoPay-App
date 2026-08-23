@@ -36,6 +36,7 @@ import {
   revokeCompanyApproval,
   updateCompany,
   updateCompanyShop,
+  updateCompanyShopSettlement,
   updatePartnerUser,
   uploadCompanyDocument,
   uploadCompanyShopPhoto,
@@ -806,6 +807,15 @@ function ShopInfoTab({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<CommonCodeDetailApi[]>([]);
 
+  // 정산 기본값(2026-08-23 확정: AD-STL-02 패키지·시공 정산 기준 관리 화면에서 이관) — 매장정보와 별개 엔드포인트라
+  // 저장 버튼·로딩/에러 상태도 따로 둔다. 업체 단위 기본값은 상품마다 가격대가 달라 정률만 사용(정액은
+  // AD-STL-02에서 구성상품별 예외로 등록)
+  const [commissionRate, setCommissionRate] = useState("");
+  const [settlementDay, setSettlementDay] = useState("");
+  const [settlementError, setSettlementError] = useState("");
+  const [settlementSaving, setSettlementSaving] = useState(false);
+  const [settlementSaved, setSettlementSaved] = useState(false);
+
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -829,6 +839,8 @@ function ShopInfoTab({
         setPhone(detail.phone ?? "");
         setBusinessHours(detail.businessHours ?? "");
         setSelectedCategories(detail.categories);
+        setCommissionRate(detail.defaultCommissionRate != null ? String(detail.defaultCommissionRate) : "");
+        setSettlementDay(detail.settlementDay != null ? String(detail.settlementDay) : "");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "매장 정보를 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -893,6 +905,37 @@ function ShopInfoTab({
       setError(err instanceof Error ? err.message : "매장 정보 저장에 실패했습니다.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveSettlement = async () => {
+    const rateValid =
+      commissionRate.trim() === "" ||
+      (!Number.isNaN(Number(commissionRate)) && Number(commissionRate) >= 0 && Number(commissionRate) <= 100);
+    const dayValid = settlementDay.trim() === "" || (Number.isInteger(Number(settlementDay)) && Number(settlementDay) >= 1 && Number(settlementDay) <= 31);
+    if (!rateValid) {
+      setSettlementError("정률은 0~100 사이의 값을 입력해 주세요.");
+      return;
+    }
+    if (!dayValid) {
+      setSettlementError("정산일은 1~31 사이의 숫자로 입력해 주세요.");
+      return;
+    }
+    setSettlementSaving(true);
+    setSettlementError("");
+    setSettlementSaved(false);
+    try {
+      const updated = await updateCompanyShopSettlement(companyId, {
+        commissionRate: commissionRate.trim() === "" ? undefined : Number(commissionRate),
+        settlementDay: settlementDay.trim() === "" ? undefined : Number(settlementDay),
+      });
+      setShop(updated);
+      setSettlementSaved(true);
+      setTimeout(() => setSettlementSaved(false), 2000);
+    } catch (err) {
+      setSettlementError(err instanceof Error ? err.message : "정산 기본값 저장에 실패했습니다.");
+    } finally {
+      setSettlementSaving(false);
     }
   };
 
@@ -1099,6 +1142,59 @@ function ShopInfoTab({
         >
           {saving ? "저장 중..." : "매장정보 저장"}
         </button>
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-outline-variant/60 bg-surface-container-low p-4">
+        <div>
+          <p className="text-xs font-extrabold text-on-surface">정산 기본값</p>
+          <p className="text-[11px] text-on-surface-variant">
+            구성상품별 예외(AD-STL-02)가 없으면 이 기본값이 적용됩니다. 관리자만 수정 가능합니다.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className={labelClass}>기본 매입가 정률(%)</label>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={commissionRate}
+              onChange={(e) => setCommissionRate(e.target.value)}
+              placeholder="예: 8"
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className={labelClass}>정산일</label>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={1}
+                max={31}
+                value={settlementDay}
+                onChange={(e) => setSettlementDay(e.target.value)}
+                placeholder="예: 10"
+                className={inputClass}
+              />
+              <span className="shrink-0 text-[11px] text-on-surface-variant">일 — 매월 며칠에 지급하는지</span>
+            </div>
+          </div>
+        </div>
+
+        {settlementError && <p className="text-[12px] font-semibold text-red-600">{settlementError}</p>}
+
+        <div className="flex items-center justify-end gap-2">
+          {settlementSaved && <span className="whitespace-nowrap text-[11px] font-semibold text-emerald-600">저장됨</span>}
+          <button
+            type="button"
+            onClick={saveSettlement}
+            disabled={settlementSaving}
+            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-xs font-bold whitespace-nowrap text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 disabled:opacity-60"
+          >
+            {settlementSaving ? "저장 중..." : "정산 기본값 저장"}
+          </button>
+        </div>
       </div>
 
       {addressSearchModal}

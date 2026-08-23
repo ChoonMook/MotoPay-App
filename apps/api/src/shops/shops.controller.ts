@@ -56,7 +56,9 @@ export class ShopsController {
     summary: '내 업체 조회(파트너 로그인 전용) — 사진·시공가능 카테고리 포함',
   })
   getMyShop(@CurrentPartnerUser() partnerUser: SafePartnerUser) {
-    return this.shopsService.getDetail(partnerUser.shopCode);
+    // 정산 관련 내부 필드(기본 매입가 정률·정산일)는 자기 자신의 업체 정보라 파트너에게도 노출(2026-08-23,
+    // PT-STL 정산 예정일 표시에 필요) — 공개 조회(/shops, /shops/:code)에서만 계속 숨김
+    return this.shopsService.getDetail(partnerUser.shopCode, true);
   }
 
   @Patch('me')

@@ -17,6 +17,7 @@ import { JwtAdminAuthGuard } from '../admin-auth/guards/jwt-admin-auth.guard';
 import { CurrentAdmin } from '../admin-auth/decorators/current-admin.decorator';
 import type { SafeAdminAccount } from '../admin-auth/admin-auth.types';
 import { UpdateShopDto } from '../shops/dto/update-shop.dto';
+import { UpdateShopSettlementDto } from '../shops/dto/update-shop-settlement.dto';
 import { UploadShopPhotoDto } from '../shops/dto/upload-shop-photo.dto';
 import { CompaniesService } from './companies.service';
 import { DealerShopMappingService } from './dealer-shop-mapping.service';
@@ -77,6 +78,18 @@ export class CompaniesController {
     @Body() dto: UpdateShopDto,
   ) {
     return this.companiesService.updateShop(id, dto);
+  }
+
+  @Patch(':id/shop/settlement')
+  @ApiOperation({
+    summary:
+      '시공업체 정산 기본값(기본 수수료·정산일) 수정 — 관리자 전용, AD-STL-02에서 이관(2026-08-23)',
+  })
+  updateShopSettlement(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateShopSettlementDto,
+  ) {
+    return this.companiesService.updateShopSettlement(id, dto);
   }
 
   @Get(':id/partner-users')

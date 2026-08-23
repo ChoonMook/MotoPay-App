@@ -33,6 +33,8 @@ import InquiryMgmtPage from "./pages/cs/InquiryMgmtPage";
 import FaqMgmtPage from "./pages/cs/FaqMgmtPage";
 import PushBroadcastPage from "./pages/cs/PushBroadcastPage";
 import ReviewMgmtPage from "./pages/review/ReviewMgmtPage";
+import SettleHistPage from "./pages/settle/SettleHistPage";
+import SettleRuleMgmtPage from "./pages/settle/SettleRuleMgmtPage";
 import AppVersionMgmtPage from "./pages/system/AppVersionMgmtPage";
 import CommonCodeMgmtPage from "./pages/system/CommonCodeMgmtPage";
 import MenuPermMgmtPage from "./pages/system/MenuPermMgmtPage";
@@ -65,6 +67,8 @@ function ContentSwitch({ path }: { path: string }) {
   if (path === "/cs/faq-mgmt") return <FaqMgmtPage />;
   if (path === "/cs/push-broadcast") return <PushBroadcastPage />;
   if (path === "/review/review-mgmt") return <ReviewMgmtPage />;
+  if (path === "/settle/settle-rule-mgmt") return <SettleRuleMgmtPage />;
+  if (path === "/settle/settle-hist") return <SettleHistPage />;
   return <PlaceholderPage path={path} />;
 }
 

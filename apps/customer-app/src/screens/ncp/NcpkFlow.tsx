@@ -500,6 +500,18 @@ export default function NcpkFlow({ onExit, initialScreen = "main", targetReserva
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carsApi]);
 
+  // CU-NCPK-02/04 시공 항목 선택 화면·추가옵션 팝업 — 상품/가격이 표시되는 화면이라, 열 때마다 최신 정보로
+  // 다시 불러온다(관리자가 그 사이 가격을 바꿨을 수 있는데 mount 시점에 한 번만 조회한 packageDetail을 계속
+  // 재사용하면 옛 가격이 뜨는 문제가 있었음 — 2026-08-23 확정)
+  useEffect(() => {
+    const packageCode = (carsApi.find((c) => c.isDefault) ?? carsApi[0])?.packageCode;
+    if (!packageCode || (screen !== "pkg" && sheet !== "addopt")) return;
+    getPackageDetail(packageCode)
+      .then(setPackageDetail)
+      .catch((err) => showToast(err instanceof Error ? err.message : "시공 패키지 정보를 불러오지 못했어요", "danger"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, sheet]);
+
   // 패키지가 바뀌면(차량 전환 등) 분류별 선택을 각 기본 품목의 첫 후보로, 추가옵션 선택은 빈 상태로 초기화
   useEffect(() => {
     setPkgSel(Object.fromEntries(pkgGroups.filter((g) => g.baseOptions[0]).map((g) => [g.prodCat, g.baseOptions[0].code])));

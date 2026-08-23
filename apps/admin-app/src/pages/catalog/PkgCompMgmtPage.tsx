@@ -175,6 +175,14 @@ export default function PkgCompMgmtPage() {
 
   const handleSave = async () => {
     if (!selectedProduct) return;
+    // 가격override에 0원을 입력하면 그 구성상품의 실제 가치가 데이터에서 사라져(딜러사 청구·시공업체 정산
+    // 산정 기준으로 쓸 수 없게 됨) — 기본상품(무상)이라도 "고객에게 무상"과 "이 항목의 실제 가치"는 별개이므로,
+    // override는 항상 0보다 커야 한다. 상품 자체 판매가를 그대로 쓰려면 override 칸을 비워두면 된다(2026-08-22 확정)
+    const hasZeroPrice = ITEM_TYPES.some(({ key }) => groups[key].some((item) => item.price.trim() === "0"));
+    if (hasZeroPrice) {
+      setGlobalError("가격override에 0원을 입력할 수 없습니다. 상품 자체 판매가를 적용하려면 비워두세요.");
+      return;
+    }
     setSaving(true);
     try {
       const items: BundleItemInput[] = ITEM_TYPES.flatMap(({ key }) =>

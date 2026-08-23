@@ -142,6 +142,8 @@ export interface CompanyShopDetail {
   useYn: boolean;
   photos: ShopPhoto[];
   categories: string[];
+  defaultCommissionRate: number | null;
+  settlementDay: number | null;
 }
 
 export function getCompanyShop(id: number): Promise<CompanyShopDetail> {
@@ -163,6 +165,21 @@ export interface UpdateCompanyShopInput {
 
 export function updateCompanyShop(id: number, input: UpdateCompanyShopInput): Promise<CompanyShopDetail> {
   return authedRequest<CompanyShopDetail>(`/admin/companies/${id}/shop`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export interface UpdateCompanyShopSettlementInput {
+  commissionRate?: number;
+  settlementDay?: number;
+}
+
+export function updateCompanyShopSettlement(
+  id: number,
+  input: UpdateCompanyShopSettlementInput,
+): Promise<CompanyShopDetail> {
+  return authedRequest<CompanyShopDetail>(`/admin/companies/${id}/shop/settlement`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

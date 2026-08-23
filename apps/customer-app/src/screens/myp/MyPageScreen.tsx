@@ -141,7 +141,7 @@ export default function MyPageScreen({
                 {sec.rows.map((m, i) => (
                   <div
                     key={m.label}
-                    onClick={m.onClick}
+                    onClick={() => m.onClick?.()}
                     className={`flex items-center gap-3 px-1 py-3.5 ${i < sec.rows.length - 1 || sec.title === "" ? "border-b border-gray-100" : ""}`}
                   >
                     <span className={`flex-1 text-sm ${m.danger ? "font-bold text-status-danger" : "font-semibold text-gray-800"}`}>{m.label}</span>

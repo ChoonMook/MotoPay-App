@@ -25,6 +25,7 @@ export interface MyShop {
   useYn: boolean;
   photos: ShopPhoto[];
   categories: string[];
+  settlementDay: number | null; // 정산일 — 매월 며칠에 지급하는지(1~31), 관리자가 AD-CO-02에서 설정
 }
 
 export interface UpdateShopInput {

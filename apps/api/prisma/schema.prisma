@@ -48,12 +48,12 @@ model User {
   updatedBy   String? // 수정자 — 본인이 수정한 경우 자기 자신의 id, 관리자가 수정한 경우 AdminAccount.username(FK 없음)
   updatedAt   DateTime  @updatedAt @db.Timestamp(3)
 
-  carPurchases NewCarPurchaseCustomer[] // 이 회원으로 매핑된 신차 구매 고객 정보(여러 대 구매 가능)
-  cars         MyCar[] // 이 회원 소유의 내 차량 목록
-  reservations Reservation[] // 이 회원이 등록한 시공 예약 목록
-  bidRequests  BidRequest[] // 이 회원이 등록한 예약시공 입찰 요청 목록
-  reviews      Review[] // 이 회원이 작성한 후기 목록
-  pointHistories PointHistory[] // 이 회원의 포인트 적립/사용/관리자 조정 내역
+  carPurchases    NewCarPurchaseCustomer[] // 이 회원으로 매핑된 신차 구매 고객 정보(여러 대 구매 가능)
+  cars            MyCar[] // 이 회원 소유의 내 차량 목록
+  reservations    Reservation[] // 이 회원이 등록한 시공 예약 목록
+  bidRequests     BidRequest[] // 이 회원이 등록한 예약시공 입찰 요청 목록
+  reviews         Review[] // 이 회원이 작성한 후기 목록
+  pointHistories  PointHistory[] // 이 회원의 포인트 적립/사용/관리자 조정 내역
   couponIssuances CouponIssuance[] // 이 회원에게 발급된 쿠폰 목록
   inquiries       Inquiry[] // 이 회원이 등록한 1:1 문의 목록
 
@@ -69,7 +69,7 @@ model PointHistory {
   amount       Int // 증감액(원) — 충전·부여는 양수, 사용·차감은 음수
   balanceAfter Int // 처리 후 잔액 스냅샷(원)
   title        String // 내역 제목(예: "카드 충전", "썬팅 시공 결제") — 관리자 부여/차감은 사유를 그대로 사용
-  reason       String? @db.Text // 관리자 강제 부여/차감(AD-PNT-04/05) 시 필수 입력 사유 — 충전/사용 건은 null
+  reason       String?  @db.Text // 관리자 강제 부여/차감(AD-PNT-04/05) 시 필수 입력 사유 — 충전/사용 건은 null
   createdBy    String? // 처리자 — 관리자 처리건은 AdminAccount.username, 회원 스스로 발생한 충전/사용은 회원 자기 자신의 User.id(FK 없음)
   createdAt    DateTime @default(now()) @db.Timestamp(3)
 
@@ -254,6 +254,7 @@ model Product {
   dealerMappings   ProductDealerMapping[] // 딜러사 매핑(AD-CTLG-08, PKG 상품 전용)
   carModelMappings ProductCarModelMapping[] // 적용 가능 차종 매핑(AD-CTLG-09, PKG 상품 전용)
   dealerCompany    Company?                 @relation(fields: [dealerCompanyId], references: [id])
+  shopCommissions  ProductShopCommission[] // 시공업체별 수수료 예외(AD-STL-02)
 
   @@index([dealerCompanyId])
   @@map("products")
@@ -361,9 +362,9 @@ model NewCarPurchaseCustomer {
   updatedBy String? // 수정자id
   updatedAt DateTime @updatedAt @db.Timestamp(3)
 
-  package       Product?             @relation(fields: [packageCode], references: [productCode])
-  member        User?                @relation(fields: [memberId], references: [id])
-  dealer        Company              @relation(fields: [dealerCompanyId], references: [id])
+  package       Product?                     @relation(fields: [packageCode], references: [productCode])
+  member        User?                        @relation(fields: [memberId], references: [id])
+  dealer        Company                      @relation(fields: [dealerCompanyId], references: [id])
   myCars        MyCar[] // 이 구매정보로 생성된 내 차량 정보(신차매핑)
   selectedItems NewCarPurchaseItem[] // 예약확정(POST /reservations) 시점에 고객이 실제 선택한 패키지 구성상품 전체(분류별 기본/업그레이드 1건 + 추가옵션들, 가격 포함)
   tintPositions NewCarPurchaseTintPosition[] // 예약확정 시점에 고객이 선택한 썬팅 부위별 농도(패키지에 썬팅 시공이 포함된 경우만)
@@ -431,11 +432,11 @@ model MyCar {
 
 // 시공업체 마스터 — 틴팅/블랙박스/코팅 등 시공을 수행하는 업체 정보
 model Shop {
-  id            Int      @id @default(autoincrement()) // 내부 시퀀스 — shopCode 채번에만 사용, 외부엔 노출 안 함
-  shopCode      String   @unique @db.Char(10) // 업체코드 — id를 10자리로 0-padding해 자동 채번(Product.productCode와 동일 방식)
+  id            Int     @id @default(autoincrement()) // 내부 시퀀스 — shopCode 채번에만 사용, 외부엔 노출 안 함
+  shopCode      String  @unique @db.Char(10) // 업체코드 — id를 10자리로 0-padding해 자동 채번(Product.productCode와 동일 방식)
   name          String // 업체명
-  greeting      String?  @db.Text // 인사말
-  intro         String?  @db.Text // 소개
+  greeting      String? @db.Text // 인사말
+  intro         String? @db.Text // 소개
   zipCode       String? // 우편번호
   address       String? // 주소
   addressDetail String? // 상세주소
@@ -443,25 +444,35 @@ model Shop {
   longitude     Float? // 경도
   phone         String? // 대표전화번호
   businessHours String? // 운영시간 안내(자유 텍스트, 예: "평일 09:00 ~ 19:00, 토요일 10:00 ~ 18:00, 일요일 휴무")
-  useYn         Boolean  @default(true) // 사용여부
-  createdBy     String? // 등록자 -> AdminAccount.username(FK 없음)
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
-  updatedBy     String? // 수정자 — AdminAccount.username 또는 PartnerUser.username(FK 없음, 관리자·소속 파트너 둘 다 수정 가능)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  useYn         Boolean @default(true) // 사용여부
 
-  photos         ShopPhoto[]
-  categories     ShopInstCategory[]
-  holidays       ShopHoliday[]
-  timeSlots      ShopTimeSlot[]
-  dailySlots     ShopDailySlot[]
-  reservations   Reservation[]
-  partnerUsers   PartnerUser[]
-  bidInvitations BidInvitation[]
-  bidOffers      BidOffer[]
-  bidPlans       BidPlan[]
-  reviews        Review[]
-  company        Company? // AD-CO 업체 관리에서 이 시공업체에 연결한 업체(사업자) 레코드
-  dealerMappings DealerShopMapping[] // 이 시공업체를 안내 가능 범위로 등록한 딜러사 매핑(AD-NCPK-04)
+  // 정산 기본값(AD-CO-02 업체관리 매장정보 탭에서 관리자만 수정, 2026-08-23 확정: AD-STL-02 정산 기준 관리
+  // 화면에서 이쪽으로 이동) — 구성상품×시공업체별로 예외(ProductShopCommission, 정액/정률 둘 다 가능)가 있으면
+  // 그걸 우선 적용하고, 없으면 이 값을 기본값으로 씀. 업체 기본값은 상품마다 가격대가 크게 달라 정액이 의미가
+  // 없어 정률만 둔다(2026-08-23 확정 — 정액이 필요하면 AD-STL-02에서 상품별 예외로 등록)
+  defaultCommissionRate Decimal? @db.Decimal(5, 2) // 정률 매입가(%) — 예: 8.50 = 8.5%
+  settlementDay         Int? // 정산일 — 매월 며칠에 이 업체에 지급하는지(1~31)
+
+  createdBy String? // 등록자 -> AdminAccount.username(FK 없음)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedBy String? // 수정자 — AdminAccount.username 또는 PartnerUser.username(FK 없음, 관리자·소속 파트너 둘 다 수정 가능)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  photos             ShopPhoto[]
+  categories         ShopInstCategory[]
+  holidays           ShopHoliday[]
+  timeSlots          ShopTimeSlot[]
+  dailySlots         ShopDailySlot[]
+  reservations       Reservation[]
+  partnerUsers       PartnerUser[]
+  bidInvitations     BidInvitation[]
+  bidOffers          BidOffer[]
+  bidPlans           BidPlan[]
+  reviews            Review[]
+  company            Company? // AD-CO 업체 관리에서 이 시공업체에 연결한 업체(사업자) 레코드
+  dealerMappings     DealerShopMapping[] // 이 시공업체를 안내 가능 범위로 등록한 딜러사 매핑(AD-NCPK-04)
+  productCommissions ProductShopCommission[] // 상품별 수수료 예외(AD-STL-02)
+  settlementBatches  ShopSettlementBatch[] // 월별 정산 배치(AD-STL-04)
 
   @@map("shops")
 }
@@ -508,6 +519,7 @@ model Company {
   newCarPurchases       NewCarPurchaseCustomer[] // 이 딜러사가 등록한 신차 구매 고객 정보(역참조)
   myCars                MyCar[] // 이 딜러사를 통해 신차매핑된 내 차량 정보(역참조)
   issuedCoupons         Coupon[] // 이 딜러사가 요청해 운영사가 대행 발행한 쿠폰(coType='DEALER'만 해당) — Coupon.issuerCompanyId 역참조
+  dealerInvoiceBatches  DealerInvoiceBatch[] // 이 딜러사(coType='DEALER') 월별 청구 배치(AD-STL-06)
 
   @@map("companies")
 }
@@ -648,27 +660,33 @@ model Reservation {
   pointsUsed          Int? // 사용한 포인트(원) — 미사용이면 0
   paidAmount          Int? // 최종 결제금액(원) — 결제 확정 전이면 null
   paidAt              DateTime? @db.Timestamp(3) // 결제 확정 일시 — null이면 결제 미확정
+  // 신차패키지(PKG) 정산 기준액(2026-08-22 확정) — 무상 기본상품(BASIC)도 실제로는 딜러사가 그 값을 부담하므로,
+  // 고객 결제액(paidAmount, PKG는 항상 null)이 아니라 "기본상품+선택된 업그레이드옵션+체크한 추가옵션"의 실제
+  // 판매가 합계를 create() 시점에 서버가 직접 계산해 스냅샷. 시공업체 정산·딜러사 청구 산정 기준(BID는 사용 안 함)
+  packageValueAmount  Int? // 신차패키지 실거래가치 총액(원) — PKG 전용, BID는 항상 null
   // 파트너 일정변경 요청(2026-08-14 추가) — 파트너가 새 일시를 제안하면 고객이 수락/거절.
   // 수락되면 date/time이 갱신되면서 이 필드들은 모두 null로 초기화됨. 거절되면 reschedStatus='REJECTED'로
   // 남아있다가 파트너가 다시 요청하면 새 값으로 덮어써짐(요청은 항상 최신 1건만 유지, 이력 보관 안 함)
-  reschedStatus        String? // "REQUESTED"(응답 대기)|"REJECTED"(거절됨) — null이면 활성 요청 없음
-  reschedDate          DateTime? @db.Date // 파트너가 제안한 새 날짜
-  reschedTime          DateTime? @db.Time(0) // 파트너가 제안한 새 시각
-  reschedReason        String?   @db.Text // 파트너가 남긴 변경 사유
-  reschedRequestedAt   DateTime? @db.Timestamp(3) // 요청 등록 일시
-  reschedRejectReason  String?   @db.Text // 고객이 거절 시 남긴 사유(선택 입력) — REJECTED 상태일 때만 값 있을 수 있음
-  reschedRespondedAt   DateTime? @db.Timestamp(3) // 고객이 거절 처리한 일시(수락 시엔 필드 자체가 초기화되므로 기록 안 남음)
+  reschedStatus       String? // "REQUESTED"(응답 대기)|"REJECTED"(거절됨) — null이면 활성 요청 없음
+  reschedDate         DateTime? @db.Date // 파트너가 제안한 새 날짜
+  reschedTime         DateTime? @db.Time(0) // 파트너가 제안한 새 시각
+  reschedReason       String?   @db.Text // 파트너가 남긴 변경 사유
+  reschedRequestedAt  DateTime? @db.Timestamp(3) // 요청 등록 일시
+  reschedRejectReason String?   @db.Text // 고객이 거절 시 남긴 사유(선택 입력) — REJECTED 상태일 때만 값 있을 수 있음
+  reschedRespondedAt  DateTime? @db.Timestamp(3) // 고객이 거절 처리한 일시(수락 시엔 필드 자체가 초기화되므로 기록 안 남음)
   createdBy           String? // 등록자 — 예약 신청한 회원 자기 자신의 User.id(FK 없음)
   createdAt           DateTime  @default(now()) @db.Timestamp(3)
   updatedBy           String? // 수정자 — 회원 자기 자신의 User.id 또는 PartnerUser.username(FK 없음, 고객 취소·파트너 시공완료처리 모두 이 테이블을 수정)
   updatedAt           DateTime  @updatedAt @db.Timestamp(3)
 
-  shop     Shop                 @relation(fields: [shopCode], references: [shopCode])
-  member   User                 @relation(fields: [memberId], references: [id])
-  request  BidRequest?          @relation(fields: [requestNo], references: [requestNo])
-  photos   ReservationPhoto[] // 시공 완료 등록 시 첨부한 시공 사진(고객 인수확인 화면에 그대로 노출)
-  callLogs ReservationCallLog[] // 파트너가 남긴 해피콜(고객 통화) 이력
-  review   Review? // 인수확인 후 고객이 남긴 후기 — 예약당 1건
+  shop               Shop                 @relation(fields: [shopCode], references: [shopCode])
+  member             User                 @relation(fields: [memberId], references: [id])
+  request            BidRequest?          @relation(fields: [requestNo], references: [requestNo])
+  photos             ReservationPhoto[] // 시공 완료 등록 시 첨부한 시공 사진(고객 인수확인 화면에 그대로 노출)
+  callLogs           ReservationCallLog[] // 파트너가 남긴 해피콜(고객 통화) 이력
+  review             Review? // 인수확인 후 고객이 남긴 후기 — 예약당 1건
+  settlementItems    ShopSettlementItem[] // 시공업체 정산 배치에 포함된 내역(AD-STL-04)
+  dealerInvoiceItems DealerInvoiceItem[] // 딜러사 청구 배치에 포함된 내역(AD-STL-06, PKG만)
 
   @@index([shopCode, date, time])
   @@map("reservations")
@@ -700,6 +718,115 @@ model ReservationCallLog {
 
   @@index([reservationNo])
   @@map("reservation_call_logs")
+}
+
+// 상품×시공업체 수수료 예외(AD-STL-02 정산 기준 관리) — 조합당 최대 1건. 예외가 없으면 Shop.defaultCommission*를
+// 기본값으로 사용한다(2026-08-22 확정: 시공업체 기본값 + 상품별 예외 구조)
+model ProductShopCommission {
+  id               Int      @id @default(autoincrement())
+  productCode      String // -> Product.productCode
+  shopCode         String // -> Shop.shopCode
+  commissionType   String // 'FIXED'(정액) | 'RATE'(정률) -> CommonCodeDetail(code='COMMISSION_TYPE')
+  commissionAmount Int? // 정액 수수료(원) — commissionType='FIXED'일 때만 사용
+  commissionRate   Decimal? @db.Decimal(5, 2) // 정률 수수료(%) — commissionType='RATE'일 때만 사용
+  useYn            Boolean  @default(true)
+  createdBy        String? // -> AdminAccount.username(FK 없음)
+  createdAt        DateTime @default(now()) @db.Timestamp(3)
+  updatedBy        String? // -> AdminAccount.username(FK 없음)
+  updatedAt        DateTime @updatedAt @db.Timestamp(3)
+
+  product Product @relation(fields: [productCode], references: [productCode])
+  shop    Shop    @relation(fields: [shopCode], references: [shopCode])
+
+  @@unique([productCode, shopCode])
+  @@map("product_shop_commissions")
+}
+
+// 시공업체 월별 정산 배치(AD-STL-04 정산 내역 조회, AD-STL-05 매입 계산서 발행) — 시공업체+정산월당 1건.
+// 해당 월 완료된 예약 건들을 모아 총매출/총수수료/지급액을 집계하고, 익월 지급 처리 상태를 관리한다
+model ShopSettlementBatch {
+  id               Int       @id @default(autoincrement())
+  shopCode         String // -> Shop.shopCode
+  settlementMonth  String    @db.Char(7) // 정산 대상월, "YYYY-MM" 형식(예: "2026-08")
+  // 총 정산 기준액 합계(원) — 포함된 예약들의 정산 기준액 합(BID는 Reservation.paidAmount, PKG는
+  // Reservation.packageValueAmount, 2026-08-22 확정: PKG는 무상 기본상품도 실거래가치로 포함해야 하므로 별도 필드 사용)
+  grossAmount      Int
+  commissionAmount Int // 총 수수료 합계(원)
+  netPayoutAmount  Int // 지급액(원) = grossAmount - commissionAmount
+  payoutStatus     String    @default("PENDING") // 'PENDING'(대기) | 'PAID'(지급완료) -> CommonCodeDetail(code='PAYOUT_STATUS')
+  payoutDate       DateTime? @db.Date // 실제 지급일
+  createdBy        String? // -> AdminAccount.username(FK 없음)
+  createdAt        DateTime  @default(now()) @db.Timestamp(3)
+  updatedBy        String? // -> AdminAccount.username(FK 없음)
+  updatedAt        DateTime  @updatedAt @db.Timestamp(3)
+
+  shop  Shop                 @relation(fields: [shopCode], references: [shopCode])
+  items ShopSettlementItem[]
+
+  @@unique([shopCode, settlementMonth])
+  @@map("shop_settlement_batches")
+}
+
+// 시공업체 정산 배치의 예약 건별 상세 — 정산 시점의 수수료율을 스냅샷으로 저장해, 이후 수수료 기준이
+// 바뀌어도 과거 정산 기록은 그대로 유지되게 한다
+model ShopSettlementItem {
+  id               Int      @id @default(autoincrement())
+  batchId          Int // -> ShopSettlementBatch.id
+  reservationNo    String // -> Reservation.reservationNo
+  productCode      String? // -> Product.productCode — 정산 대상 상품(입찰 건은 상품 연결이 불명확할 수 있어 nullable)
+  // 해당 건 정산 기준액(원) 스냅샷 — BID는 Reservation.paidAmount, PKG는 Reservation.packageValueAmount
+  grossAmount      Int
+  commissionType   String // 정산 시점 적용된 수수료 방식 스냅샷 -> CommonCodeDetail(code='COMMISSION_TYPE')
+  commissionAmount Int // 정산 시점 계산된 수수료액(원) 스냅샷
+  netAmount        Int // grossAmount - commissionAmount
+  createdAt        DateTime @default(now()) @db.Timestamp(3)
+
+  batch       ShopSettlementBatch @relation(fields: [batchId], references: [id])
+  reservation Reservation         @relation(fields: [reservationNo], references: [reservationNo])
+
+  @@index([batchId])
+  @@index([reservationNo])
+  @@map("shop_settlement_items")
+}
+
+// 딜러사 월별 청구 배치(AD-STL-06 매출 계산서 발행) — 신차패키지(PKG)만 해당, 입찰(BID)은 딜러사 청구 대상이
+// 아니라 이 배치에 포함되지 않는다. 청구액은 패키지 실거래가치(무상 기본상품 포함 전체)를 그대로 사용하며
+// 마진을 붙이지 않는다(2026-08-22 확정 — 무상 기본상품도 딜러사가 실비 부담하는 구조이므로 고객 결제액이
+// 아니라 Reservation.packageValueAmount를 기준으로 삼는다)
+model DealerInvoiceBatch {
+  id              Int       @id @default(autoincrement())
+  dealerCompanyId Int // -> Company.id (coType='DEALER')
+  invoiceMonth    String    @db.Char(7) // 청구 대상월, "YYYY-MM" 형식
+  totalAmount     Int // 총 청구액(원) — 포함된 예약들의 Reservation.packageValueAmount 합(그대로, 마진 없음)
+  invoiceStatus   String    @default("PENDING") // 'PENDING'(대기) | 'INVOICED'(청구완료) | 'PAID'(입금완료) -> CommonCodeDetail(code='INVOICE_STATUS')
+  invoicedAt      DateTime? @db.Timestamp(3)
+  paidAt          DateTime? @db.Timestamp(3)
+  createdBy       String? // -> AdminAccount.username(FK 없음)
+  createdAt       DateTime  @default(now()) @db.Timestamp(3)
+  updatedBy       String? // -> AdminAccount.username(FK 없음)
+  updatedAt       DateTime  @updatedAt @db.Timestamp(3)
+
+  dealerCompany Company             @relation(fields: [dealerCompanyId], references: [id])
+  items         DealerInvoiceItem[]
+
+  @@unique([dealerCompanyId, invoiceMonth])
+  @@map("dealer_invoice_batches")
+}
+
+// 딜러사 청구 배치의 예약 건별 상세
+model DealerInvoiceItem {
+  id            Int      @id @default(autoincrement())
+  batchId       Int // -> DealerInvoiceBatch.id
+  reservationNo String // -> Reservation.reservationNo
+  amount        Int // 해당 건 청구액(원) — Reservation.packageValueAmount 스냅샷
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+
+  batch       DealerInvoiceBatch @relation(fields: [batchId], references: [id])
+  reservation Reservation        @relation(fields: [reservationNo], references: [reservationNo])
+
+  @@index([batchId])
+  @@index([reservationNo])
+  @@map("dealer_invoice_items")
 }
 
 // 인수확인 후 고객이 남기는 시공업체 후기(CU-RSVC-17) — 예약 1건당 1건, 신차패키지·예약시공 등 reservationType 공용
@@ -757,7 +884,7 @@ model Inquiry {
   updatedBy  String?
   updatedAt  DateTime  @updatedAt @db.Timestamp(3)
 
-  member User          @relation(fields: [memberId], references: [id])
+  member User           @relation(fields: [memberId], references: [id])
   photos InquiryPhoto[]
 
   @@index([memberId])
@@ -836,19 +963,19 @@ model BidRequest {
 
 // 업체가 예약시공 요청에 제출한 입찰(일반입찰 GENERAL 전용 — 전문가추천의 추천안은 별도 도메인, 미구현)
 model BidOffer {
-  id            Int      @id @default(autoincrement()) // 내부 시퀀스 — offerNo 채번에만 사용
-  offerNo       String   @unique @db.Char(10) // 응찰번호 — id를 10자리로 0-padding(BidRequest.requestNo와 동일 방식)
-  requestNo     String   @db.Char(10) // 대상 요청 -> BidRequest.requestNo
+  id            Int       @id @default(autoincrement()) // 내부 시퀀스 — offerNo 채번에만 사용
+  offerNo       String    @unique @db.Char(10) // 응찰번호 — id를 10자리로 0-padding(BidRequest.requestNo와 동일 방식)
+  requestNo     String    @db.Char(10) // 대상 요청 -> BidRequest.requestNo
   shopCode      String // 응찰 업체 -> Shop.shopCode
   // 시공 예정일 — 기본은 BidRequest.desiredDate와 같지만, 그 날짜에 예약 가능한 슬롯이 없으면 파트너가 다른
   // 날짜를 골라 응찰할 수 있음(2026-08-14 추가). null이면(이 컬럼 추가 이전 레거시 행) desiredDate와 동일하게 취급
   scheduledDate DateTime? @db.Date
-  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
-  memo          String?  @db.Text
+  scheduledTime DateTime  @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
+  memo          String?   @db.Text
   createdBy     String? // 등록자 — 응찰한 업체 소속 PartnerUser.username(FK 없음)
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  createdAt     DateTime  @default(now()) @db.Timestamp(3)
   updatedBy     String? // 수정자 -> PartnerUser.username(FK 없음)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(3)
 
   request BidRequest     @relation(fields: [requestNo], references: [requestNo])
   shop    Shop           @relation(fields: [shopCode], references: [shopCode])
@@ -873,18 +1000,18 @@ model BidOfferItem {
 
 // 업체가 전문가추천(EXPERT) 요청에 제출한 추천안 — BidOffer와 별도 도메인(상품·부위/농도·추천사유를 함께 제안)
 model BidPlan {
-  id            Int      @id @default(autoincrement()) // 내부 시퀀스 — planNo 채번에만 사용
-  planNo        String   @unique @db.Char(10) // 추천번호 — id를 10자리로 0-padding(BidOffer.offerNo와 동일 방식)
-  requestNo     String   @db.Char(10) // 대상 요청 -> BidRequest.requestNo
+  id            Int       @id @default(autoincrement()) // 내부 시퀀스 — planNo 채번에만 사용
+  planNo        String    @unique @db.Char(10) // 추천번호 — id를 10자리로 0-padding(BidOffer.offerNo와 동일 방식)
+  requestNo     String    @db.Char(10) // 대상 요청 -> BidRequest.requestNo
   shopCode      String // 추천 업체 -> Shop.shopCode
   // 시공 예정일 — BidOffer.scheduledDate와 동일한 이유로 추가(기본은 desiredDate, 슬롯 없으면 다른 날짜로 추천 가능)
   scheduledDate DateTime? @db.Date
-  scheduledTime DateTime @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
-  reason        String   @db.Text // 추천 사유
+  scheduledTime DateTime  @db.Time(0) // 시공 예정 시각 — scheduledDate 기준 그 업체의 실제 슬롯 중에서 선택
+  reason        String    @db.Text // 추천 사유
   createdBy     String? // 등록자 — 추천안을 제출한 업체 소속 PartnerUser.username(FK 없음)
-  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  createdAt     DateTime  @default(now()) @db.Timestamp(3)
   updatedBy     String? // 수정자 -> PartnerUser.username(FK 없음)
-  updatedAt     DateTime @updatedAt @db.Timestamp(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(3)
 
   request   BidRequest        @relation(fields: [requestNo], references: [requestNo])
   shop      Shop              @relation(fields: [shopCode], references: [shopCode])
@@ -987,7 +1114,7 @@ model Notification {
   type      String // -> CommonCodeDetail(code='NOTI_TYPE') 클라이언트 아이콘 매핑용
   title     String
   body      String
-  dataJson  String? @db.Text // JSON.stringify(reservationNo/requestNo 등) — 알림 탭 시 이동 대상 판별용
+  dataJson  String?  @db.Text // JSON.stringify(reservationNo/requestNo 등) — 알림 탭 시 이동 대상 판별용
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamp(3)
 

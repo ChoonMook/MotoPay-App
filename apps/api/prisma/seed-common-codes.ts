@@ -44,6 +44,9 @@ const MASTERS: { code: string; name: string }[] = [
   { code: 'FAQ_CATEGORY', name: 'FAQ 카테고리' },
   { code: 'NOTI_TYPE', name: '알림함 알림 유형' },
   { code: 'PUSH_MSG_TYPE', name: '푸시 알림 메시지' },
+  { code: 'COMMISSION_TYPE', name: '수수료 방식' },
+  { code: 'PAYOUT_STATUS', name: '시공업체 정산 지급상태' },
+  { code: 'INVOICE_STATUS', name: '딜러사 청구상태' },
 ];
 
 interface DetailRow {
@@ -323,6 +326,19 @@ const DETAILS: DetailRow[] = [
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_NOT_SELECTED', detailName: '다른 업체가 선정됐어요', ref1: '아쉽지만 이번 요청은 다른 업체가 선정됐어요.', ref2: 'bidbox' },
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_OFFER_RECEIVED', detailName: '새 입찰이 도착했어요', ref1: '업체가 입찰을 제출했어요. 비교해보세요.', ref2: 'rsv' },
   { code: 'PUSH_MSG_TYPE', detailCode: 'BID_PLAN_RECEIVED', detailName: '새 추천안이 도착했어요', ref1: '업체가 추천안을 제출했어요. 비교해보세요.', ref2: 'rsv' },
+
+  // COMMISSION_TYPE
+  { code: 'COMMISSION_TYPE', detailCode: 'FIXED', detailName: '정액' },
+  { code: 'COMMISSION_TYPE', detailCode: 'RATE', detailName: '정률' },
+
+  // PAYOUT_STATUS
+  { code: 'PAYOUT_STATUS', detailCode: 'PENDING', detailName: '지급대기' },
+  { code: 'PAYOUT_STATUS', detailCode: 'PAID', detailName: '지급완료' },
+
+  // INVOICE_STATUS
+  { code: 'INVOICE_STATUS', detailCode: 'PENDING', detailName: '청구대기' },
+  { code: 'INVOICE_STATUS', detailCode: 'INVOICED', detailName: '청구완료' },
+  { code: 'INVOICE_STATUS', detailCode: 'PAID', detailName: '입금완료' },
 ];
 
 async function main() {

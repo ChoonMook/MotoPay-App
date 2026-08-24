@@ -7,6 +7,8 @@ import CommonHeader from "./CommonHeader";
 import { WarnIcon, StarIcon } from "./commonIcons";
 import type { HandoverStatus } from "./commonTypes";
 
+const nfmt = (n: number) => n.toLocaleString("en-US");
+
 export interface WrittenReview {
   rating: number;
   content: string;
@@ -31,6 +33,10 @@ interface CstDoneHandoverScreenProps {
   selName: string;
   handover: HandoverStatus;
   vehicleSummary?: VehicleSummary;
+  /** 결제 금액(원) — 예약시공(BID)만 값 있음. 신차패키지(PKG)는 고객이 직접 결제하는 흐름이 없어 null */
+  paidAmount?: number | null;
+  /** 상품(시공 항목)별 결제 금액 — BID만 값 있음, 없으면 총액 카드만 표시 */
+  paidItems?: { label: string; productName: string | null; price: number }[];
   /** 파트너가 완료 등록 시 첨부한 시공 사진의 실제 URL 목록 */
   photos: string[];
   /** 이미 작성된 후기 — 있으면 후기 작성 버튼 대신 별점·내용을 그대로 보여줌 */
@@ -45,6 +51,8 @@ export default function CstDoneHandoverScreen({
   selName,
   handover,
   vehicleSummary,
+  paidAmount,
+  paidItems,
   photos,
   review,
   loading = false,
@@ -105,6 +113,28 @@ export default function CstDoneHandoverScreen({
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {paidAmount != null && (
+          <div className="mt-[18px] rounded-[14px] border border-gray-200 bg-white px-4 py-1.5">
+            {paidItems && paidItems.length > 0 && (
+              <div className="border-b border-gray-100 py-1.5">
+                {paidItems.map((it, i) => (
+                  <div key={`${it.label}-${i}`} className="flex items-center justify-between gap-2.5 py-2">
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-gray-800">{it.label}</div>
+                      <div className="mt-0.5 truncate text-[11.5px] text-gray-500">{it.productName ?? "제품 미지정"}</div>
+                    </div>
+                    <span className="flex-none text-[13px] font-semibold text-gray-800 tabular-nums">{nfmt(it.price)}원</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[13px] font-bold text-gray-500">결제 금액</span>
+              <span className="text-[15px] font-extrabold text-gray-900 tabular-nums">{nfmt(paidAmount)}원</span>
             </div>
           </div>
         )}

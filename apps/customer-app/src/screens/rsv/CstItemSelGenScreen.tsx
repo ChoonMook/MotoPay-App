@@ -48,12 +48,14 @@ interface CstItemSelGenScreenProps {
   items: Record<ItemKey, boolean>;
   itemDefs: ItemDef[];
   loading: boolean;
+  /** 대표 차종(브랜드·차종·세부차종명) — 등록된 차량이 없으면 null(카드 자체를 표시하지 않음) */
+  carLabel: string | null;
   onToggleItem: (key: ItemKey) => void;
   onBack: () => void;
   onNext: () => void;
 }
 
-export default function CstItemSelGenScreen({ items, itemDefs, loading, onToggleItem, onBack, onNext }: CstItemSelGenScreenProps) {
+export default function CstItemSelGenScreen({ items, itemDefs, loading, carLabel, onToggleItem, onBack, onNext }: CstItemSelGenScreenProps) {
   const selCount = itemDefs.filter((it) => items[it.key]).length;
 
   return (
@@ -61,6 +63,22 @@ export default function CstItemSelGenScreen({ items, itemDefs, loading, onToggle
       <RsvHeader title="시공항목 선택" onBack={onBack} steps={STEP_LABELS} current={0} />
 
       <div className="mp-scroll flex-1 overflow-y-auto px-5 pt-[18px] pb-6">
+        {carLabel && (
+          <div className="mb-3.5 flex items-center gap-2.5 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] bg-brand-subtle text-brand">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 17h14M6 17l1-5h10l1 5M8 12V9h8v3" />
+                <circle cx="7.5" cy="17.5" r="1.5" />
+                <circle cx="16.5" cy="17.5" r="1.5" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] text-gray-500">대표 차종</div>
+              <div className="truncate text-sm font-extrabold text-gray-900">{carLabel}</div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-3.5 rounded-[10px] bg-gray-100 px-[13px] py-[11px] text-[13px] leading-[1.45] text-gray-600">
           받고 싶은 <b>시공 항목</b>을 모두 선택하세요. 다음 단계에서 항목별 제품을 고를 수 있어요.
         </div>

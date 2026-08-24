@@ -1,4 +1,4 @@
-// apps/api의 정산 배치 엔드포인트(/admin/settlements/shop-batches/*) 호출 — AD-STL-04 정산 내역 조회 화면 전용
+// apps/api의 정산 배치 엔드포인트(/admin/settlements/shop-batches/*) 호출 — AD-STL-04 패키지·시공 정산 내역 조회 화면 전용
 import { authedRequest } from "./http";
 
 export interface ShopSettlementBatchApi {
@@ -38,6 +38,11 @@ export function listShopSettlementBatches(params: { settlementMonth?: string; sh
 export interface ShopSettlementItemApi {
   id: number;
   reservationNo: string;
+  reservationType: string; // 'PKG' | 'BID'
+  serviceDate: string; // "YYYY-MM-DD"
+  customerName: string;
+  carLabel: string | null;
+  packageName: string | null; // PKG만 값 있음
   productCode: string | null;
   productName: string | null;
   grossAmount: number;

@@ -286,7 +286,9 @@ export default function PkgCompMgmtPage() {
               ) : (
                 <div className="flex flex-col gap-5">
                   {ITEM_TYPES.map(({ key, label }) => {
-                    const options = componentProducts;
+                    // 신규 구성상품 추가 드롭다운에는 사용중인 상품만 노출(2026-08-23 확정) — 이미 등록된
+                    // 구성상품은 나중에 사용중지되더라도 componentLabelMap(필터 안 함)으로 계속 이름이 보임
+                    const options = componentProducts.filter((p) => p.useYn);
                     return (
                       <div key={key} className="space-y-2">
                         <h4 className="text-xs font-extrabold text-on-surface">{label}</h4>

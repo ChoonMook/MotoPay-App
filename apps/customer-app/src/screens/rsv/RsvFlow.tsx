@@ -4,6 +4,7 @@ import Toast from "../../components/ui/Toast";
 import { useToast } from "../../components/ui/useToast";
 import { pushBackAction } from "../../native/backHandler";
 
+import { listMyCars, type MyCarApi } from "../../api/cars";
 import BookingScreen, { displayStatus, type ReqStatusFilter } from "./BookingScreen";
 import BidCancelConfirmScreen from "./BidCancelConfirmScreen";
 import ReqTypeSelScreen from "./ReqTypeSelScreen";
@@ -137,6 +138,9 @@ export default function RsvFlow({
   // 반영돼야 해서 캐시하지 않고 prodsel 화면 진입마다 재조회함(loadingProducts가 이 재조회 상태를 나타냄)
   const [tintProducts, setTintProducts] = useState<ProductApi[]>([]);
   const [otherProducts, setOtherProducts] = useState<Partial<Record<ProdItemKey, ProductApi[]>>>({});
+  // CU-RSVC-11/19 입찰 내용 상세 → 제품 상세 — 요청 항목의 실제 카테고리(썬팅뿐 아니라 블랙박스 등 전부) 카탈로그를
+  // 조회해 판매가·브랜드·설명을 보여준다(2026-08-23 확정: 이전엔 썬팅만 조회해 다른 항목은 판매가가 안 보였음)
+  const [bidItemCatalog, setBidItemCatalog] = useState<ProductApi[]>([]);
   const [prodBrandCodes, setProdBrandCodes] = useState<CommonCodeDetailApi[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
 
@@ -180,6 +184,7 @@ export default function RsvFlow({
   // 요청 카드·등록완료 화면에 차종(브랜드+모델)을 라벨로 보여주기 위한 코드값 조회
   const [carBrandCodes, setCarBrandCodes] = useState<CommonCodeDetailApi[]>([]);
   const [carModelCodes, setCarModelCodes] = useState<CommonCodeDetailApi[]>([]);
+  const [carsApi, setCarsApi] = useState<MyCarApi[]>([]);
   // CU-RSVC-03 시공항목 선택 — admin-app 기준정보 > 시공항목 관리(AD-CTLG-03)에 등록·활성화된 CAR_INST만 노출
   const [carInstCodes, setCarInstCodes] = useState<CommonCodeDetailApi[]>([]);
   const [loadingCarInst, setLoadingCarInst] = useState(true);
@@ -216,6 +221,9 @@ export default function RsvFlow({
   const [activeReservationId, setActiveReservationId] = useState<number | null>(null);
   const [handoverShopName, setHandoverShopName] = useState("");
   const [handoverDetail, setHandoverDetail] = useState<HandoverDetail | null>(null);
+  const [handoverPaidItems, setHandoverPaidItems] = useState<{ label: string; productName: string | null; price: number }[]>(
+    [],
+  );
   const [loadingHandover, setLoadingHandover] = useState(false);
   const [confirmingHandover, setConfirmingHandover] = useState(false);
   const [review, setReview] = useState<ReviewApi | null>(null);
@@ -263,8 +271,10 @@ export default function RsvFlow({
     ]);
   };
 
-  useEffect(() => {
-    refreshRequests();
+  // CU-RSVC-01/03 새 견적 요청 참조 데이터(업체·차종·차량·시공항목·제품) — 마운트 시 1회뿐 아니라, 관리자가
+  // 그 사이 시공항목·차종 등을 바꿨을 수 있어 "새 견적 요청하기"를 다시 누를 때마다도 최신값으로 다시 불러온다
+  // (2026-08-23 확정: RsvFlow가 마운트된 채로 오래 떠 있으면 예전 값을 계속 쓰던 문제)
+  const loadReferenceData = () => {
     listShops()
       .then((shops) => {
         setShopNameByCode(Object.fromEntries(shops.map((s) => [s.shopCode, s.name])));
@@ -273,19 +283,34 @@ export default function RsvFlow({
       .catch(() => {});
     getCommonCodeDetails("CAR_BRAND").then(setCarBrandCodes).catch(() => {});
     getCommonCodeDetails("CAR_MODEL").then(setCarModelCodes).catch(() => {});
+    listMyCars().then(setCarsApi).catch(() => {});
     getCommonCodeDetails("CAR_INST")
       .then(setCarInstCodes)
       .catch(() => {})
       .finally(() => setLoadingCarInst(false));
-    // 썬팅 제품·브랜드 코드는 요청 등록(제품 선택·검색)뿐 아니라 입찰 내용 상세(제품 상세)에서도 필요해 마운트 시
-    // 우선 한 번 조회해둠(prodsel 화면에 들어가면 최신 값으로 다시 조회됨 — 아래 CU-RSVC-04 effect 참고)
+    // 썬팅 제품·브랜드 코드는 요청 등록(제품 선택·검색)뿐 아니라 입찰 내용 상세(제품 상세)에서도 필요해 미리 조회해둠
+    // (prodsel 화면에 들어가면 최신 값으로 한 번 더 조회됨 — 아래 CU-RSVC-04 effect 참고)
     getCommonCodeDetails("PROD_BRAND").then(setProdBrandCodes).catch(() => {});
     listBidProducts("TINT").then(setTintProducts).catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshRequests();
+    loadReferenceData();
     getMyPointsSummary()
       .then((s) => setMemberPointBalance(s.balance))
       .catch(() => {}); // 결제 화면 진입 전까지는 몰라도 되는 보조 데이터라 실패해도 토스트 없이 0으로 유지
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "새 견적 요청하기" 시트를 열 때마다 참조 데이터를 다시 불러온다 — RsvFlow는 화면 전환에도 계속 마운트된
+  // 상태라, 마운트 시점에 한 번만 조회한 값을 계속 쓰면 그 사이 바뀐 시공항목·차종·업체 정보가 반영되지 않았음
+  useEffect(() => {
+    if (sheet !== "reqtype") return;
+    setLoadingCarInst(true);
+    loadReferenceData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet]);
 
   // CU-RSVC-21 일정 변경 — 캘린더에 표시할 선정 업체의 월별 휴무일
   useEffect(() => {
@@ -323,6 +348,12 @@ export default function RsvFlow({
     const model = carModelCodes.find((d) => d.detailCode === car.carModelCode)?.detailName ?? car.carModelCode;
     return car.trimName ? `${brand} ${model} ${car.trimName}` : `${brand} ${model}`;
   };
+
+  // CU-RSVC-03 시공항목 선택 화면 상단에 표시할 대표 차종(브랜드·차종·세부차종명) — 등록된 차량이 없으면 null
+  const defaultCarApi = carsApi.find((c) => c.isDefault) ?? carsApi[0] ?? null;
+  const defaultCarLabel = defaultCarApi
+    ? carLabel({ carBrandCode: defaultCarApi.carBrandCode, carModelCode: defaultCarApi.carModelCode, trimName: defaultCarApi.trimName })
+    : null;
 
   // 상품 브랜드 코드 -> 한글 라벨 — 제품 검색·상세(CU-RSVC-05/11)에서 실제 카탈로그의 brand(코드값)를 표시용으로 변환
   const prodBrandLabel = (code: string): string => prodBrandCodes.find((d) => d.detailCode === code)?.detailName ?? code;
@@ -699,9 +730,13 @@ export default function RsvFlow({
       const reservation = reqReservation[request.requestNo];
       if (!reservation) return;
       setActiveReservationId(reservation.id);
+      // 인수확인 화면(CstDoneHandoverScreen)의 "결제 금액" 표시에 필요 — 이전엔 이 분기에서 세팅을 안 해서
+      // 총 결제금액이 항상 안 보이는 버그가 있었음(2026-08-24 확정)
+      setActiveReservation(reservation);
       setHandoverShopName(shopNameByCode[reservation.shopCode] ?? "선정 업체");
       setHandoverDetail(null);
       setReview(null);
+      setHandoverPaidItems([]);
       setLoadingHandover(true);
       getHandoverDetail(reservation.id)
         .then(setHandoverDetail)
@@ -710,6 +745,41 @@ export default function RsvFlow({
       getReview(reservation.id)
         .then(setReview)
         .catch(() => {}); // 후기 조회 실패는 버튼 노출에만 영향 — 별도 에러 토스트 불필요
+      // 상품별 결제 금액 — 낙찰된 응찰(GENERAL)/추천안(EXPERT)의 항목별 가격을 다시 조회해서 보여줌
+      // (2026-08-24 확정: 총액뿐 아니라 항목별 금액·상품명도 필요)
+      if (request.reqType === "EXPERT" && request.selectedPlanNo) {
+        getBidPlans(request.id)
+          .then((plans) => {
+            const won = plans.find((p) => p.planNo === request.selectedPlanNo);
+            setHandoverPaidItems(
+              won
+                ? won.items.map((it) => ({
+                    label: INST_CODE_LABELS[it.instCode] ?? it.instCode,
+                    productName: it.productName,
+                    price: it.offerPrice,
+                  }))
+                : [],
+            );
+          })
+          .catch(() => {}); // 참고용 항목별 내역이라 실패해도 총액 표시는 그대로 유지
+      } else if (request.selectedOfferNo) {
+        // BidOfferItem엔 상품명이 없어(가격만 응찰), 같은 요청의 BidRequestItem(고객이 요청 시 지정한 제품명)에서 채운다
+        const productNameByInstCode = new Map(request.items.map((it) => [it.instCode, it.productName]));
+        getBidOffers(request.id)
+          .then((offers) => {
+            const won = offers.find((o) => o.offerNo === request.selectedOfferNo);
+            setHandoverPaidItems(
+              won
+                ? won.items.map((it) => ({
+                    label: INST_CODE_LABELS[it.instCode] ?? it.instCode,
+                    productName: productNameByInstCode.get(it.instCode) ?? null,
+                    price: it.price,
+                  }))
+                : [],
+            );
+          })
+          .catch(() => {});
+      }
       setScreen("handover");
       return;
     }
@@ -777,6 +847,22 @@ export default function RsvFlow({
       .catch(() => {}) // 참고용 가격 표시라 실패해도 화면 진입을 막지 않고 조용히 무시
       .finally(() => setLoadingMyReqDtl(false));
   };
+
+  // CU-RSVC-11/19 입찰 내용 상세 → 제품 상세 — 요청에 포함된 항목들의 실제 카테고리 카탈로그를 전부 조회해둔다
+  // (openMyReqDtl과 동일한 PROD_CAT_BY_INST_CODE 매핑 재사용, 이전엔 썬팅 카탈로그만 있어 다른 항목은 판매가 매칭이 안 됐음)
+  useEffect(() => {
+    const items = activeBidRequest?.items ?? [];
+    const namedItems = items.filter((it) => it.productName);
+    if (namedItems.length === 0) {
+      setBidItemCatalog([]);
+      return;
+    }
+    const prodCats = [...new Set(namedItems.map((it) => PROD_CAT_BY_INST_CODE[it.instCode]).filter((c): c is string => !!c))];
+    Promise.all(prodCats.map((cat) => listBidProducts(cat)))
+      .then((lists) => setBidItemCatalog(lists.flat()))
+      .catch(() => {}); // 참고용 판매가 표시라 실패해도 조용히 무시
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBidRequest?.requestNo]);
 
   // 요청 취소 시트 열기 — 이전 요청에서 남은 취소사유 선택 상태를 초기화
   const openCancelSheet = (request: BidRequestApi) => {
@@ -881,6 +967,7 @@ export default function RsvFlow({
           items={items}
           itemDefs={visibleItemDefs}
           loading={loadingCarInst}
+          carLabel={defaultCarLabel}
           onToggleItem={(key) => setItems((cur) => ({ ...cur, [key]: !cur[key] }))}
           onBack={goMain}
           onNext={() => setScreen("prodsel")}
@@ -1023,7 +1110,7 @@ export default function RsvFlow({
           photoUrlByShopCode={photoUrlByShopCode}
           requestItems={activeBidRequest?.items ?? []}
           requestPositions={activeBidRequest?.positions ?? []}
-          tintProducts={tintProducts}
+          catalogProducts={bidItemCatalog}
           brandLabel={prodBrandLabel}
           decided={!!activeBidRequest && activeBidRequest.status !== "OPEN"}
           selectedOfferNo={activeBidRequest?.selectedOfferNo ?? null}
@@ -1182,6 +1269,8 @@ export default function RsvFlow({
         <CstDoneHandoverScreen
           selName={handoverShopName}
           handover={handoverStatus}
+          paidAmount={activeReservation?.paidAmount}
+          paidItems={handoverPaidItems}
           photos={handoverPhotoUrls}
           review={review}
           loading={loadingHandover}

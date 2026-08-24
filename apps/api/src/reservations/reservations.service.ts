@@ -169,6 +169,8 @@ export interface BidJobDetailView {
   completionMemo: string | null;
   completedAt: string | null;
   handoverConfirmedAt: string | null;
+  paidAmount: number | null; // 고객 결제 금액(원) — 파트너 완료건 상세에 정산 참고용으로 노출(2026-08-24 확정)
+  items: { instCode: string; productName: string | null; price: number }[]; // 항목별 결제 금액(2026-08-24 확정)
   photos: string[]; // uploads/ 기준 상대경로
 }
 
@@ -1082,12 +1084,13 @@ export class ReservationsService {
       throw new NotFoundException('예약시공 예약을 찾을 수 없습니다.');
     }
 
-    const [photos, handoverConfirmedAt] = await Promise.all([
+    const [photos, handoverConfirmedAt, items] = await Promise.all([
       this.prisma.reservationPhoto.findMany({
         where: { reservationNo },
         orderBy: { sortOrder: 'asc' },
       }),
       this.resolveHandoverConfirmation(reservation),
+      this.resolveBidJobItems(reservation.requestNo),
     ]);
 
     return {
@@ -1095,8 +1098,50 @@ export class ReservationsService {
       completionMemo: reservation.completionMemo,
       completedAt: reservation.completedAt?.toISOString() ?? null,
       handoverConfirmedAt: handoverConfirmedAt?.toISOString() ?? null,
+      paidAmount: reservation.paidAmount,
+      items,
       photos: photos.map((p) => p.photoPath),
     };
+  }
+
+  /** 낙찰된 응찰(GENERAL)/추천안(EXPERT)의 항목별 상품명·가격 — PT-RSVC-11 완료건 상세에 상품별 결제 금액을
+   * 보여주기 위함(2026-08-24 확정, customer-app RsvFlow.tsx의 동일 로직과 대응) */
+  private async resolveBidJobItems(
+    requestNo: string | null,
+  ): Promise<{ instCode: string; productName: string | null; price: number }[]> {
+    if (!requestNo) return [];
+    const request = await this.prisma.bidRequest.findUnique({
+      where: { requestNo },
+    });
+    if (!request) return [];
+
+    if (request.reqType === 'EXPERT') {
+      if (!request.selectedPlanNo) return [];
+      const plan = await this.prisma.bidPlan.findUnique({
+        where: { planNo: request.selectedPlanNo },
+        include: { items: true },
+      });
+      return (plan?.items ?? []).map((it) => ({
+        instCode: it.instCode,
+        productName: it.productName,
+        price: it.offerPrice,
+      }));
+    }
+
+    if (!request.selectedOfferNo) return [];
+    const [offer, requestItems] = await Promise.all([
+      this.prisma.bidOffer.findUnique({
+        where: { offerNo: request.selectedOfferNo },
+        include: { items: true },
+      }),
+      this.prisma.bidRequestItem.findMany({ where: { requestNo } }),
+    ]);
+    const productNameByInstCode = new Map(requestItems.map((i) => [i.instCode, i.productName]));
+    return (offer?.items ?? []).map((it) => ({
+      instCode: it.instCode,
+      productName: productNameByInstCode.get(it.instCode) ?? null,
+      price: it.price,
+    }));
   }
 
   async getPackageJobDetail(

@@ -774,7 +774,7 @@ export default function NewCarPurchaseInputPage() {
   useEffect(() => {
     setLoading(true);
     setLoadError("");
-    Promise.all([listCompanies(), getGroup("CAR_BRAND"), getGroup("CAR_MODEL"), listProducts({ prodType: "PKG" }), getMe()])
+    Promise.all([listCompanies(), getGroup("CAR_BRAND"), getGroup("CAR_MODEL"), listProducts({ prodType: "PKG", useYn: true }), getMe()])
       .then(([companies, brandGroup, modelGroup, packages, me]) => {
         setShared({
           dealers: companies.filter((c) => c.coType === "DEALER" && c.useYn),

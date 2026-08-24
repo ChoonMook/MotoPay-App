@@ -4,6 +4,7 @@
 // (클라이언트가 보낸 이름·번호를 그대로 믿지 않고 서버가 PortOne에 직접 물어봐서 확정하는 것이 핵심)
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { formatPhone, normalizePhone } from '../common/crypto/phone-crypto';
 
 interface PortOneIdentityVerification {
   status: string;
@@ -46,6 +47,6 @@ export class IdentityVerificationService {
       throw new BadRequestException('본인인증 결과에서 이름 또는 휴대폰번호를 확인하지 못했습니다.');
     }
 
-    return { name, phone };
+    return { name, phone: formatPhone(normalizePhone(phone)) };
   }
 }

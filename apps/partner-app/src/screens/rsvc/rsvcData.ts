@@ -17,7 +17,7 @@ export const JOB_TAB_META: { key: JobStatus; label: string }[] = [
 ];
 
 // -> CommonCodeDetail(code='CAR_INST'), apps/customer-app의 rsvTypes.ts INST_CODE_LABELS와 동일
-const INST_CODE_LABELS: Record<string, string> = {
+export const INST_CODE_LABELS: Record<string, string> = {
   TINT: "썬팅·틴팅",
   PPF: "PPF",
   BBOX: "블랙박스",

@@ -88,6 +88,8 @@ export interface BidJobDetail {
   completionMemo: string | null;
   completedAt: string | null;
   handoverConfirmedAt: string | null;
+  paidAmount: number | null; // 고객 결제 금액(원) — 정산 참고용
+  items: { instCode: string; productName: string | null; price: number }[]; // 항목별 결제 금액
   photos: string[]; // uploads/ 기준 상대경로 — 완료 등록 시 첨부한 시공 사진
 }
 

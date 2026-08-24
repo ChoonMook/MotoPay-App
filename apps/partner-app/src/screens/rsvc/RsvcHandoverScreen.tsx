@@ -5,9 +5,11 @@ import type { BidJobDetail } from "../../api/reservations";
 import Button from "../../components/ui/Button";
 import PhotoLightbox from "../../components/ui/PhotoLightbox";
 import { CheckBadgeIcon } from "./rsvcIcons";
+import { INST_CODE_LABELS } from "./rsvcData";
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
 const HANDOVER_AUTO_CONFIRM_DAYS = 3;
+const nfmt = (n: number) => n.toLocaleString("en-US");
 
 function formatDateTimeLabel(iso: string): string {
   const d = new Date(iso);
@@ -102,6 +104,28 @@ export default function RsvcHandoverScreen({ job, loading, settlementDay, onBack
             </div>
           </div>
         </div>
+
+        {job.paidAmount != null && (
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-4 py-1.5">
+            {job.items.length > 0 && (
+              <div className="border-b border-gray-100 py-1.5">
+                {job.items.map((it, i) => (
+                  <div key={`${it.instCode}-${i}`} className="flex items-center justify-between gap-2.5 py-2">
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-gray-800">{INST_CODE_LABELS[it.instCode] ?? it.instCode}</div>
+                      <div className="mt-0.5 truncate text-[11.5px] text-gray-500">{it.productName ?? "제품 미지정"}</div>
+                    </div>
+                    <span className="flex-none text-[13px] font-semibold text-gray-800 tabular-nums">{nfmt(it.price)}원</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[13px] font-bold text-gray-500">결제 금액</span>
+              <span className="text-[15px] font-extrabold text-gray-900 tabular-nums">{nfmt(job.paidAmount)}원</span>
+            </div>
+          </div>
+        )}
 
         <div className="my-4 rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
           {hoRows.map((r, i) => (

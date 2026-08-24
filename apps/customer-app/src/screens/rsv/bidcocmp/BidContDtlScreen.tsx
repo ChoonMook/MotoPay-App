@@ -1,7 +1,7 @@
 // CU-RSVC-11: 입찰 내용 상세 - 시공항목별 상품·가격과 합계 확인 후 선택하거나 업체 프로필로 이동
-// 항목명 옆에 고객이 요청한 제품명·부위별 농도(썬팅)를 바로 노출하고, "제품 상세"는 실제 카탈로그(tintProducts,
-// RsvFlow.tsx가 GET /products?prodCat=TINT&bidApplicable=true로 조회)에서 이름이 일치하는 상품을 찾아
-// 브랜드·가격을 채워준다(평점은 DB에 리뷰 데이터가 없어 미표시)
+// 항목명 옆에 고객이 요청한 제품명·부위별 농도(썬팅)를 바로 노출하고, "제품 상세"는 실제 카탈로그(catalogProducts,
+// RsvFlow.tsx가 요청에 포함된 항목들의 카테고리를 GET /products?prodCat=...&bidApplicable=true로 조회)에서
+// 이름이 일치하는 상품을 찾아 브랜드·판매가를 채워준다(평점은 DB에 리뷰 데이터가 없어 미표시)
 import shopThumb from "../../../assets/images/shop.png";
 import Button from "../../../components/ui/Button";
 import RsvHeader from "../RsvHeader";
@@ -29,18 +29,22 @@ function itemSubtitle(itemName: string, requestItems: BidRequestItemApi[], reque
   return productName ?? "제품 미지정";
 }
 
-/** "제품 상세" 진입 시 넘길 정보 — 썬팅(TINT)이고 제품명이 실제 카탈로그(tintProducts)에 있으면 브랜드·가격까지 채워줌 */
+/**
+ * "제품 상세" 진입 시 넘길 정보 — 제품명이 실제 카탈로그(catalogProducts, 요청에 포함된 모든 항목의 카테고리를
+ * 조회해둔 값)에 있으면 브랜드·판매가·설명까지 채워준다. 카테고리를 썬팅으로 한정하지 않음(2026-08-23 확정 —
+ * 이전엔 썬팅 카탈로그만 조회해 블랙박스 등 다른 항목은 항상 매칭 실패, 판매가가 안 보였음)
+ */
 function buildProdDtlInfo(
   itemName: string,
   requestItems: BidRequestItemApi[],
   requestPositions: BidRequestPositionApi[],
-  tintProducts: ProductApi[],
+  catalogProducts: ProductApi[],
   brandLabel: (code: string) => string,
 ): ProdDtlInfo {
   const reqItem = findRequestItem(itemName, requestItems);
   const isTint = reqItem?.instCode === "TINT";
   const productName = reqItem?.productName ?? null;
-  const matched = isTint && productName ? tintProducts.find((p) => p.name === productName) : undefined;
+  const matched = productName ? catalogProducts.find((p) => p.name === productName) : undefined;
   return {
     itemLabel: itemName,
     productName,
@@ -60,8 +64,8 @@ interface BidContDtlScreenProps {
   photoUrlByShopCode: Record<string, string | null>;
   requestItems: BidRequestItemApi[];
   requestPositions: BidRequestPositionApi[];
-  /** "제품 상세" 진입 시 썬팅 제품의 브랜드·가격을 채우기 위한 실제 카탈로그 — RsvFlow.tsx에서 이미 조회해둔 값 재사용 */
-  tintProducts: ProductApi[];
+  /** "제품 상세" 진입 시 브랜드·가격을 채우기 위한 실제 카탈로그(요청에 포함된 전 항목 카테고리) — RsvFlow.tsx에서 이미 조회해둔 값 재사용 */
+  catalogProducts: ProductApi[];
   brandLabel: (code: string) => string;
   /** 이미 업체가 선정(SELECTED)됐거나 마감·취소된 요청이면 true — 더 이상 새로 선택할 수 없음 */
   decided: boolean;
@@ -80,7 +84,7 @@ export default function BidContDtlScreen({
   photoUrlByShopCode,
   requestItems,
   requestPositions,
-  tintProducts,
+  catalogProducts,
   brandLabel,
   decided,
   selectedOfferNo,
@@ -131,7 +135,7 @@ export default function BidContDtlScreen({
           {bidder.items.map(([name, price], i) => (
             <div
               key={name}
-              onClick={() => onOpenProdDtl(buildProdDtlInfo(name, requestItems, requestPositions, tintProducts, brandLabel))}
+              onClick={() => onOpenProdDtl(buildProdDtlInfo(name, requestItems, requestPositions, catalogProducts, brandLabel))}
               className={`flex cursor-pointer items-center justify-between gap-3 py-3.5 ${i < bidder.items.length - 1 ? "border-b border-gray-100" : ""}`}
             >
               <div className="min-w-0 flex-1">

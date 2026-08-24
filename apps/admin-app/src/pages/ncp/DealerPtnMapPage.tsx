@@ -48,8 +48,8 @@ export default function DealerPtnMapPage() {
     setLoadError("");
     Promise.all([listCompanies(), listShops()])
       .then(([companies, shopList]) => {
-        setDealers(companies.filter((c) => c.coType === "DEALER"));
-        setShops(shopList);
+        setDealers(companies.filter((c) => c.coType === "DEALER" && c.useYn));
+        setShops(shopList.filter((s) => s.useYn));
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "목록을 불러오지 못했습니다."))
       .finally(() => setLoading(false));

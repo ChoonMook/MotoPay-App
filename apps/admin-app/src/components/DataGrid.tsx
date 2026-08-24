@@ -30,6 +30,10 @@ export interface DataGridProps<TData> {
   emptyMessage?: string;
   /** true인 동안 ag-grid 자체 로딩 오버레이를 표시 — rowData가 빈 배열이어도 "결과 없음" 문구로 잘못 표시되지 않도록 분리 */
   loading?: boolean;
+  /** columnDefs의 spanRows(동일 값 셀 병합)를 쓰려면 true로 지정 - gridOptions 레벨 스위치라 컬럼 정의만으로는 동작하지 않음 */
+  enableCellSpan?: boolean;
+  /** 그리드 하단에 고정 표시할 합계 등의 행(페이지네이션과 무관하게 항상 노출) */
+  pinnedBottomRowData?: TData[];
 }
 
 function DataGridInner<TData>(
@@ -45,6 +49,8 @@ function DataGridInner<TData>(
     rowClass,
     emptyMessage = "조건에 맞는 항목이 없습니다.",
     loading = false,
+    enableCellSpan = false,
+    pinnedBottomRowData,
   }: DataGridProps<TData>,
   ref: ForwardedRef<AgGridReact<TData>>,
 ) {
@@ -74,6 +80,8 @@ function DataGridInner<TData>(
         getRowClass={getRowClass}
         rowSelection={rowSelection}
         rowClass={rowClass}
+        enableCellSpan={enableCellSpan}
+        pinnedBottomRowData={pinnedBottomRowData}
         pagination
         paginationPageSize={pageSize}
         paginationPageSizeSelector={false}

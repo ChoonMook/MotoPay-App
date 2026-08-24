@@ -71,9 +71,9 @@ interface AccountFormValue {
   useYn: boolean;
 }
 
-// accountType='ADMIN'(운영사)은 소속업체가 없고, 그 외(DEALER/SUPPLIER)는 같은 업체구분의 업체만 선택 가능
+// accountType='ADMIN'(운영사)은 소속업체가 없고, 그 외(DEALER/SUPPLIER)는 같은 업체구분의 사용중인 업체만 선택 가능
 function companyOptionsFor(accountType: string, companies: CompanyListItem[]): CompanyListItem[] {
-  return companies.filter((c) => c.coType === accountType);
+  return companies.filter((c) => c.coType === accountType && c.useYn);
 }
 
 function AddAccountModal({
